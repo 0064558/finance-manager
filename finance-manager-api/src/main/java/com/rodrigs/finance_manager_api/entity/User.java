@@ -24,7 +24,7 @@ public class User implements Serializable {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "email", nullable = false, unique = true, length = 100)
+    @Column(name = "email", nullable = false, length = 254)
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
@@ -41,13 +41,10 @@ public class User implements Serializable {
 
     public User() {}
 
-    public User(UUID id, String name, String email, String passwordHash, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
-        this.id = id;
+    public User(String name, String email, String passwordHash) {
         this.name = name;
         this.email = email;
         this.passwordHash = passwordHash;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
     }
 
     public UUID getId() {
