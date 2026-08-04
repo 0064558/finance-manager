@@ -105,6 +105,18 @@ A documentacao OpenAPI considera endpoints sob:
 /api/v1/**
 ```
 
+## Migrations Flyway
+
+O schema do banco e criado exclusivamente por migrations em `src/main/resources/db/migration`.
+As migrations ja aplicadas nao devem ser editadas; qualquer ajuste deve entrar em uma nova versao.
+
+| Versao | Arquivo | Proposito |
+| --- | --- | --- |
+| `V1` | `V1__create_users.sql` | Habilita UUID com `pgcrypto`, cria `users`, checks obrigatorios e indice unico case-insensitive de e-mail. |
+| `V2` | `V2__create_financial_accounts.sql` | Cria `financial_accounts`, vinculo com usuario, tipos permitidos, constraint composta para propriedade e indice por usuario. |
+| `V3` | `V3__create_categories.sql` | Cria `categories`, tipos de transacao permitidos, unicidade por usuario/tipo/nome normalizado e indice por usuario. |
+| `V4` | `V4__create_transactions.sql` | Cria `transactions`, FKs simples e compostas de isolamento por usuario, checks de tipo/valor/descricao e indices de filtros. |
+
 ## Parar o ambiente
 
 Pare os conteineres:
