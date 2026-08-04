@@ -1,4 +1,4 @@
-package com.rodrigs.finance_manager_api.entity;
+package com.rodrigs.finance_manager_api.user.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -10,6 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
+// A entidade User representa um usuário do sistema de gerenciamento financeiro. Ela é mapeada para a tabela "users" no banco de dados e contém informações essenciais sobre o usuário, como nome, email e hash da senha. Além disso, possui campos de auditoria para rastrear quando o usuário foi criado e atualizado.
 @Entity
 @Table(name = "users")
 public class User implements Serializable {

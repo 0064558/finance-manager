@@ -1,6 +1,6 @@
-package com.rodrigs.finance_manager_api.repository;
+package com.rodrigs.finance_manager_api.user.repository;
 
-import com.rodrigs.finance_manager_api.entity.User;
+import com.rodrigs.finance_manager_api.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
