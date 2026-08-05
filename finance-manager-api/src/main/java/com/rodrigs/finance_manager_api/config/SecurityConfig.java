@@ -1,5 +1,8 @@
 package com.rodrigs.finance_manager_api.config;
 
+import com.rodrigs.finance_manager_api.auth.JwtAuthenticationFilter;
+import com.rodrigs.finance_manager_api.auth.JwtService;
+import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -7,9 +10,18 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
+
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
+
+    public SecurityConfig(JwtService jwtService, UserRepository userRepository) {
+        this.jwtService = jwtService;
+        this.userRepository = userRepository;
+    }
 
     @Bean
     // PasswordEncoder bean that uses BCrypt for password hashing
@@ -37,6 +49,11 @@ public class SecurityConfig {
                 )
                 .httpBasic(httpBasic -> httpBasic.disable()) // Disable HTTP Basic authentication and form login
                 .formLogin(formLogin -> formLogin.disable()) // Disable form login
+                // Add the custom JWT authentication filter before the UsernamePasswordAuthenticationFilter
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtService, userRepository),
+                        UsernamePasswordAuthenticationFilter.class
+                )
                 .build(); // Build the SecurityFilterChain and return it
     }
 }

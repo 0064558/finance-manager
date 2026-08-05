@@ -1,5 +1,6 @@
 package com.rodrigs.finance_manager_api.user.controller;
 
+import com.rodrigs.finance_manager_api.auth.AuthenticatedUser;
 import com.rodrigs.finance_manager_api.user.dto.LoginRequestDTO;
 import com.rodrigs.finance_manager_api.user.dto.LoginResponseDTO;
 import com.rodrigs.finance_manager_api.user.dto.RegisterUserRequestDTO;
@@ -7,6 +8,7 @@ import com.rodrigs.finance_manager_api.user.dto.UserResponseDTO;
 import com.rodrigs.finance_manager_api.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -32,5 +34,10 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponseDTO loginUser(@Valid @RequestBody LoginRequestDTO request) {
         return userService.loginUser(request);
+    }
+
+    @GetMapping("/me")
+    public AuthenticatedUser me(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        return authenticatedUser;
     }
 }
