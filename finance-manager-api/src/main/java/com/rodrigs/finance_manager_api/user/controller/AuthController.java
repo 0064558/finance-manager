@@ -1,5 +1,7 @@
 package com.rodrigs.finance_manager_api.user.controller;
 
+import com.rodrigs.finance_manager_api.user.dto.LoginRequestDTO;
+import com.rodrigs.finance_manager_api.user.dto.LoginResponseDTO;
 import com.rodrigs.finance_manager_api.user.dto.RegisterUserRequestDTO;
 import com.rodrigs.finance_manager_api.user.dto.UserResponseDTO;
 import com.rodrigs.finance_manager_api.user.service.UserService;

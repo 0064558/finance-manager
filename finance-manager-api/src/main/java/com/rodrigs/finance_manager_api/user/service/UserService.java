@@ -1,5 +1,9 @@
 package com.rodrigs.finance_manager_api.user.service;
 
+import com.rodrigs.finance_manager_api.config.JwtProperties;
+import com.rodrigs.finance_manager_api.auth.JwtService;
+import com.rodrigs.finance_manager_api.user.dto.LoginRequestDTO;
+import com.rodrigs.finance_manager_api.user.dto.LoginResponseDTO;
 import com.rodrigs.finance_manager_api.user.dto.RegisterUserRequestDTO;
 import com.rodrigs.finance_manager_api.user.dto.UserResponseDTO;
 import com.rodrigs.finance_manager_api.user.entity.User;
@@ -14,13 +18,21 @@ import java.util.Locale;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final JwtProperties jwtProperties;
 
     // dependency injection
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, JwtProperties jwtProperties) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+        this.jwtProperties = jwtProperties;
     }
 
+    /* Register a new user.
+    * @param request the user registration request
+    * @return the registered user's response
+    */
     @Transactional
     public UserResponseDTO registerUser(RegisterUserRequestDTO request) {
         // Normalize input before validation and persistence so equivalent values are treated equally.
@@ -47,6 +59,44 @@ public class UserService {
                 savedUser.getName(),
                 savedUser.getEmail(),
                 savedUser.getCreatedAt()
+        );
+    }
+
+    /**
+     * Log in a user.
+     * @param request the login request
+     * @return the login response
+     */
+    @Transactional(readOnly = true)
+    public LoginResponseDTO loginUser(LoginRequestDTO request) {
+        // Normalize email so case and surrounding spaces do not affect credential lookup.
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+
+        // Validate the user credentials and retrieve the user entity from the database.
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+
+        // Check if the provided password matches the stored password hash using the password encoder.
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        // Generate a JWT access token for the authenticated user.
+        String accessToken = jwtService.generateAccessToken(user);
+
+        // Return the login response with the access token and user information.
+        UserResponseDTO userResponse = new UserResponseDTO(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getCreatedAt()
+        );
+
+        return new LoginResponseDTO(
+                accessToken,
+                "Bearer",
+                jwtProperties.expirationSeconds(),
+                userResponse
         );
     }
 }
