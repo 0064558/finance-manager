@@ -28,9 +28,15 @@ DB_URL=jdbc:postgresql://localhost:5432/finance_manager_dev
 DB_USERNAME=postgres
 DB_PASSWORD=
 POSTGRES_AUTH_METHOD=trust
+
+JWT_ISSUER=finance-manager-api
+JWT_EXPIRATION_SECONDS=3600
+JWT_SECRET=gere_um_secret_forte_para_o_ambiente_local
 ```
 
 O arquivo `.env` fica fora do Git.
+
+`JWT_SECRET` deve ser um valor forte e privado. Nao use o valor do exemplo em producao e nao versione segredos reais.
 
 ## Subir o banco
 
@@ -104,6 +110,105 @@ A documentacao OpenAPI considera endpoints sob:
 ```text
 /api/v1/**
 ```
+
+## Autenticacao JWT
+
+A autenticacao da API usa Bearer JWT. O fluxo principal e:
+
+1. O cliente cadastra um usuario em `POST /api/v1/auth/register`.
+2. O cliente faz login em `POST /api/v1/auth/login`.
+3. A API retorna um `accessToken`.
+4. O cliente envia esse token nas rotas protegidas usando o header `Authorization`.
+
+Formato do header:
+
+```http
+Authorization: Bearer seu_access_token
+```
+
+Endpoints publicos:
+
+```text
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+GET  /actuator/health
+GET  /swagger-ui.html
+GET  /api-docs/v1
+```
+
+Endpoint protegido disponivel nesta fase:
+
+```text
+GET /api/v1/auth/me
+```
+
+Exemplo de cadastro:
+
+```http
+POST /api/v1/auth/register
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "Rodrigo",
+  "email": "rodrigo@email.com",
+  "password": "senha1234"
+}
+```
+
+Exemplo de login:
+
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+```
+
+```json
+{
+  "email": "rodrigo@email.com",
+  "password": "senha1234"
+}
+```
+
+Resposta esperada do login:
+
+```json
+{
+  "accessToken": "jwt_gerado_pela_api",
+  "tokenType": "Bearer",
+  "expiresIn": 3600,
+  "user": {
+    "id": "uuid-do-usuario",
+    "name": "Rodrigo",
+    "email": "rodrigo@email.com",
+    "createdAt": "2026-08-05T17:00:00-03:00"
+  }
+}
+```
+
+Para usar pelo Swagger UI, acesse `http://localhost:8080/swagger-ui.html`, faca login pelo endpoint `/auth/login`, copie o `accessToken`, clique em `Authorize` e informe somente o token. O Swagger ja aplica o prefixo Bearer no header.
+
+Respostas importantes:
+
+| Situacao | Status | Codigo |
+| --- | --- | --- |
+| Dados invalidos no cadastro ou login | `400` | `VALIDATION_FAILED` |
+| E-mail ja cadastrado | `409` | `EMAIL_ALREADY_REGISTERED` |
+| Login com credenciais invalidas | `401` | `INVALID_CREDENTIALS` |
+| Token ausente, invalido ou expirado | `401` | `AUTHENTICATION_REQUIRED` |
+
+Senhas nunca sao retornadas pela API. O banco armazena apenas o hash gerado com BCrypt.
+
+## Testes
+
+Execute a suite automatizada com:
+
+```powershell
+mvn test
+```
+
+Os testes cobrem cadastro, login, hash de senha, duplicidade de e-mail, emissao/validacao de JWT, token malformado, token assinado com outra chave, token expirado e acesso a rota protegida.
 
 ## Migrations Flyway
 
