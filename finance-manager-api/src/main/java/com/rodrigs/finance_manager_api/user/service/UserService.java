@@ -39,7 +39,7 @@ public class UserService {
         User user = new User(name, email, passwordHash);
 
         // Persist the user and use the managed result to read generated fields such as id and createdAt.
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user);
 
         // Return the public API shape. Sensitive fields such as passwordHash stay inside the entity.
         return new UserResponseDTO(
