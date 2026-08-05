@@ -8,6 +8,8 @@ import com.rodrigs.finance_manager_api.user.dto.RegisterUserRequestDTO;
 import com.rodrigs.finance_manager_api.user.dto.UserResponseDTO;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
+import com.rodrigs.finance_manager_api.shared.exception.EmailAlreadyRegisteredException;
+import com.rodrigs.finance_manager_api.shared.exception.InvalidCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +43,7 @@ public class UserService {
 
         // Keep one account per email. The database unique index is still the final protection.
         if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new IllegalArgumentException("Email already exists");
+            throw new EmailAlreadyRegisteredException();
         }
 
         // Store only the BCrypt hash. The raw password must never be persisted or returned.
@@ -74,11 +76,11 @@ public class UserService {
 
         // Validate the user credentials and retrieve the user entity from the database.
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+                .orElseThrow(InvalidCredentialsException::new);
 
         // Check if the provided password matches the stored password hash using the password encoder.
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("Invalid email or password");
+            throw new InvalidCredentialsException();
         }
 
         // Generate a JWT access token for the authenticated user.
