@@ -28,4 +28,9 @@ public class AuthController {
         // Call the service layer to handle user registration and return the response DTO
         return userService.registerUser(request);
     }
+
+    @PostMapping("/login")
+    public LoginResponseDTO loginUser(@Valid @RequestBody LoginRequestDTO request) {
+        return userService.loginUser(request);
+    }
 }
