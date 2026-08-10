@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.net.URI;
 import java.time.OffsetDateTime;
 
+/**
+ * Classe de tratamento global de excecoes.
+ */
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -80,6 +84,23 @@ public class GlobalExceptionHandler {
         problemDetail.setType(URI.create("about:blank"));
         problemDetail.setInstance(URI.create(request.getRequestURI()));
         problemDetail.setProperty("timestamp", OffsetDateTime.now());
+
+        return problemDetail;
+    }
+
+    // Trata a excecao de conta financeira nao encontrada.
+    @ExceptionHandler(FinancialAccountNotFoundException.class)
+    public ProblemDetail handleFinancialAccountNotFound(
+            FinancialAccountNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = createProblemDetail(
+                HttpStatus.NOT_FOUND,
+                "Financial account not found",
+                "The requested financial account was not found.",
+                request
+        );
+        problemDetail.setProperty("code", "FINANCIAL_ACCOUNT_NOT_FOUND");
 
         return problemDetail;
     }
