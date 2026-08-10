@@ -9,6 +9,9 @@ import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -41,11 +44,23 @@ public class FinancialAccountService {
         // salva a conta no banco
         account = financialAccountRepository.saveAndFlush(account);
 
-        return response(account);
+        return toResponse(account);
+    }
+
+    public List<FinancialAccountResponseDTO> findAllAccounts(UUID authenticatedUserId) {
+        List<FinancialAccount> accounts = accounts = financialAccountRepository.findAllByUserIdOrderByCreatedAtAsc(authenticatedUserId);
+
+        List<FinancialAccountResponseDTO> response = new ArrayList<>();
+
+        for (FinancialAccount account: accounts) {
+            response.add(toResponse(account));
+        }
+
+        return response;
     }
 
     // metodo para retornar uma conta por meio do DTO
-    private FinancialAccountResponseDTO response(FinancialAccount account) {
+    private FinancialAccountResponseDTO toResponse(FinancialAccount account) {
         return new FinancialAccountResponseDTO(
                 account.getId(),
                 account.getName(),
@@ -55,4 +70,6 @@ public class FinancialAccountService {
                 account.getUpdatedAt()
         );
     }
+
+
 }
