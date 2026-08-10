@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+// DTO para resposta de uma conta financeira
 public record FinancialAccountResponseDTO(
         UUID id,
         String name,

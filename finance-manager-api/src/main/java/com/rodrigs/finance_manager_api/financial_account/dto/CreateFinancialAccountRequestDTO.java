@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
+// DTO para criar uma conta financeira
 public record CreateFinancialAccountRequestDTO(
         @NotBlank
         @Size(min = 2, max = 100)

@@ -41,6 +41,7 @@ public class FinancialAccount {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    // Construtor protegido para uso do JPA
     protected  FinancialAccount() {}
 
     public FinancialAccount(User user, String name, AccountType type, BigDecimal initialBalance) {
@@ -50,6 +51,7 @@ public class FinancialAccount {
         this.initialBalance = initialBalance;
     }
 
+    // Atualiza os dados da conta financeira
     public void update(String name, AccountType type, BigDecimal initialBalance) {
         this.name = name;
         this.type = type;
