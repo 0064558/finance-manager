@@ -48,14 +48,19 @@ public class FinancialAccountService {
     }
 
     public List<FinancialAccountResponseDTO> findAllAccounts(UUID authenticatedUserId) {
+        // busca contas do user
         List<FinancialAccount> accounts = accounts = financialAccountRepository.findAllByUserIdOrderByCreatedAtAsc(authenticatedUserId);
 
+        // cria lista de resposta
         List<FinancialAccountResponseDTO> response = new ArrayList<>();
 
+        // percorre as contas
         for (FinancialAccount account: accounts) {
+            // converte entidade em DTO e adiciona na lista de resposta
             response.add(toResponse(account));
         }
 
+        // retorna lista de DTOs
         return response;
     }
 
