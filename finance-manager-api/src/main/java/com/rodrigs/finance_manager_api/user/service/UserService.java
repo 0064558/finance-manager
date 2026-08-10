@@ -56,12 +56,7 @@ public class UserService {
         User savedUser = userRepository.saveAndFlush(user);
 
         // Return the public API shape. Sensitive fields such as passwordHash stay inside the entity.
-        return new UserResponseDTO(
-                savedUser.getId(),
-                savedUser.getName(),
-                savedUser.getEmail(),
-                savedUser.getCreatedAt()
-        );
+        return toResponse(savedUser);
     }
 
     /**
@@ -86,19 +81,20 @@ public class UserService {
         // Generate a JWT access token for the authenticated user.
         String accessToken = jwtService.generateAccessToken(user);
 
-        // Return the login response with the access token and user information.
-        UserResponseDTO userResponse = new UserResponseDTO(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getCreatedAt()
-        );
-
         return new LoginResponseDTO(
                 accessToken,
                 "Bearer",
                 jwtProperties.expirationSeconds(),
-                userResponse
+                toResponse(user)
+        );
+    }
+
+    private UserResponseDTO toResponse(User user) {
+        return new UserResponseDTO(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getCreatedAt()
         );
     }
 }
