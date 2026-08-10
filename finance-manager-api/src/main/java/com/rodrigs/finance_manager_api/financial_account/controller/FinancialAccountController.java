@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -23,9 +24,16 @@ public class FinancialAccountController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FinancialAccountResponseDTO createAccount(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, // pega o usuario que esta autenticado
             @Valid
             @RequestBody CreateFinancialAccountRequestDTO request) {
         return accountService.createFinancialAccount(authenticatedUser.id(), request);
     }
+
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public List<FinancialAccountResponseDTO> findAllAccounts(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        return accountService.findAllAccounts(authenticatedUser.id());
+    }
+
 }
