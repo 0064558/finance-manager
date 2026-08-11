@@ -105,6 +105,22 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(FinancialAccountHasTransactionsException.class)
+    public ProblemDetail handleFinancialAccountHasTransactions(
+            FinancialAccountHasTransactionsException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = createProblemDetail(
+                HttpStatus.CONFLICT,
+                "Financial account has transactions",
+                "This financial account has transactions and cannot be changed in this way.",
+                request
+        );
+        problemDetail.setProperty("code", "FINANCIAL_ACCOUNT_HAS_TRANSACTIONS");
+
+        return problemDetail;
+    }
+
     private record FieldErrorDetail(String field, String message) {
     }
 }
