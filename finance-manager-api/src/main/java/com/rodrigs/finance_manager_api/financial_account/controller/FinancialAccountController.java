@@ -31,9 +31,13 @@ public class FinancialAccountController {
     }
 
     @GetMapping
-    @ResponseStatus(HttpStatus.OK)
     public List<FinancialAccountResponseDTO> findAllAccounts(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
         return accountService.findAllAccounts(authenticatedUser.id());
+    }
+
+    @GetMapping("/{accountId}")
+    public FinancialAccountResponseDTO findAccountById(@PathVariable UUID accountId, @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        return accountService.findAccountById(accountId, authenticatedUser.id());
     }
 
 }

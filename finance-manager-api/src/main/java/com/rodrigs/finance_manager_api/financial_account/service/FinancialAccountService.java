@@ -4,15 +4,13 @@ import com.rodrigs.finance_manager_api.financial_account.dto.CreateFinancialAcco
 import com.rodrigs.finance_manager_api.financial_account.dto.FinancialAccountResponseDTO;
 import com.rodrigs.finance_manager_api.financial_account.entity.FinancialAccount;
 import com.rodrigs.finance_manager_api.financial_account.repository.FinancialAccountRepository;
+import com.rodrigs.finance_manager_api.shared.exception.FinancialAccountNotFoundException;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class FinancialAccountService {
@@ -49,19 +47,27 @@ public class FinancialAccountService {
 
     public List<FinancialAccountResponseDTO> findAllAccounts(UUID authenticatedUserId) {
         // busca contas do user
-        List<FinancialAccount> accounts = accounts = financialAccountRepository.findAllByUserIdOrderByCreatedAtAsc(authenticatedUserId);
+        List<FinancialAccount> accounts = financialAccountRepository.findAllByUserIdOrderByCreatedAtAsc(authenticatedUserId);
 
         // cria lista de resposta
         List<FinancialAccountResponseDTO> response = new ArrayList<>();
 
         // percorre as contas
-        for (FinancialAccount account: accounts) {
+        for (FinancialAccount account : accounts) {
             // converte entidade em DTO e adiciona na lista de resposta
             response.add(toResponse(account));
         }
 
         // retorna lista de DTOs
         return response;
+    }
+
+    public FinancialAccountResponseDTO findAccountById(UUID accountId, UUID authenticatedUserId) {
+        // buscar por id + userId
+        FinancialAccount account = financialAccountRepository.findByIdAndUserId(accountId, authenticatedUserId)
+                .orElseThrow(() -> new FinancialAccountNotFoundException("Account not found for the authenticated user."));
+
+        return toResponse(account);
     }
 
     // metodo para retornar uma conta por meio do DTO
