@@ -3,6 +3,7 @@ package com.rodrigs.finance_manager_api.financial_account.controller;
 import com.rodrigs.finance_manager_api.auth.AuthenticatedUser;
 import com.rodrigs.finance_manager_api.financial_account.dto.CreateFinancialAccountRequestDTO;
 import com.rodrigs.finance_manager_api.financial_account.dto.FinancialAccountResponseDTO;
+import com.rodrigs.finance_manager_api.financial_account.dto.UpdateFinancialAccountRequestDTO;
 import com.rodrigs.finance_manager_api.financial_account.service.FinancialAccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,14 @@ public class FinancialAccountController {
     @GetMapping("/{accountId}")
     public FinancialAccountResponseDTO findAccountById(@PathVariable UUID accountId, @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
         return accountService.findAccountById(accountId, authenticatedUser.id());
+    }
+
+    @PutMapping("/{accountId}")
+    public FinancialAccountResponseDTO updateAccount(
+            @PathVariable UUID accountId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody UpdateFinancialAccountRequestDTO request) {
+        return accountService.updateFinancialAccount(accountId, authenticatedUser.id(), request);
     }
 
 }
