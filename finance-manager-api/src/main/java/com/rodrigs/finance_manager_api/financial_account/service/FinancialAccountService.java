@@ -13,7 +13,9 @@ import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class FinancialAccountService {
@@ -50,6 +52,7 @@ public class FinancialAccountService {
         return toResponse(account);
     }
 
+    @Transactional(readOnly = true)
     public List<FinancialAccountResponseDTO> findAllAccounts(UUID authenticatedUserId) {
         // busca contas do user
         List<FinancialAccount> accounts = financialAccountRepository.findAllByUserIdOrderByCreatedAtAsc(authenticatedUserId);
@@ -67,6 +70,7 @@ public class FinancialAccountService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public FinancialAccountResponseDTO findAccountById(UUID accountId, UUID authenticatedUserId) {
         // buscar por id + userId
         FinancialAccount account = financialAccountRepository.findByIdAndUserId(accountId, authenticatedUserId)
