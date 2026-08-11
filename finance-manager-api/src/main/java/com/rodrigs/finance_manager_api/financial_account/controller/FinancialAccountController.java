@@ -45,8 +45,15 @@ public class FinancialAccountController {
     public FinancialAccountResponseDTO updateAccount(
             @PathVariable UUID accountId,
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @Valid @RequestBody UpdateFinancialAccountRequestDTO request) {
+            @Valid @RequestBody UpdateFinancialAccountRequestDTO request
+    ) {
         return accountService.updateFinancialAccount(accountId, authenticatedUser.id(), request);
+    }
+
+    @DeleteMapping("/{accountId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAccount(@PathVariable UUID accountId, @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        accountService.deleteFinancialAccount(accountId, authenticatedUser.id());
     }
 
 }
