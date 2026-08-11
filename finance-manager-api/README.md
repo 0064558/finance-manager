@@ -131,7 +131,6 @@ Endpoints publicos:
 ```text
 POST /api/v1/auth/register
 POST /api/v1/auth/login
-GET  /actuator/health
 GET  /swagger-ui.html
 GET  /api-docs/v1
 ```
@@ -200,6 +199,98 @@ Respostas importantes:
 
 Senhas nunca sao retornadas pela API. O banco armazena apenas o hash gerado com BCrypt.
 
+## Fase 4 - Contas financeiras
+
+A fase 4 implementa o CRUD protegido de contas financeiras. Cada conta pertence a um
+usuario, e o usuario autenticado e obtido exclusivamente do JWT. O cliente nao envia
+`userId` no corpo ou na URL para definir o proprietario da conta.
+
+### Modelo da conta
+
+| Campo | Tipo | Regra |
+| --- | --- | --- |
+| `id` | UUID | Identificador gerado pela API. |
+| `name` | String | Obrigatorio, entre 2 e 100 caracteres. Espacos externos sao removidos. |
+| `type` | Enum | `CASH`, `CHECKING` ou `SAVINGS`. |
+| `initialBalance` | BigDecimal | Obrigatorio, no maximo 17 digitos inteiros e 2 casas decimais; pode ser negativo. |
+| `createdAt` | OffsetDateTime | Preenchido pela API. |
+| `updatedAt` | OffsetDateTime | Atualizado pela API. |
+
+O saldo atual nao e armazenado nesta tabela. Ele sera calculado futuramente a partir do
+saldo inicial e das transacoes vinculadas a conta.
+
+### Endpoints
+
+Todos os endpoints abaixo exigem:
+
+```http
+Authorization: Bearer seu_access_token
+```
+
+| Metodo | Endpoint | Status de sucesso | Finalidade |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/financial-accounts` | `201 Created` | Cria uma conta para o usuario autenticado. |
+| `GET` | `/api/v1/financial-accounts` | `200 OK` | Lista as contas do usuario autenticado, por data de criacao crescente. |
+| `GET` | `/api/v1/financial-accounts/{accountId}` | `200 OK` | Consulta uma conta propria. |
+| `PUT` | `/api/v1/financial-accounts/{accountId}` | `200 OK` | Atualiza nome, tipo e saldo inicial quando permitido. |
+| `DELETE` | `/api/v1/financial-accounts/{accountId}` | `204 No Content` | Exclui uma conta propria sem transacoes. |
+
+### Criar uma conta
+
+```http
+POST /api/v1/financial-accounts
+Content-Type: application/json
+Authorization: Bearer seu_access_token
+```
+
+```json
+{
+  "name": "Conta corrente",
+  "type": "CHECKING",
+  "initialBalance": 1500.00
+}
+```
+
+### Atualizar uma conta
+
+O payload do `PUT` possui os mesmos campos do cadastro:
+
+```json
+{
+  "name": "Conta corrente principal",
+  "type": "CHECKING",
+  "initialBalance": 1700.00
+}
+```
+
+O saldo inicial pode ser alterado enquanto a conta nao possui transacoes. Depois do
+primeiro lancamento, essa alteracao e recusada para preservar o historico financeiro.
+
+### Regras de propriedade e historico
+
+- Consultas, atualizacoes e exclusoes usam `accountId` junto do id extraido do JWT.
+- Uma conta de outro usuario responde `404 Not Found`, sem revelar se o recurso existe.
+- Uma conta com transacoes nao pode ser excluida.
+- Uma conta com transacoes nao pode ter o `initialBalance` alterado.
+- O tipo da conta deve ser `CASH`, `CHECKING` ou `SAVINGS`.
+- Nao existe exclusao em cascata de transacoes.
+
+### Respostas de erro
+
+| Situacao | Status | Codigo |
+| --- | --- | --- |
+| Corpo com nome, tipo ou saldo invalido | `400` | `VALIDATION_FAILED` |
+| Token ausente, invalido ou expirado | `401` | `AUTHENTICATION_REQUIRED` |
+| Conta inexistente ou pertencente a outro usuario | `404` | `FINANCIAL_ACCOUNT_NOT_FOUND` |
+| Conta possui transacoes e a operacao e proibida | `409` | `FINANCIAL_ACCOUNT_HAS_TRANSACTIONS` |
+
+### Testes da fase
+
+Os testes unitarios do service cobrem criacao, listagem, propriedade, atualizacao,
+alteracao de saldo inicial com historico e exclusao. Os testes de integracao cobrem o
+CRUD protegido, validacao de payload e tentativa de acesso por outro usuario usando
+tokens JWT reais.
+
 ## Testes
 
 Execute a suite automatizada com:
@@ -208,7 +299,7 @@ Execute a suite automatizada com:
 mvn test
 ```
 
-Os testes cobrem cadastro, login, hash de senha, duplicidade de e-mail, emissao/validacao de JWT, token malformado, token assinado com outra chave, token expirado e acesso a rota protegida.
+Os testes cobrem cadastro, login, hash de senha, duplicidade de e-mail, emissao/validacao de JWT, token malformado, token assinado com outra chave, token expirado, acesso a rota protegida e o CRUD de contas financeiras.
 
 ## Migrations Flyway
 
