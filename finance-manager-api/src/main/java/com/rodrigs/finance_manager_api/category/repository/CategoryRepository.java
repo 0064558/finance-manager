@@ -24,4 +24,11 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
             TransactionType transactionType,
             String name
     );
+
+    boolean existsByUserIdAndTransactionTypeAndNameIgnoreCaseAndIdNot(
+            UUID userId,
+            TransactionType transactionType,
+            String name,
+            UUID categoryId
+    );
 }
