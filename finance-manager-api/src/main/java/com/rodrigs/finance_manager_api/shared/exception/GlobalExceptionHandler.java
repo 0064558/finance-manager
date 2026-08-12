@@ -49,6 +49,22 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ProblemDetail handleCategoryNotFound(
+            CategoryNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = createProblemDetail(
+                HttpStatus.NOT_FOUND,
+                "Category not found",
+                "The requested category was not found.",
+                request
+        );
+        problemDetail.setProperty("code", "CATEGORY_NOT_FOUND");
+
+        return problemDetail;
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ProblemDetail handleInvalidCredentials(
             InvalidCredentialsException exception,

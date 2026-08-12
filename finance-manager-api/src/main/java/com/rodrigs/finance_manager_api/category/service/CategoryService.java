@@ -6,6 +6,8 @@ import com.rodrigs.finance_manager_api.category.entity.Category;
 import com.rodrigs.finance_manager_api.category.repository.CategoryRepository;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.CategoryAlreadyExistsException;
+import com.rodrigs.finance_manager_api.shared.exception.CategoryNotFoundException;
+import com.rodrigs.finance_manager_api.shared.exception.FinancialAccountNotFoundException;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -65,6 +68,14 @@ public class CategoryService {
         }
 
         return responseDTOS;
+    }
+
+    @Transactional(readOnly = true)
+    public CategoryResponseDTO findCategoryById(UUID categoryId, UUID authenticatedUserId) {
+        Category category = categoryRepository.findByIdAndUserId(categoryId, authenticatedUserId)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found for the authenticated user."));
+
+        return toResponse(category);
     }
 
     // metodo para converter a entidade categoria para CategoryResponseDTO
