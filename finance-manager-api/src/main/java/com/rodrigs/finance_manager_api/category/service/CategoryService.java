@@ -11,6 +11,8 @@ import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -28,7 +30,6 @@ public class CategoryService {
     public CategoryResponseDTO createCategory(UUID authenticatedUserId, CreateCategoryRequestDTO requestDTO) {
         // busca o user pelo id
         User user = userRepository.findById(authenticatedUserId).orElseThrow();
-
 
         String normalizedName = requestDTO.name().trim();
 
@@ -51,7 +52,19 @@ public class CategoryService {
         category = categoryRepository.saveAndFlush(category);
 
         return toResponse(category);
+    }
 
+    @Transactional(readOnly = true)
+    public List<CategoryResponseDTO> findAllCategories(UUID authenticatedUserId) {
+        List<Category> categories = categoryRepository.findAllByUserIdOrderByTransactionTypeAscNameAsc(authenticatedUserId);
+
+        List<CategoryResponseDTO> responseDTOS = new ArrayList<>();
+
+        for(Category category : categories) {
+            responseDTOS.add(toResponse(category));
+        }
+
+        return responseDTOS;
     }
 
     // metodo para converter a entidade categoria para CategoryResponseDTO
