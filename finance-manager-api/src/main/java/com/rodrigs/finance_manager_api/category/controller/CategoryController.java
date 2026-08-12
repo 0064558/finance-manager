@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/categories")
 public class CategoryController {
@@ -24,5 +26,10 @@ public class CategoryController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Valid @RequestBody CreateCategoryRequestDTO request) {
         return categoryService.createCategory(authenticatedUser.id(), request);
+    }
+
+    @GetMapping
+    public List<CategoryResponseDTO> findAllCategories(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        return categoryService.findAllCategories(authenticatedUser.id());
     }
 }
