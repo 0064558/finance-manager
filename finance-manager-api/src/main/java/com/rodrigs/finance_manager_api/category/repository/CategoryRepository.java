@@ -25,6 +25,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
             String name
     );
 
+    // verifica se ja existe uma categoria com o mesmo nome e tipo de transacao para o user autenticado, ignorando a categoria com o id especificado
     boolean existsByUserIdAndTransactionTypeAndNameIgnoreCaseAndIdNot(
             UUID userId,
             TransactionType transactionType,
