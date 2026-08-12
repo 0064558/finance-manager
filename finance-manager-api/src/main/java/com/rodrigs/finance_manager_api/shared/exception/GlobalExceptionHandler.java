@@ -33,6 +33,22 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(CategoryAlreadyExistsException.class)
+    public ProblemDetail handleCategoryAlreadyExists(
+            CategoryAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = createProblemDetail(
+                HttpStatus.CONFLICT,
+                "Category already exists",
+                "A category with this name and transaction type already exists for the authenticated user.",
+                request
+        );
+        problemDetail.setProperty("code", "CATEGORY_ALREADY_EXISTS");
+
+        return problemDetail;
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ProblemDetail handleInvalidCredentials(
             InvalidCredentialsException exception,

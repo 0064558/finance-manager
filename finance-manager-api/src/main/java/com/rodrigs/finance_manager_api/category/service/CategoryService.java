@@ -5,6 +5,7 @@ import com.rodrigs.finance_manager_api.category.dto.CreateCategoryRequestDTO;
 import com.rodrigs.finance_manager_api.category.entity.Category;
 import com.rodrigs.finance_manager_api.category.repository.CategoryRepository;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
+import com.rodrigs.finance_manager_api.shared.exception.CategoryAlreadyExistsException;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
