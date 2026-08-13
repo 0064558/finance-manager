@@ -49,4 +49,14 @@ public class CategoryController {
             @Valid @RequestBody UpdateCategoryRequestDTO request) {
         return categoryService.updateCategory(categoryId, authenticatedUser.id(), request);
     }
+
+    @DeleteMapping("/{categoryId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCategory(
+            @PathVariable UUID categoryId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        categoryService.deleteCategory(categoryId, authenticatedUser.id());
+    }
+
 }

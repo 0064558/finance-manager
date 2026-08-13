@@ -122,6 +122,21 @@ public class CategoryService {
         return toResponse(category);
     }
 
+    @Transactional
+    public void deleteCategory(UUID categoryId, UUID authenticatedUserId) {
+        // busca a categoria
+        Category category = categoryRepository.findByIdAndUserId(categoryId, authenticatedUserId)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found for the authenticated user."));
+
+        // verifica se existem transações vinculadas
+        if (transactionRepository.existsByCategoryIdAndUserId(categoryId, authenticatedUserId)) {
+            throw new CategoryHasTransactionsException();
+        }
+
+        // deleta a categoria
+        categoryRepository.delete(category);
+    }
+
 
     // metodo para converter a entidade categoria para CategoryResponseDTO
     private CategoryResponseDTO toResponse(Category category) {
