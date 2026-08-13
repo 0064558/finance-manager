@@ -59,4 +59,5 @@ public class CategoryController {
         categoryService.deleteCategory(categoryId, authenticatedUser.id());
     }
 
+
 }
