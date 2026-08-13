@@ -113,7 +113,7 @@ class FinancialAccountServiceTest {
         );
         when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
-        when(transactionRepository.existsByAccountIdAndUserId(account.getId(), user.getId()))
+        when(transactionRepository.existsByFinancialAccount_IdAndUser_Id(account.getId(), user.getId()))
                 .thenReturn(false);
 
         FinancialAccountResponseDTO response = financialAccountService.updateFinancialAccount(
@@ -135,7 +135,7 @@ class FinancialAccountServiceTest {
         );
         when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
-        when(transactionRepository.existsByAccountIdAndUserId(account.getId(), user.getId()))
+        when(transactionRepository.existsByFinancialAccount_IdAndUser_Id(account.getId(), user.getId()))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> financialAccountService.updateFinancialAccount(
@@ -143,7 +143,7 @@ class FinancialAccountServiceTest {
         )).isInstanceOf(FinancialAccountHasTransactionsException.class);
 
         assertThat(account.getName()).isEqualTo("Conta");
-        verify(transactionRepository).existsByAccountIdAndUserId(account.getId(), user.getId());
+        verify(transactionRepository).existsByFinancialAccount_IdAndUser_Id(account.getId(), user.getId());
     }
 
     @Test
@@ -151,7 +151,7 @@ class FinancialAccountServiceTest {
         FinancialAccount account = account(user, "Conta", AccountType.CASH, "100.00");
         when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
-        when(transactionRepository.existsByAccountIdAndUserId(account.getId(), user.getId()))
+        when(transactionRepository.existsByFinancialAccount_IdAndUser_Id(account.getId(), user.getId()))
                 .thenReturn(false);
 
         financialAccountService.deleteFinancialAccount(account.getId(), user.getId());
@@ -164,7 +164,7 @@ class FinancialAccountServiceTest {
         FinancialAccount account = account(user, "Conta", AccountType.CASH, "100.00");
         when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
-        when(transactionRepository.existsByAccountIdAndUserId(account.getId(), user.getId()))
+        when(transactionRepository.existsByFinancialAccount_IdAndUser_Id(account.getId(), user.getId()))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> financialAccountService.deleteFinancialAccount(account.getId(), user.getId()))

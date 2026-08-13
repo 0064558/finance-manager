@@ -169,6 +169,38 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(TransactionTypeMismatchException.class)
+    public ProblemDetail handleTransactionTypeMismatch(
+            TransactionTypeMismatchException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = createProblemDetail(
+                HttpStatus.CONFLICT,
+                "Transaction type mismatch",
+                "The type of transaction can't be different from the category type.",
+                request
+        );
+        problemDetail.setProperty("code", "TRANSACTION_TYPE_MISMATCH");
+
+        return problemDetail;
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ProblemDetail handleUserNotFound(
+            UserNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = createProblemDetail(
+                HttpStatus.NOT_FOUND,
+                "User not found",
+                "Authenticated User not found.",
+                request
+        );
+        problemDetail.setProperty("code", "USER_NOT_FOUND");
+
+        return problemDetail;
+    }
+
     private record FieldErrorDetail(String field, String message) {
     }
 }

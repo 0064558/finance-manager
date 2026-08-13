@@ -7,6 +7,7 @@ import com.rodrigs.finance_manager_api.financial_account.entity.FinancialAccount
 import com.rodrigs.finance_manager_api.financial_account.repository.FinancialAccountRepository;
 import com.rodrigs.finance_manager_api.shared.exception.FinancialAccountHasTransactionsException;
 import com.rodrigs.finance_manager_api.shared.exception.FinancialAccountNotFoundException;
+import com.rodrigs.finance_manager_api.shared.exception.UserNotFoundException;
 import com.rodrigs.finance_manager_api.transaction.repository.TransactionRepository;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
@@ -36,7 +37,7 @@ public class FinancialAccountService {
             CreateFinancialAccountRequestDTO requestDTO // dados enviados no corpo da requisicao
     ) {
         // busca o usuario pelo ID
-        User user = userRepository.findById(authenticatedUserId).orElseThrow();
+        User user = userRepository.findById(authenticatedUserId).orElseThrow(UserNotFoundException::new);
 
         // cria uma nova conta tratando parametros para equivalencia
         FinancialAccount account = new FinancialAccount(
@@ -74,7 +75,7 @@ public class FinancialAccountService {
     public FinancialAccountResponseDTO findAccountById(UUID accountId, UUID authenticatedUserId) {
         // buscar por id + userId
         FinancialAccount account = financialAccountRepository.findByIdAndUserId(accountId, authenticatedUserId)
-                .orElseThrow(() -> new FinancialAccountNotFoundException("Account not found for the authenticated user."));
+                .orElseThrow(FinancialAccountNotFoundException::new);
 
         return toResponse(account);
     }
@@ -82,12 +83,12 @@ public class FinancialAccountService {
     @Transactional
     public FinancialAccountResponseDTO updateFinancialAccount(UUID accountId, UUID authenticatedUserId, UpdateFinancialAccountRequestDTO requestDTO) {
         FinancialAccount account = financialAccountRepository.findByIdAndUserId(accountId, authenticatedUserId)
-                .orElseThrow(() -> new FinancialAccountNotFoundException("Account not found for the authenticated user."));
+                .orElseThrow(FinancialAccountNotFoundException::new);
 
         boolean initialBalanceChanged = initialBalanceChanged(account, requestDTO);
 
         // verifica se o saldo mudou e se ha transacoes na conta
-        if (initialBalanceChanged && transactionRepository.existsByAccountIdAndUserId(accountId, authenticatedUserId)) {
+        if (initialBalanceChanged && transactionRepository.existsByFinancialAccount_IdAndUser_Id(accountId, authenticatedUserId)) {
             throw new FinancialAccountHasTransactionsException();
         }
 
@@ -99,10 +100,10 @@ public class FinancialAccountService {
     @Transactional
     public void deleteFinancialAccount(UUID accountId, UUID authenticatedUserId) {
         FinancialAccount account = financialAccountRepository.findByIdAndUserId(accountId, authenticatedUserId)
-                .orElseThrow(() -> new FinancialAccountNotFoundException("Account not found for the authenticated user."));
+                .orElseThrow(FinancialAccountNotFoundException::new);
 
         // se ha transacoes na conta
-        if (transactionRepository.existsByAccountIdAndUserId(accountId, authenticatedUserId)) {
+        if (transactionRepository.existsByFinancialAccount_IdAndUser_Id(accountId, authenticatedUserId)) {
             throw new FinancialAccountHasTransactionsException();
         }
 

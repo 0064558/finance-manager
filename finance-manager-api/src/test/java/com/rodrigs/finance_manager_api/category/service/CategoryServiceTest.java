@@ -203,7 +203,7 @@ class CategoryServiceTest {
                 "Ajuste",
                 category.getId()
         )).thenReturn(false);
-        when(transactionRepository.existsByCategoryIdAndUserId(category.getId(), userId))
+        when(transactionRepository.existsByCategory_IdAndUser_Id(category.getId(), userId))
                 .thenReturn(false);
 
         CategoryResponseDTO response = categoryService.updateCategory(
@@ -257,7 +257,7 @@ class CategoryServiceTest {
                 "Ajuste",
                 category.getId()
         )).thenReturn(false);
-        when(transactionRepository.existsByCategoryIdAndUserId(category.getId(), userId))
+        when(transactionRepository.existsByCategory_IdAndUser_Id(category.getId(), userId))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> categoryService.updateCategory(
@@ -275,7 +275,7 @@ class CategoryServiceTest {
 
         when(categoryRepository.findByIdAndUserId(category.getId(), userId))
                 .thenReturn(Optional.of(category));
-        when(transactionRepository.existsByCategoryIdAndUserId(category.getId(), userId))
+        when(transactionRepository.existsByCategory_IdAndUser_Id(category.getId(), userId))
                 .thenReturn(false);
 
         categoryService.deleteCategory(category.getId(), userId);
@@ -291,7 +291,7 @@ class CategoryServiceTest {
 
         when(categoryRepository.findByIdAndUserId(category.getId(), userId))
                 .thenReturn(Optional.of(category));
-        when(transactionRepository.existsByCategoryIdAndUserId(category.getId(), userId))
+        when(transactionRepository.existsByCategory_IdAndUser_Id(category.getId(), userId))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> categoryService.deleteCategory(

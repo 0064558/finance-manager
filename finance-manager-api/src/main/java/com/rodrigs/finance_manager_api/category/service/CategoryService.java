@@ -78,7 +78,7 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public CategoryResponseDTO findCategoryById(UUID categoryId, UUID authenticatedUserId) {
         Category category = categoryRepository.findByIdAndUserId(categoryId, authenticatedUserId)
-                .orElseThrow(() -> new CategoryNotFoundException("Category not found for the authenticated user."));
+                .orElseThrow(CategoryNotFoundException::new);
 
         return toResponse(category);
     }
@@ -91,7 +91,7 @@ public class CategoryService {
 
         // busca a categoria
         Category category = categoryRepository.findByIdAndUserId(categoryId, authenticatedUserId)
-                .orElseThrow(() -> new CategoryNotFoundException("Category not found for the authenticated user."));
+                .orElseThrow(CategoryNotFoundException::new);
 
         // normaliza o nome
         String normalizedName = requestDTO.name().trim();
@@ -107,7 +107,7 @@ public class CategoryService {
         // verifica duplicidade
         if (verify) {
             throw new CategoryAlreadyExistsException();
-        } else if (transactionTypeChanged && transactionRepository.existsByCategoryIdAndUserId( // verifica se o tipo mudou e se existem transações vinculadas
+        } else if (transactionTypeChanged && transactionRepository.existsByCategory_IdAndUser_Id( // verifica se o tipo mudou e se existem transações vinculadas
                 categoryId,
                 authenticatedUserId
         )) {
@@ -126,10 +126,10 @@ public class CategoryService {
     public void deleteCategory(UUID categoryId, UUID authenticatedUserId) {
         // busca a categoria
         Category category = categoryRepository.findByIdAndUserId(categoryId, authenticatedUserId)
-                .orElseThrow(() -> new CategoryNotFoundException("Category not found for the authenticated user."));
+                .orElseThrow(CategoryNotFoundException::new);
 
         // verifica se existem transações vinculadas
-        if (transactionRepository.existsByCategoryIdAndUserId(categoryId, authenticatedUserId)) {
+        if (transactionRepository.existsByCategory_IdAndUser_Id(categoryId, authenticatedUserId)) {
             throw new CategoryHasTransactionsException();
         }
 
