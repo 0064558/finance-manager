@@ -65,6 +65,22 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(CategoryHasTransactionsException.class)
+    public ProblemDetail handleCategoryHasTransactions(
+            CategoryHasTransactionsException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = createProblemDetail(
+                HttpStatus.CONFLICT,
+                "Category has transactions",
+                "The requested category has transactions and cannot be changed in this way.",
+                request
+        );
+        problemDetail.setProperty("code", "CATEGORY_HAS_TRANSACTIONS");
+
+        return problemDetail;
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ProblemDetail handleInvalidCredentials(
             InvalidCredentialsException exception,

@@ -23,6 +23,9 @@ public class Transaction {
     @Column(name = "account_id", nullable = false)
     private UUID accountId;
 
+    @Column(name = "category_id", nullable = false)
+    private UUID categoryId;
+
     protected Transaction() {
     }
 

@@ -11,4 +11,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     // verifica se uma transação existe para uma conta específica e um usuário específico
     boolean existsByAccountIdAndUserId(UUID accountId, UUID userId);
+
+    // verifica se uma transação existe para uma categoria específica e um usuário específico
+    boolean existsByCategoryIdAndUserId(UUID categoryId, UUID userId);
 }

@@ -2,12 +2,15 @@ package com.rodrigs.finance_manager_api.category.service;
 
 import com.rodrigs.finance_manager_api.category.dto.CategoryResponseDTO;
 import com.rodrigs.finance_manager_api.category.dto.CreateCategoryRequestDTO;
+import com.rodrigs.finance_manager_api.category.dto.UpdateCategoryRequestDTO;
 import com.rodrigs.finance_manager_api.category.entity.Category;
 import com.rodrigs.finance_manager_api.category.repository.CategoryRepository;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.CategoryAlreadyExistsException;
+import com.rodrigs.finance_manager_api.shared.exception.CategoryHasTransactionsException;
 import com.rodrigs.finance_manager_api.shared.exception.CategoryNotFoundException;
 import com.rodrigs.finance_manager_api.shared.exception.FinancialAccountNotFoundException;
+import com.rodrigs.finance_manager_api.transaction.repository.TransactionRepository;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -22,11 +25,13 @@ import java.util.UUID;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
 
 
-    public CategoryService(CategoryRepository categoryRepository, UserRepository userRepository) {
+    public CategoryService(CategoryRepository categoryRepository, UserRepository userRepository, TransactionRepository transactionRepository) {
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
+        this.transactionRepository = transactionRepository;
     }
 
     @Transactional
@@ -63,7 +68,7 @@ public class CategoryService {
 
         List<CategoryResponseDTO> responseDTOS = new ArrayList<>();
 
-        for(Category category : categories) {
+        for (Category category : categories) {
             responseDTOS.add(toResponse(category));
         }
 
@@ -77,6 +82,46 @@ public class CategoryService {
 
         return toResponse(category);
     }
+
+    @Transactional
+    public CategoryResponseDTO updateCategory(
+            UUID categoryId,
+            UUID authenticatedUserId,
+            UpdateCategoryRequestDTO requestDTO) {
+
+        // busca a categoria
+        Category category = categoryRepository.findByIdAndUserId(categoryId, authenticatedUserId)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found for the authenticated user."));
+
+        // normaliza o nome
+        String normalizedName = requestDTO.name().trim();
+
+        boolean verify = categoryRepository.existsByUserIdAndTransactionTypeAndNameIgnoreCaseAndIdNot(
+                authenticatedUserId,
+                requestDTO.transactionType(),
+                normalizedName,
+                categoryId
+        );
+        boolean transactionTypeChanged = category.getTransactionType() != requestDTO.transactionType();
+
+        // verifica duplicidade
+        if (verify) {
+            throw new CategoryAlreadyExistsException();
+        } else if (transactionTypeChanged && transactionRepository.existsByCategoryIdAndUserId( // verifica se o tipo mudou e se existem transações vinculadas
+                categoryId,
+                authenticatedUserId
+        )) {
+            throw new CategoryHasTransactionsException();
+        }
+
+        // atualiza nome e transaction type
+        category.setName(normalizedName);
+        category.setTransactionType(requestDTO.transactionType());
+
+        // retorna a resposta convertida em DTO
+        return toResponse(category);
+    }
+
 
     // metodo para converter a entidade categoria para CategoryResponseDTO
     private CategoryResponseDTO toResponse(Category category) {

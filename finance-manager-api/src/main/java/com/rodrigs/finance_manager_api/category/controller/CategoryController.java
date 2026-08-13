@@ -3,6 +3,7 @@ package com.rodrigs.finance_manager_api.category.controller;
 import com.rodrigs.finance_manager_api.auth.AuthenticatedUser;
 import com.rodrigs.finance_manager_api.category.dto.CategoryResponseDTO;
 import com.rodrigs.finance_manager_api.category.dto.CreateCategoryRequestDTO;
+import com.rodrigs.finance_manager_api.category.dto.UpdateCategoryRequestDTO;
 import com.rodrigs.finance_manager_api.category.service.CategoryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -39,5 +40,13 @@ public class CategoryController {
             @PathVariable UUID categoryId,
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
         return categoryService.findCategoryById(categoryId, authenticatedUser.id());
+    }
+
+    @PutMapping("/{categoryId}")
+    public CategoryResponseDTO updateCategory(
+            @PathVariable UUID categoryId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody UpdateCategoryRequestDTO request) {
+        return categoryService.updateCategory(categoryId, authenticatedUser.id(), request);
     }
 }
