@@ -291,6 +291,76 @@ alteracao de saldo inicial com historico e exclusao. Os testes de integracao cob
 CRUD protegido, validacao de payload e tentativa de acesso por outro usuario usando
 tokens JWT reais.
 
+### Categorias
+
+Todos os endpoints de categoria exigem autenticação:
+
+```http
+Authorization: Bearer seu_access_token
+```
+
+| Metodo | Endpoint | Status de sucesso | Finalidade |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/categories` | `201 Created` | Cria uma categoria de receita ou despesa. |
+| `GET` | `/api/v1/categories` | `200 OK` | Lista as categorias do usuário autenticado. |
+| `GET` | `/api/v1/categories/{categoryId}` | `200 OK` | Consulta uma categoria própria. |
+| `PUT` | `/api/v1/categories/{categoryId}` | `200 OK` | Atualiza nome e tipo da categoria. |
+| `DELETE` | `/api/v1/categories/{categoryId}` | `204 No Content` | Exclui uma categoria sem transações. |
+
+#### Criar uma categoria
+
+```http
+POST /api/v1/categories
+Content-Type: application/json
+Authorization: Bearer seu_access_token
+```
+
+```json
+{
+  "name": "Alimentação",
+  "transactionType": "EXPENSE"
+}
+```
+
+Os únicos valores aceitos para `transactionType` são `INCOME` e `EXPENSE`.
+
+#### Atualizar uma categoria
+
+```http
+PUT /api/v1/categories/{categoryId}
+Content-Type: application/json
+Authorization: Bearer seu_access_token
+```
+
+```json
+{
+  "name": "Alimentação atualizada",
+  "transactionType": "EXPENSE"
+}
+```
+
+O nome deve possuir entre 2 e 80 caracteres. Espaços externos são removidos antes
+da persistência. O nome é único por usuário e tipo, portanto `Salário` pode existir
+como `INCOME` e `EXPENSE`, mas não duas vezes no mesmo tipo.
+
+#### Regras de propriedade e histórico
+
+- Categorias são pessoais e só podem ser acessadas pelo proprietário extraído do JWT.
+- Uma categoria de outro usuário responde `404 Not Found`, sem revelar sua existência.
+- Uma categoria vinculada a transações não pode ser excluída.
+- O tipo de uma categoria vinculada a transações não pode ser alterado.
+- O nome pode ser alterado, desde que não gere duplicidade.
+
+#### Respostas de erro
+
+| Situação | Status | Código |
+| --- | --- | --- |
+| Nome ou tipo inválido | `400` | `VALIDATION_FAILED` |
+| Token ausente, inválido ou expirado | `401` | `AUTHENTICATION_REQUIRED` |
+| Categoria inexistente ou pertencente a outro usuário | `404` | `CATEGORY_NOT_FOUND` |
+| Nome duplicado no mesmo tipo | `409` | `CATEGORY_ALREADY_EXISTS` |
+| Categoria possui transações e a operação é proibida | `409` | `CATEGORY_HAS_TRANSACTIONS` |
+
 ## Testes
 
 Execute a suite automatizada com:
@@ -299,7 +369,7 @@ Execute a suite automatizada com:
 mvn test
 ```
 
-Os testes cobrem cadastro, login, hash de senha, duplicidade de e-mail, emissao/validacao de JWT, token malformado, token assinado com outra chave, token expirado, acesso a rota protegida e o CRUD de contas financeiras.
+Os testes cobrem cadastro, login, hash de senha, duplicidade de e-mail, emissão/validação de JWT, token malformado, token assinado com outra chave, token expirado, acesso a rota protegida e os CRUDs de contas financeiras e categorias.
 
 ## Migrations Flyway
 
