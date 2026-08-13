@@ -4,14 +4,27 @@ import com.rodrigs.finance_manager_api.transaction.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
 
-    // verifica se uma transação existe para uma conta específica e um usuário específico
-    boolean existsByAccountIdAndUserId(UUID accountId, UUID userId);
+    // Verifica se existe uma transação associada a uma conta financeira específica e a um usuário específico
+    boolean existsByFinancialAccount_IdAndUser_Id(
+            UUID accountId,
+            UUID userId
+    );
 
-    // verifica se uma transação existe para uma categoria específica e um usuário específico
-    boolean existsByCategoryIdAndUserId(UUID categoryId, UUID userId);
+    // Verifica se existe uma transação associada a uma categoria específica e a um usuário específico
+    boolean existsByCategory_IdAndUser_Id(
+            UUID categoryId,
+            UUID userId
+    );
+
+    // Recupera uma transação específica associada a um usuário específico
+    Optional<Transaction> findByIdAndUser_Id(
+            UUID transactionId,
+            UUID userId
+    );
 }
