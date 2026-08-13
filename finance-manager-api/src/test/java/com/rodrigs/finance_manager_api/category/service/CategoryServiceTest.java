@@ -340,7 +340,6 @@ class CategoryServiceTest {
         UUID categoryId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-
         // simula o comportamento do repositório de categorias para indicar que a categoria não pertence ao usuário
         when(categoryRepository.findByIdAndUserId(categoryId, userId))
                 .thenReturn(Optional.empty());
