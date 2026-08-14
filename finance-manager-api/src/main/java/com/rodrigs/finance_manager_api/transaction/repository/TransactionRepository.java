@@ -1,6 +1,8 @@
 package com.rodrigs.finance_manager_api.transaction.repository;
 
 import com.rodrigs.finance_manager_api.transaction.entity.Transaction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -26,5 +28,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     Optional<Transaction> findByIdAndUser_Id(
             UUID transactionId,
             UUID userId
+    );
+
+    // Recupera todas as transações associadas a um usuário específico, com paginação
+    Page<Transaction> findAllByUser_Id(
+            UUID userId,
+            Pageable pageable
     );
 }

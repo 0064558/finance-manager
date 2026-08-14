@@ -14,9 +14,12 @@ import com.rodrigs.finance_manager_api.transaction.entity.Transaction;
 import com.rodrigs.finance_manager_api.transaction.repository.TransactionRepository;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -62,6 +65,14 @@ public class TransactionService {
         transaction = transactionRepository.saveAndFlush(transaction);
 
         return toResponse(transaction);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TransactionResponseDTO> findAllTransactions(UUID authenticatedUserId, Pageable pageable) {
+        Page<Transaction> transactions = transactionRepository.findAllByUser_Id(authenticatedUserId, pageable);
+
+        // Convert the Page<Transaction> to Page<TransactionResponseDTO>
+        return transactions.map(this::toResponse);
     }
 
     private TransactionResponseDTO toResponse(Transaction transaction) {
