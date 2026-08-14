@@ -217,6 +217,22 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(TransactionNotFoundException.class)
+    public ProblemDetail handleTransactionNotFound(
+            TransactionNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = createProblemDetail(
+                HttpStatus.NOT_FOUND,
+                "Transaction not found",
+                "Transaction not found for the authenticated user.",
+                request
+        );
+        problemDetail.setProperty("code", "TRANSACTION_NOT_FOUND");
+
+        return problemDetail;
+    }
+
     private record FieldErrorDetail(String field, String message) {
     }
 }

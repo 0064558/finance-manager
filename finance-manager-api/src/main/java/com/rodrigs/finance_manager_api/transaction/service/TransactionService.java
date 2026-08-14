@@ -5,11 +5,7 @@ import com.rodrigs.finance_manager_api.category.repository.CategoryRepository;
 import com.rodrigs.finance_manager_api.financial_account.entity.FinancialAccount;
 import com.rodrigs.finance_manager_api.financial_account.repository.FinancialAccountRepository;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
-import com.rodrigs.finance_manager_api.shared.exception.CategoryNotFoundException;
-import com.rodrigs.finance_manager_api.shared.exception.FinancialAccountNotFoundException;
-import com.rodrigs.finance_manager_api.shared.exception.InvalidTransactionDateRangeException;
-import com.rodrigs.finance_manager_api.shared.exception.TransactionTypeMismatchException;
-import com.rodrigs.finance_manager_api.shared.exception.UserNotFoundException;
+import com.rodrigs.finance_manager_api.shared.exception.*;
 import com.rodrigs.finance_manager_api.transaction.dto.CreateTransactionRequestDTO;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionResponseDTO;
 import com.rodrigs.finance_manager_api.transaction.entity.Transaction;
@@ -105,6 +101,14 @@ public class TransactionService {
         );
 
         return transactions.map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public TransactionResponseDTO findTransactionById(UUID transactionId, UUID authenticatedUserId) {
+        Transaction transaction = transactionRepository.findByIdAndUser_Id(transactionId, authenticatedUserId)
+                .orElseThrow(TransactionNotFoundException::new);
+
+        return toResponse(transaction);
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {
