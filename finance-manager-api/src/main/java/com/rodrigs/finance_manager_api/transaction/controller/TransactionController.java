@@ -58,4 +58,12 @@ public class TransactionController {
                 pageable
         );
     }
+
+    @GetMapping("/{transactionId}")
+    public TransactionResponseDTO findTransactionById(
+            @PathVariable UUID transactionId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return transactionService.findTransactionById(transactionId, authenticatedUser.id());
+    }
 }
