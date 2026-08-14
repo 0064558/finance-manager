@@ -4,14 +4,17 @@ import com.rodrigs.finance_manager_api.category.entity.Category;
 import com.rodrigs.finance_manager_api.category.repository.CategoryRepository;
 import com.rodrigs.finance_manager_api.financial_account.entity.FinancialAccount;
 import com.rodrigs.finance_manager_api.financial_account.repository.FinancialAccountRepository;
+import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.CategoryNotFoundException;
 import com.rodrigs.finance_manager_api.shared.exception.FinancialAccountNotFoundException;
+import com.rodrigs.finance_manager_api.shared.exception.InvalidTransactionDateRangeException;
 import com.rodrigs.finance_manager_api.shared.exception.TransactionTypeMismatchException;
 import com.rodrigs.finance_manager_api.shared.exception.UserNotFoundException;
 import com.rodrigs.finance_manager_api.transaction.dto.CreateTransactionRequestDTO;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionResponseDTO;
 import com.rodrigs.finance_manager_api.transaction.entity.Transaction;
 import com.rodrigs.finance_manager_api.transaction.repository.TransactionRepository;
+import com.rodrigs.finance_manager_api.transaction.repository.specification.TransactionSpecifications;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
@@ -19,7 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -68,11 +71,46 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TransactionResponseDTO> findAllTransactions(UUID authenticatedUserId, Pageable pageable) {
-        Page<Transaction> transactions = transactionRepository.findAllByUser_Id(authenticatedUserId, pageable);
+    public Page<TransactionResponseDTO> findAllTransactions(
+            UUID authenticatedUserId,
+            LocalDate startDate,
+            LocalDate endDate,
+            TransactionType type,
+            UUID accountId,
+            UUID categoryId,
+            Pageable pageable
+    ) {
+        validateDateRange(startDate, endDate);
 
-        // Convert the Page<Transaction> to Page<TransactionResponseDTO>
+        if (accountId != null) {
+            financialAccountRepository.findByIdAndUserId(accountId, authenticatedUserId)
+                    .orElseThrow(FinancialAccountNotFoundException::new);
+        }
+
+        if (categoryId != null) {
+            categoryRepository.findByIdAndUserId(categoryId, authenticatedUserId)
+                    .orElseThrow(CategoryNotFoundException::new);
+        }
+
+        Page<Transaction> transactions = transactionRepository.findAll(
+                TransactionSpecifications.withFilters(
+                        authenticatedUserId,
+                        startDate,
+                        endDate,
+                        type,
+                        accountId,
+                        categoryId
+                ),
+                pageable
+        );
+
         return transactions.map(this::toResponse);
+    }
+
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new InvalidTransactionDateRangeException();
+        }
     }
 
     private TransactionResponseDTO toResponse(Transaction transaction) {

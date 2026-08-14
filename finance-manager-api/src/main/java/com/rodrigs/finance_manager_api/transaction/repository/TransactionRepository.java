@@ -4,13 +4,15 @@ import com.rodrigs.finance_manager_api.transaction.entity.Transaction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
+public interface TransactionRepository
+        extends JpaRepository<Transaction, UUID>, JpaSpecificationExecutor<Transaction> {
 
     // Verifica se existe uma transação associada a uma conta financeira específica e a um usuário específico
     boolean existsByFinancialAccount_IdAndUser_Id(

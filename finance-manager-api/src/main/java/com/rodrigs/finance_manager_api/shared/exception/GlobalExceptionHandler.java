@@ -201,6 +201,22 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(InvalidTransactionDateRangeException.class)
+    public ProblemDetail handleInvalidTransactionDateRange(
+            InvalidTransactionDateRangeException exception,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problemDetail = createProblemDetail(
+                HttpStatus.BAD_REQUEST,
+                "Invalid transaction date range",
+                "The transaction start date must be before or equal to the end date.",
+                request
+        );
+        problemDetail.setProperty("code", "INVALID_TRANSACTION_DATE_RANGE");
+
+        return problemDetail;
+    }
+
     private record FieldErrorDetail(String field, String message) {
     }
 }
