@@ -361,6 +361,160 @@ como `INCOME` e `EXPENSE`, mas não duas vezes no mesmo tipo.
 | Nome duplicado no mesmo tipo | `409` | `CATEGORY_ALREADY_EXISTS` |
 | Categoria possui transações e a operação é proibida | `409` | `CATEGORY_HAS_TRANSACTIONS` |
 
+## Transações
+
+As transações representam receitas e despesas já realizadas. Todos os endpoints
+exigem autenticação e usam exclusivamente o usuário extraído do JWT. O cliente
+não envia `userId`.
+
+### Modelo da transação
+
+| Campo | Tipo | Regra |
+| --- | --- | --- |
+| `id` | UUID | Identificador gerado pela API. |
+| `accountId` | UUID | Conta pertencente ao usuário autenticado. |
+| `categoryId` | UUID | Categoria pertencente ao usuário autenticado. |
+| `type` | Enum | `INCOME` ou `EXPENSE`; deve coincidir com o tipo da categoria. |
+| `amount` | BigDecimal | Obrigatório, maior que zero, com no máximo 17 dígitos inteiros e 2 casas decimais. |
+| `occurredOn` | LocalDate | Obrigatório e não pode ser uma data futura. |
+| `description` | String | Opcional, com no máximo 255 caracteres; espaços externos são removidos. |
+| `createdAt` | OffsetDateTime | Preenchido pela API. |
+| `updatedAt` | OffsetDateTime | Atualizado pela API. |
+
+Os valores enviados em `amount` são sempre positivos. O campo `type` define se o
+lançamento é uma receita ou uma despesa. A criação ou alteração de uma transação
+não modifica `initialBalance`; saldos são derivados das transações em consultas.
+
+### Endpoints
+
+| Método | Endpoint | Status de sucesso | Finalidade |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/transactions` | `201 Created` | Cria uma receita ou despesa. |
+| `GET` | `/api/v1/transactions` | `200 OK` | Lista transações com paginação e filtros. |
+| `GET` | `/api/v1/transactions/{transactionId}` | `200 OK` | Consulta uma transação própria. |
+| `PUT` | `/api/v1/transactions/{transactionId}` | `200 OK` | Atualiza integralmente uma transação própria. |
+| `DELETE` | `/api/v1/transactions/{transactionId}` | `204 No Content` | Exclui fisicamente uma transação própria. |
+
+### Criar uma transação
+
+```http
+POST /api/v1/transactions
+Content-Type: application/json
+Authorization: Bearer seu_access_token
+```
+
+```json
+{
+  "accountId": "8eb438af-1c4e-4395-8385-15ed32a80a60",
+  "categoryId": "6e95f378-4b1e-4bb4-be15-5cf2bf619812",
+  "type": "EXPENSE",
+  "amount": 125.50,
+  "occurredOn": "2026-08-13",
+  "description": "Mercado"
+}
+```
+
+Conta e categoria devem pertencer ao usuário autenticado. Uma categoria
+`EXPENSE` não pode ser usada com uma transação `INCOME`, e vice-versa.
+
+### Listar transações
+
+A listagem é paginada. As páginas são numeradas a partir de zero, o tamanho
+padrão é 20 e a ordenação padrão é `occurredOn` decrescente, seguida de
+`createdAt` decrescente.
+
+```http
+GET /api/v1/transactions?page=0&size=10
+Authorization: Bearer seu_access_token
+```
+
+Filtros opcionais:
+
+| Parâmetro | Tipo | Regra |
+| --- | --- | --- |
+| `startDate` | `yyyy-MM-dd` | Data inicial inclusiva. |
+| `endDate` | `yyyy-MM-dd` | Data final inclusiva. |
+| `type` | Enum | `INCOME` ou `EXPENSE`. |
+| `accountId` | UUID | Conta própria usada no lançamento. |
+| `categoryId` | UUID | Categoria própria usada no lançamento. |
+| `page` | Inteiro | Página zero-based. |
+| `size` | Inteiro | Quantidade de itens por página. |
+| `sort` | Texto | Ordenação do Spring Data, quando necessário. |
+
+Exemplo combinando filtros:
+
+```http
+GET /api/v1/transactions?startDate=2026-08-01&endDate=2026-08-31&type=EXPENSE&accountId=8eb438af-1c4e-4395-8385-15ed32a80a60&page=0&size=10
+```
+
+O intervalo de datas é inclusivo. A data inicial deve ser menor ou igual à data
+final. O retorno possui os dados em `content` e os metadados de paginação, como
+`totalElements`, `totalPages`, `number` e `size`.
+
+### Consultar, atualizar e excluir
+
+Consulta por ID:
+
+```http
+GET /api/v1/transactions/d511327d-4e93-460d-a3b0-1be08037fc3d
+Authorization: Bearer seu_access_token
+```
+
+O `PUT` recebe o mesmo formato do cadastro e revalida todos os campos:
+
+```http
+PUT /api/v1/transactions/d511327d-4e93-460d-a3b0-1be08037fc3d
+Content-Type: application/json
+Authorization: Bearer seu_access_token
+```
+
+```json
+{
+  "accountId": "8eb438af-1c4e-4395-8385-15ed32a80a60",
+  "categoryId": "6e95f378-4b1e-4bb4-be15-5cf2bf619812",
+  "type": "EXPENSE",
+  "amount": 150.75,
+  "occurredOn": "2026-08-13",
+  "description": "Mercado atualizado"
+}
+```
+
+Para excluir:
+
+```http
+DELETE /api/v1/transactions/d511327d-4e93-460d-a3b0-1be08037fc3d
+Authorization: Bearer seu_access_token
+```
+
+A exclusão é física. Depois da exclusão, uma nova consulta ou tentativa de
+exclusão do mesmo ID responde `404 Not Found`.
+
+### Regras de propriedade e respostas de erro
+
+- Uma transação de outro usuário responde `404 Not Found`, sem revelar sua existência.
+- Conta ou categoria de outro usuário não pode ser usada em uma transação.
+- O tipo da transação deve coincidir com o tipo da categoria.
+- O valor deve ser positivo e ter no máximo duas casas decimais.
+- A data de ocorrência não pode ser futura.
+- O intervalo informado deve possuir data inicial menor ou igual à data final.
+
+| Situação | Status | Código |
+| --- | --- | --- |
+| Corpo ou parâmetro inválido | `400` | `VALIDATION_FAILED` |
+| Intervalo de datas inválido | `400` | `INVALID_TRANSACTION_DATE_RANGE` |
+| Token ausente, inválido ou expirado | `401` | `AUTHENTICATION_REQUIRED` |
+| Transação inexistente ou de outro usuário | `404` | `TRANSACTION_NOT_FOUND` |
+| Conta inexistente, de outro usuário ou filtro não autorizado | `404` | `FINANCIAL_ACCOUNT_NOT_FOUND` |
+| Categoria inexistente, de outro usuário ou filtro não autorizado | `404` | `CATEGORY_NOT_FOUND` |
+| Tipo da transação diferente do tipo da categoria | `409` | `TRANSACTION_TYPE_MISMATCH` |
+
+### Testes da fase
+
+Os testes unitários cobrem as regras do `TransactionService`, incluindo
+propriedade, valor, tipo, datas, filtros, atualização e exclusão. Os testes de
+integração cobrem o CRUD protegido, paginação, filtros, validações e isolamento
+entre dois usuários usando tokens JWT reais.
+
 ## Testes
 
 Execute a suite automatizada com:
