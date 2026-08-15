@@ -142,6 +142,14 @@ public class TransactionService {
         return toResponse(transaction);
     }
 
+    @Transactional
+    public void deleteTransaction(UUID transactionId, UUID authenticatedUserId) {
+        Transaction transaction = transactionRepository.findByIdAndUser_Id(transactionId, authenticatedUserId)
+                .orElseThrow(TransactionNotFoundException::new);
+
+        transactionRepository.delete(transaction);
+    }
+
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
             throw new InvalidTransactionDateRangeException();

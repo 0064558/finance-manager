@@ -76,4 +76,10 @@ public class TransactionController {
     ) {
         return transactionService.updateTransaction(transactionId, authenticatedUser.id(), requestDTO);
     }
+
+    @DeleteMapping("/{transactionId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTransaction(@PathVariable UUID transactionId, @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        transactionService.deleteTransaction(transactionId, authenticatedUser.id());
+    }
 }
