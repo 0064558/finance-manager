@@ -4,6 +4,7 @@ import com.rodrigs.finance_manager_api.auth.AuthenticatedUser;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.transaction.dto.CreateTransactionRequestDTO;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionResponseDTO;
+import com.rodrigs.finance_manager_api.transaction.dto.UpdateTransactionRequestDTO;
 import com.rodrigs.finance_manager_api.transaction.service.TransactionService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -65,5 +66,14 @@ public class TransactionController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
         return transactionService.findTransactionById(transactionId, authenticatedUser.id());
+    }
+
+    @PutMapping("/{transactionId}")
+    public TransactionResponseDTO updateTransaction(
+            @PathVariable UUID transactionId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody UpdateTransactionRequestDTO requestDTO
+    ) {
+        return transactionService.updateTransaction(transactionId, authenticatedUser.id(), requestDTO);
     }
 }

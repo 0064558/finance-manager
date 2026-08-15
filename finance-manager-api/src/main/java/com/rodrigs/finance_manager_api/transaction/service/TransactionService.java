@@ -8,6 +8,7 @@ import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.*;
 import com.rodrigs.finance_manager_api.transaction.dto.CreateTransactionRequestDTO;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionResponseDTO;
+import com.rodrigs.finance_manager_api.transaction.dto.UpdateTransactionRequestDTO;
 import com.rodrigs.finance_manager_api.transaction.entity.Transaction;
 import com.rodrigs.finance_manager_api.transaction.repository.TransactionRepository;
 import com.rodrigs.finance_manager_api.transaction.repository.specification.TransactionSpecifications;
@@ -107,6 +108,36 @@ public class TransactionService {
     public TransactionResponseDTO findTransactionById(UUID transactionId, UUID authenticatedUserId) {
         Transaction transaction = transactionRepository.findByIdAndUser_Id(transactionId, authenticatedUserId)
                 .orElseThrow(TransactionNotFoundException::new);
+
+        return toResponse(transaction);
+    }
+
+    @Transactional
+    public TransactionResponseDTO updateTransaction(UUID transactionId,
+                                                    UUID authenticatedUserId,
+                                                    UpdateTransactionRequestDTO requestDTO) {
+        Transaction transaction = transactionRepository.findByIdAndUser_Id(transactionId, authenticatedUserId)
+                .orElseThrow(TransactionNotFoundException::new);
+        FinancialAccount account = financialAccountRepository.findByIdAndUserId(requestDTO.accountId(), authenticatedUserId)
+                .orElseThrow(FinancialAccountNotFoundException::new);
+        Category category = categoryRepository.findByIdAndUserId(requestDTO.categoryId(), authenticatedUserId)
+                .orElseThrow(CategoryNotFoundException::new);
+
+        if (requestDTO.type() != category.getTransactionType()) {
+            throw new TransactionTypeMismatchException();
+        }
+
+        String description = requestDTO.description() == null ? null : requestDTO.description().trim();
+
+        transaction.update(
+                account,
+                category,
+                requestDTO.type(),
+                requestDTO.amount(),
+                requestDTO.occurredOn(),
+                description);
+
+        transaction = transactionRepository.saveAndFlush(transaction);
 
         return toResponse(transaction);
     }
