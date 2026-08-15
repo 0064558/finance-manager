@@ -1,6 +1,7 @@
 package com.rodrigs.finance_manager_api.report.controller;
 
 import com.rodrigs.finance_manager_api.auth.AuthenticatedUser;
+import com.rodrigs.finance_manager_api.report.dto.CurrentBalanceResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
 import com.rodrigs.finance_manager_api.report.service.ReportService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -30,5 +31,10 @@ public class ReportController {
             @RequestParam("endDate") LocalDate endDate
             ) {
         return reportService.getSummary(authenticatedUser.id(), startDate, endDate);
+    }
+
+    @GetMapping("/balances")
+    public CurrentBalanceResponseDTO getCurrentBalance(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        return reportService.getCurrentBalance(authenticatedUser.id());
     }
 }
