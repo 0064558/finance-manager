@@ -78,6 +78,28 @@ class ReportServiceTest {
     }
 
     @Test
+    void shouldReturnZeroSummaryWhenPeriodHasNoTransactions() {
+        LocalDate startDate = LocalDate.of(2026, 8, 1);
+        LocalDate endDate = LocalDate.of(2026, 8, 31);
+
+        when(transactionRepository.findTotalsByUserAndPeriod(
+                userId,
+                startDate,
+                endDate,
+                TransactionType.INCOME,
+                TransactionType.EXPENSE
+        )).thenReturn(reportTotalsProjection);
+        when(reportTotalsProjection.getTotalIncome()).thenReturn(BigDecimal.ZERO);
+        when(reportTotalsProjection.getTotalExpense()).thenReturn(BigDecimal.ZERO);
+
+        ReportSummaryResponseDTO response = reportService.getSummary(userId, startDate, endDate);
+
+        assertThat(response.totalIncome()).isEqualByComparingTo("0.00");
+        assertThat(response.totalExpense()).isEqualByComparingTo("0.00");
+        assertThat(response.netBalance()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
     void shouldReturnNegativeNetBalanceWhenExpensesAreGreaterThanIncome() {
         LocalDate startDate = LocalDate.of(2026, 8, 1);
         LocalDate endDate = LocalDate.of(2026, 8, 31);

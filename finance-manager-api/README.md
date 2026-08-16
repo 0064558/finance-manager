@@ -197,6 +197,31 @@ Respostas importantes:
 | Login com credenciais invalidas | `401` | `INVALID_CREDENTIALS` |
 | Token ausente, invalido ou expirado | `401` | `AUTHENTICATION_REQUIRED` |
 
+Erros da API usam `application/problem+json`. Além dos campos padrão de
+`ProblemDetail` (`type`, `title`, `status`, `detail` e `instance`), a resposta
+inclui `code`, `timestamp` e `traceId`. Erros de validação também incluem
+`fields`, com o nome e a mensagem de cada campo inválido:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Validation failed",
+  "status": 400,
+  "detail": "One or more request fields are invalid.",
+  "instance": "/api/v1/auth/register",
+  "code": "VALIDATION_FAILED",
+  "timestamp": "2026-08-16T18:00:00Z",
+  "traceId": "4f8f8f91-0d4b-4f56-9a34-6adf4e4b2db0",
+  "fields": [
+    { "field": "password", "message": "A senha deve conter ao menos uma letra e um número" }
+  ]
+}
+```
+
+Falhas inesperadas retornam `500` com uma mensagem genérica. O `traceId` pode
+ser usado para localizar o erro nos logs do servidor; detalhes internos, SQL,
+stack trace, senhas e tokens nunca são enviados ao cliente.
+
 Senhas nunca sao retornadas pela API. O banco armazena apenas o hash gerado com BCrypt.
 
 ## Fase 4 - Contas financeiras
@@ -514,6 +539,91 @@ Os testes unitários cobrem as regras do `TransactionService`, incluindo
 propriedade, valor, tipo, datas, filtros, atualização e exclusão. Os testes de
 integração cobrem o CRUD protegido, paginação, filtros, validações e isolamento
 entre dois usuários usando tokens JWT reais.
+
+## Dashboard e relatórios
+
+Os endpoints de relatório exigem autenticação JWT:
+
+```http
+Authorization: Bearer seu_access_token
+```
+
+| Método | Endpoint | Status de sucesso | Finalidade |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/reports/summary` | `200 OK` | Retorna receitas, despesas e saldo líquido de um período. |
+| `GET` | `/api/v1/reports/balances` | `200 OK` | Retorna o saldo atual de cada conta e o total consolidado. |
+
+### Resumo financeiro por período
+
+As datas inicial e final são obrigatórias, devem usar o formato `yyyy-MM-dd` e o
+intervalo é inclusivo:
+
+```http
+GET /api/v1/reports/summary?startDate=2026-08-01&endDate=2026-08-31
+Authorization: Bearer seu_access_token
+```
+
+Exemplo de resposta:
+
+```json
+{
+  "startDate": "2026-08-01",
+  "endDate": "2026-08-31",
+  "totalIncome": 1600.00,
+  "totalExpense": 100.00,
+  "netBalance": 1500.00
+}
+```
+
+O `netBalance` representa somente a movimentação líquida do período:
+
+```text
+totalIncome - totalExpense
+```
+
+O saldo inicial das contas não participa desse cálculo. Se `startDate` for posterior
+a `endDate`, ou se alguma data estiver ausente ou inválida, a API responde `400 Bad
+Request`.
+
+### Saldo atual das contas
+
+O saldo atual não recebe intervalo de datas. Ele considera todas as movimentações
+acumuladas e o saldo inicial de cada conta:
+
+```text
+saldo da conta = initialBalance + receitas - despesas
+```
+
+Exemplo de requisição:
+
+```http
+GET /api/v1/reports/balances
+Authorization: Bearer seu_access_token
+```
+
+Exemplo de resposta:
+
+```json
+{
+  "totalBalance": 2777.77,
+  "accounts": [
+    {
+      "accountId": "8eb438af-1c4e-4395-8385-15ed32a80a60",
+      "accountName": "Bradesco",
+      "balance": 2000.00
+    },
+    {
+      "accountId": "53e8cae9-ddf6-4e6a-a328-8a1fedcbfb5c",
+      "accountName": "Nubank",
+      "balance": 777.77
+    }
+  ]
+}
+```
+
+Contas sem transações também são retornadas, considerando somente o saldo inicial.
+Os relatórios sempre filtram pelo usuário autenticado e nunca incluem dados de
+outros usuários.
 
 ## Testes
 

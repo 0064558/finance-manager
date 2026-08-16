@@ -2,6 +2,7 @@ package com.rodrigs.finance_manager_api.config;
 
 import com.rodrigs.finance_manager_api.auth.JwtAuthenticationFilter;
 import com.rodrigs.finance_manager_api.auth.JwtService;
+import com.rodrigs.finance_manager_api.shared.exception.ProblemDetailFactory;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -16,20 +17,24 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import tools.jackson.databind.ObjectMapper;
 
-import java.net.URI;
-import java.time.OffsetDateTime;
-
 @Configuration
 public class SecurityConfig {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final ProblemDetailFactory problemDetailFactory;
 
-    public SecurityConfig(JwtService jwtService, UserRepository userRepository, ObjectMapper objectMapper) {
+    public SecurityConfig(
+            JwtService jwtService,
+            UserRepository userRepository,
+            ObjectMapper objectMapper,
+            ProblemDetailFactory problemDetailFactory
+    ) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        this.problemDetailFactory = problemDetailFactory;
     }
 
     @Bean
@@ -67,7 +72,7 @@ public class SecurityConfig {
                                         "Unauthorized",
                                         "Authentication is required to access this resource.",
                                         "AUTHENTICATION_REQUIRED",
-                                        request.getRequestURI()
+                                        request
                                 ))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
                                 writeProblemDetail(
@@ -76,7 +81,7 @@ public class SecurityConfig {
                                         "Forbidden",
                                         "You do not have permission to access this resource.",
                                         "ACCESS_DENIED",
-                                        request.getRequestURI()
+                                        request
                                 ))
                 )
                 // Add the custom JWT authentication filter before the UsernamePasswordAuthenticationFilter
@@ -93,14 +98,9 @@ public class SecurityConfig {
             String title,
             String detail,
             String code,
-            String path
+            jakarta.servlet.http.HttpServletRequest request
     ) throws java.io.IOException {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
-        problemDetail.setTitle(title);
-        problemDetail.setType(URI.create("about:blank"));
-        problemDetail.setInstance(URI.create(path));
-        problemDetail.setProperty("code", code);
-        problemDetail.setProperty("timestamp", OffsetDateTime.now());
+        ProblemDetail problemDetail = problemDetailFactory.create(status, title, detail, code, request);
 
         response.setStatus(status.value());
         response.setContentType("application/problem+json");

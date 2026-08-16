@@ -52,6 +52,22 @@ class ReportControllerIntegrationTest {
     }
 
     @Test
+    void shouldReturnZeroSummaryWhenPeriodHasNoTransactions() throws Exception {
+        String token = registerAndLogin(uniqueEmail());
+        LocalDate endDate = LocalDate.now().minusDays(1);
+        LocalDate startDate = endDate.minusDays(2);
+
+        mockMvc.perform(get("/api/v1/reports/summary")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", startDate.toString())
+                        .param("endDate", endDate.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalIncome").value(0.00))
+                .andExpect(jsonPath("$.totalExpense").value(0.00))
+                .andExpect(jsonPath("$.netBalance").value(0.00));
+    }
+
+    @Test
     void shouldReturnCurrentBalancesIncludingAccountWithoutTransactions() throws Exception {
         String token = registerAndLogin(uniqueEmail());
         String accountWithTransactions = createAccount(token, "Bradesco", "500.00");

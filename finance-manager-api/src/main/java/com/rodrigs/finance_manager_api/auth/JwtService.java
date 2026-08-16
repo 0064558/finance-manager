@@ -78,7 +78,8 @@ public class JwtService {
      */
     public boolean isTokenValid(String token) {
         try {
-            parseClaims(token);
+            Claims claims = parseClaims(token);
+            UUID.fromString(claims.getSubject());
             return true;
         } catch (JwtException | IllegalArgumentException exception) {
             return false;
