@@ -627,13 +627,17 @@ outros usuários.
 
 ## Testes
 
-Execute a suite automatizada com:
+Os testes unitários e de integração são executados com:
 
 ```powershell
-mvn test
+mvn verify
 ```
 
-Os testes cobrem cadastro, login, hash de senha, duplicidade de e-mail, emissão/validação de JWT, token malformado, token assinado com outra chave, token expirado, acesso a rota protegida e os CRUDs de contas financeiras e categorias.
+Os testes de integração usam PostgreSQL real em Testcontainers, aplicam as migrations Flyway desde o zero e limpam os dados entre os métodos. Portanto, o Docker precisa estar disponível durante a execução.
+
+O relatório de cobertura é gerado em `target/site/jacoco/index.html`. O build falha quando a cobertura de linhas da aplicação fica abaixo de 70%.
+
+Os testes cobrem cadastro, login, hash de senha, duplicidade de e-mail, emissão/validação de JWT, token malformado, token assinado com outra chave, token expirado, acesso a rota protegida, isolamento entre usuários, regras de histórico, filtros e paginação de transações, relatórios, migrations PostgreSQL e respostas de erro padronizadas.
 
 ## Migrations Flyway
 

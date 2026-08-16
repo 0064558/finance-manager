@@ -2,6 +2,7 @@ package com.rodrigs.finance_manager_api.shared.exception;
 
 import com.jayway.jsonpath.JsonPath;
 import com.rodrigs.finance_manager_api.FinanceManagerApiApplication;
+import com.rodrigs.finance_manager_api.support.PostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @SpringBootTest(classes = FinanceManagerApiApplication.class)
 @AutoConfigureMockMvc
-class ErrorHandlingIntegrationTest {
+class ErrorHandlingIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

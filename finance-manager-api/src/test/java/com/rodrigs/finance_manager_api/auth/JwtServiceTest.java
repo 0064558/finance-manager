@@ -2,10 +2,15 @@ package com.rodrigs.finance_manager_api.auth;
 
 import com.rodrigs.finance_manager_api.config.JwtProperties;
 import com.rodrigs.finance_manager_api.user.entity.User;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Field;
+import java.time.Instant;
+import java.util.Date;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,6 +64,20 @@ class JwtServiceTest {
         expiredJwtService.initializeSecretKey();
 
         String token = expiredJwtService.generateAccessToken(user);
+
+        assertThat(jwtService.isTokenValid(token)).isFalse();
+    }
+
+    @Test
+    void shouldRejectTokenWithNonUuidSubject() {
+        Instant now = Instant.now();
+        String token = Jwts.builder()
+                .issuer(ISSUER)
+                .subject("not-a-uuid")
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(3600)))
+                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+                .compact();
 
         assertThat(jwtService.isTokenValid(token)).isFalse();
     }

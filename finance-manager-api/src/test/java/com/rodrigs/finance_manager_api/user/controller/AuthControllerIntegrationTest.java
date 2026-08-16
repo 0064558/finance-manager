@@ -2,6 +2,7 @@ package com.rodrigs.finance_manager_api.user.controller;
 
 import com.jayway.jsonpath.JsonPath;
 import com.rodrigs.finance_manager_api.FinanceManagerApiApplication;
+import com.rodrigs.finance_manager_api.support.PostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -9,6 +10,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+import java.util.UUID;
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @SpringBootTest(classes = FinanceManagerApiApplication.class)
 @AutoConfigureMockMvc
-class AuthControllerIntegrationTest {
+class AuthControllerIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -94,6 +103,25 @@ class AuthControllerIntegrationTest {
     void shouldRejectProtectedRouteWithInvalidToken() throws Exception {
         mockMvc.perform(get("/api/v1/auth/me")
                         .header("Authorization", "Bearer token-invalido"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
+    }
+
+    @Test
+    void shouldRejectProtectedRouteWithExpiredToken() throws Exception {
+        Instant now = Instant.now();
+        String expiredToken = Jwts.builder()
+                .issuer("finance-manager-api-test")
+                .subject(UUID.randomUUID().toString())
+                .issuedAt(Date.from(now.minusSeconds(120)))
+                .expiration(Date.from(now.minusSeconds(60)))
+                .signWith(Keys.hmacShaKeyFor(
+                        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                                .getBytes(StandardCharsets.UTF_8)))
+                .compact();
+
+        mockMvc.perform(get("/api/v1/auth/me")
+                        .header("Authorization", "Bearer " + expiredToken))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
     }

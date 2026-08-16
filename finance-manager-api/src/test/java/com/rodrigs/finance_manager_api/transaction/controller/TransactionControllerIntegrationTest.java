@@ -2,6 +2,7 @@ package com.rodrigs.finance_manager_api.transaction.controller;
 
 import com.jayway.jsonpath.JsonPath;
 import com.rodrigs.finance_manager_api.FinanceManagerApiApplication;
+import com.rodrigs.finance_manager_api.support.PostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @SpringBootTest(classes = FinanceManagerApiApplication.class)
 @AutoConfigureMockMvc
-class TransactionControllerIntegrationTest {
+class TransactionControllerIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -172,6 +173,79 @@ class TransactionControllerIntegrationTest {
         mockMvc.perform(delete("/api/v1/transactions/{transactionId}", transactionId)
                         .header("Authorization", "Bearer " + otherUserToken))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldRejectTransactionsUsingAccountOrCategoryFromAnotherUser() throws Exception {
+        String ownerToken = registerAndLogin(uniqueEmail());
+        String otherUserToken = registerAndLogin(uniqueEmail());
+        String ownerAccountId = createAccount(ownerToken, "Conta do proprietário");
+        String ownerCategoryId = createCategory(ownerToken, "Categoria do proprietário", "EXPENSE");
+        String otherAccountId = createAccount(otherUserToken, "Conta de outro usuário");
+        String otherCategoryId = createCategory(otherUserToken, "Categoria de outro usuário", "EXPENSE");
+
+        mockMvc.perform(post("/api/v1/transactions")
+                        .header("Authorization", "Bearer " + otherUserToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(transactionJson(
+                                otherAccountId,
+                                ownerCategoryId,
+                                "EXPENSE",
+                                "10.00",
+                                LocalDate.now().minusDays(1),
+                                "Categoria de outro usuário"
+                        )))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("CATEGORY_NOT_FOUND"));
+
+        mockMvc.perform(post("/api/v1/transactions")
+                        .header("Authorization", "Bearer " + otherUserToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(transactionJson(
+                                ownerAccountId,
+                                otherCategoryId,
+                                "EXPENSE",
+                                "10.00",
+                                LocalDate.now().minusDays(1),
+                                "Conta de outro usuário"
+                        )))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("FINANCIAL_ACCOUNT_NOT_FOUND"));
+    }
+
+    @Test
+    void shouldFilterTransactionsIndependentlyByAccountCategoryAndDateRange() throws Exception {
+        String token = registerAndLogin(uniqueEmail());
+        String firstAccountId = createAccount(token, "Conta principal");
+        String secondAccountId = createAccount(token, "Conta secundária");
+        String categoryId = createCategory(token, "Alimentação", "EXPENSE");
+        LocalDate firstDate = LocalDate.now().minusDays(5);
+        LocalDate secondDate = LocalDate.now().minusDays(3);
+
+        createTransaction(token, firstAccountId, categoryId, "EXPENSE", "50.00", firstDate, "Primeira");
+        createTransaction(token, secondAccountId, categoryId, "EXPENSE", "75.00", secondDate, "Segunda");
+
+        mockMvc.perform(get("/api/v1/transactions")
+                        .header("Authorization", "Bearer " + token)
+                        .param("accountId", secondAccountId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].description").value("Segunda"));
+
+        mockMvc.perform(get("/api/v1/transactions")
+                        .header("Authorization", "Bearer " + token)
+                        .param("categoryId", categoryId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalElements").value(2));
+
+        mockMvc.perform(get("/api/v1/transactions")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", firstDate.toString())
+                        .param("endDate", firstDate.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].description").value("Primeira"));
     }
 
     @Test
