@@ -57,6 +57,7 @@ public class SecurityConfig {
                                 "/api-docs/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
+                                "/actuator/**",
                                 "/error"
                         ).permitAll() // Allow all requests to the specified endpoints
                         // Require authentication for any other request
