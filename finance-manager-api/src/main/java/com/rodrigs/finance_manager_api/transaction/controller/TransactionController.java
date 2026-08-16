@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -79,7 +80,7 @@ public class TransactionController {
             @RequestParam(value = "accountId", required = false) UUID accountId,
             @Parameter(description = "Filtra por uma categoria pertencente ao usuário", example = "6e95f378-4b1e-4bb4-be15-5cf2bf619812")
             @RequestParam(value = "categoryId", required = false) UUID categoryId,
-            @PageableDefault(size = 20, sort = {"occurredOn", "createdAt"}, direction = Sort.Direction.DESC) Pageable pageable
+            @ParameterObject @PageableDefault(size = 20, sort = {"occurredOn", "createdAt"}, direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return transactionService.findAllTransactions(
                 authenticatedUser.id(),
