@@ -3,18 +3,58 @@ services:
     image: postgres:17-alpine
     container_name: finance-manager-postgres
     restart: unless-stopped
+
     environment:
       POSTGRES_DB: ${DB_NAME:-finance_manager_dev}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-}
-      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_AUTH_METHOD:-trust}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no arquivo .env}
+
     ports:
       - "${DB_PORT:-5432}:5432"
+
     volumes:
       - finance_manager_postgres_data:/var/lib/postgresql/data
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: finance-manager-api
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SERVER_PORT: 8080
+
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-finance_manager_dev}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no arquivo .env}
+
+      JWT_ISSUER: ${JWT_ISSUER:-finance-manager-api}
+      JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-3600}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no arquivo .env}
+
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:8080/actuator/health || exit 1"
+        ]
+      interval: 15s
       timeout: 5s
       retries: 5
 
