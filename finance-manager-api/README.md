@@ -8,7 +8,7 @@ API para gerenciamento financeiro pessoal.
 - Maven 3.9+
 - Docker e Docker Compose
 
-## Configuracao local
+## Configuração local
 
 Crie o arquivo `.env` a partir do modelo versionado:
 
@@ -16,18 +16,20 @@ Crie o arquivo `.env` a partir do modelo versionado:
 Copy-Item .env.example .env
 ```
 
-O ambiente local usa PostgreSQL sem senha, com autenticacao `trust`, apenas para desenvolvimento:
+O ambiente local usa o PostgreSQL executado pelo Docker. A porta `5433` é a porta
+da máquina; dentro da rede Docker, o PostgreSQL continua ouvindo na porta `5432`.
+
+Depois de copiar o arquivo, confira as variáveis:
 
 ```env
 SPRING_PROFILES_ACTIVE=dev
 SERVER_PORT=8080
 
 DB_NAME=finance_manager_dev
-DB_PORT=5432
-DB_URL=jdbc:postgresql://localhost:5432/finance_manager_dev
+DB_PORT=5433
+DB_URL=jdbc:postgresql://localhost:5433/finance_manager_dev
 DB_USERNAME=postgres
-DB_PASSWORD=
-POSTGRES_AUTH_METHOD=trust
+DB_PASSWORD=defina_uma_senha_local
 
 JWT_ISSUER=finance-manager-api
 JWT_EXPIRATION_SECONDS=3600
@@ -36,65 +38,112 @@ JWT_SECRET=gere_um_secret_forte_para_o_ambiente_local
 
 O arquivo `.env` fica fora do Git.
 
-`JWT_SECRET` deve ser um valor forte e privado. Nao use o valor do exemplo em producao e nao versione segredos reais.
+`JWT_SECRET` deve ser um valor forte e privado. Não use o valor do exemplo em
+produção e não versione segredos reais.
 
-## Subir o banco
+`DB_PASSWORD` é a senha do PostgreSQL. Ela é diferente da senha usada pelos
+usuários da API.
 
-Inicie o PostgreSQL em conteiner:
+## Executar a stack completa com Docker
+
+Valide o arquivo Compose:
 
 ```powershell
-docker compose up -d
+docker compose config
 ```
 
-Confira se o conteiner esta rodando:
+Construa a imagem da API e inicie a API junto com o PostgreSQL:
+
+```powershell
+docker compose up -d --build
+```
+
+Confira os serviços:
 
 ```powershell
 docker compose ps
 ```
 
-Confirme se a porta local esta disponivel:
-
-```powershell
-Test-NetConnection localhost -Port 5432
-```
-
-O resultado esperado e:
-
-```text
-TcpTestSucceeded : True
-```
-
-Tambem e possivel validar pelo PostgreSQL:
-
-```powershell
-docker compose exec postgres pg_isready -U postgres -d finance_manager_dev
-```
-
-Resultado esperado:
-
-```text
-/var/run/postgresql:5432 - accepting connections
-```
-
-## Rodar a aplicacao
-
-Com o banco disponivel, inicie a API em perfil `dev`:
-
-```powershell
-mvn spring-boot:run
-```
-
-Ou informe o perfil explicitamente:
-
-```powershell
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
-```
-
-A aplicacao sobe em:
+A API fica disponível em:
 
 ```text
 http://localhost:8080
 ```
+
+O PostgreSQL Dockerizado fica disponível para ferramentas instaladas na máquina,
+como pgAdmin, em:
+
+```text
+Host: localhost
+Port: 5433
+Database: finance_manager_dev
+Username: postgres
+```
+
+A API dentro do Docker acessa o banco pelo nome do serviço:
+
+```text
+jdbc:postgresql://postgres:5432/finance_manager_dev
+```
+
+Confira os logs:
+
+```powershell
+docker compose logs --tail=100 api
+docker compose logs --tail=100 postgres
+```
+
+Teste o health check:
+
+```powershell
+Invoke-RestMethod http://localhost:8080/actuator/health
+```
+
+Resultado esperado:
+
+```json
+{
+  "status": "UP"
+}
+```
+
+Confirme as tabelas criadas pelas migrations:
+
+```powershell
+docker compose exec postgres psql -U postgres -d finance_manager_dev -c '\dt'
+```
+
+## Executar a API pelo IntelliJ
+
+Para desenvolver com mais rapidez, mantenha somente o PostgreSQL no Docker e
+execute a API pelo IntelliJ:
+
+```powershell
+docker compose stop api
+docker compose up -d postgres
+```
+
+Nesse modo, a configuração de execução do IntelliJ deve carregar o arquivo `.env`
+ou definir explicitamente:
+
+```text
+SPRING_PROFILES_ACTIVE=dev
+DB_URL=jdbc:postgresql://localhost:5433/finance_manager_dev
+DB_USERNAME=postgres
+DB_PASSWORD=mesma_senha_do_.env
+JWT_ISSUER=finance-manager-api
+JWT_EXPIRATION_SECONDS=3600
+JWT_SECRET=seu_segredo_local
+```
+
+A API executada pelo IntelliJ e a API executada pelo Docker usam o mesmo banco:
+
+```text
+IntelliJ: localhost:5433
+Docker:   postgres:5432
+```
+
+Não execute simultaneamente a API pelo IntelliJ e pelo Docker na porta `8080`.
 
 ## Swagger e OpenAPI
 
@@ -653,14 +702,22 @@ As migrations ja aplicadas nao devem ser editadas; qualquer ajuste deve entrar e
 
 ## Parar o ambiente
 
-Pare os conteineres:
+Para parar somente a API e continuar usando o PostgreSQL pelo IntelliJ:
+
+```powershell
+docker compose stop api
+```
+
+Para parar os contêineres sem remover o volume de dados:
 
 ```powershell
 docker compose down
 ```
 
-Para remover tambem o volume nomeado do PostgreSQL:
+Para remover também o volume nomeado do PostgreSQL e apagar os dados locais:
 
 ```powershell
 docker compose down -v
 ```
+
+Use `docker compose down -v` somente quando quiser recriar o banco do zero.
