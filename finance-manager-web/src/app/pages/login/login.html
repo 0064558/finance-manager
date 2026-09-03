@@ -1,1 +1,42 @@
-<p>login works!</p>
+<main>
+  <h1>Entrar</h1>
+
+  <form [formGroup]="loginForm" (ngSubmit)="submit()">
+    <div>
+      <label for="email">E-mail</label>
+      <input
+        id="email"
+        type="email"
+        formControlName="email"
+        autocomplete="username"
+      />
+
+      @if (loginForm.controls.email.touched &&
+           loginForm.controls.email.hasError('required')) {
+        <p>O e-mail é obrigatório.</p>
+      }
+
+      @if (loginForm.controls.email.touched &&
+           loginForm.controls.email.hasError('email')) {
+        <p>Informe um e-mail válido.</p>
+      }
+    </div>
+
+    <div>
+      <label for="password">Senha</label>
+      <input
+        id="password"
+        type="password"
+        formControlName="password"
+        autocomplete="current-password"
+      />
+
+      @if (loginForm.controls.password.touched &&
+           loginForm.controls.password.hasError('required')) {
+        <p>A senha é obrigatória.</p>
+      }
+    </div>
+
+    <button type="submit">Entrar</button>
+  </form>
+</main>
