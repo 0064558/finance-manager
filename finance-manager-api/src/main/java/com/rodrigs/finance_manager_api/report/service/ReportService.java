@@ -3,8 +3,11 @@ package com.rodrigs.finance_manager_api.report.service;
 import com.rodrigs.finance_manager_api.financial_account.repository.FinancialAccountRepository;
 import com.rodrigs.finance_manager_api.report.dto.AccountBalanceResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.CurrentBalanceResponseDTO;
+import com.rodrigs.finance_manager_api.report.dto.CashFlowPointResponseDTO;
+import com.rodrigs.finance_manager_api.report.dto.CashFlowResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
 import com.rodrigs.finance_manager_api.report.repository.AccountBalanceProjection;
+import com.rodrigs.finance_manager_api.report.repository.CashFlowProjection;
 import com.rodrigs.finance_manager_api.report.repository.ReportTotalsProjection;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.InvalidTransactionDateRangeException;
@@ -16,7 +19,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -83,6 +88,39 @@ public class ReportService {
 
         // retorna o total e a lista de contas
         return new CurrentBalanceResponseDTO(totalBalance, accountBalanceDtos);
+    }
+
+    @Transactional(readOnly = true)
+    public CashFlowResponseDTO getCashFlow(UUID authenticatedUserId, LocalDate startDate, LocalDate endDate) {
+        validateDateRange(startDate, endDate);
+
+        List<CashFlowProjection> groupedPoints = transactionRepository.findCashFlowByUserAndPeriod(
+                authenticatedUserId,
+                startDate,
+                endDate,
+                TransactionType.INCOME,
+                TransactionType.EXPENSE
+        );
+
+        Map<LocalDate, CashFlowProjection> pointsByDate = groupedPoints.stream()
+                .collect(Collectors.toMap(CashFlowProjection::getOccurredOn, Function.identity()));
+
+        List<CashFlowPointResponseDTO> points = startDate.datesUntil(endDate.plusDays(1))
+                .map(date -> {
+                    CashFlowProjection point = pointsByDate.get(date);
+                    BigDecimal totalIncome = point == null ? BigDecimal.ZERO : point.getTotalIncome();
+                    BigDecimal totalExpense = point == null ? BigDecimal.ZERO : point.getTotalExpense();
+
+                    return new CashFlowPointResponseDTO(
+                            date,
+                            totalIncome,
+                            totalExpense,
+                            totalIncome.subtract(totalExpense)
+                    );
+                })
+                .toList();
+
+        return new CashFlowResponseDTO(startDate, endDate, points);
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

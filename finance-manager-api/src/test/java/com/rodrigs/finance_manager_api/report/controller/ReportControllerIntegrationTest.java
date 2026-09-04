@@ -69,6 +69,36 @@ class ReportControllerIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void shouldReturnDailyCashFlowIncludingDaysWithoutTransactions() throws Exception {
+        String token = registerAndLogin(uniqueEmail());
+        String accountId = createAccount(token, "Conta principal", "1000.00");
+        String incomeCategoryId = createCategory(token, "Salário", "INCOME");
+        String expenseCategoryId = createCategory(token, "Alimentação", "EXPENSE");
+        LocalDate endDate = LocalDate.now().minusDays(1);
+        LocalDate startDate = endDate.minusDays(2);
+
+        createTransaction(token, accountId, incomeCategoryId, "INCOME", "250.00", startDate);
+        createTransaction(token, accountId, expenseCategoryId, "EXPENSE", "80.00", endDate);
+
+        mockMvc.perform(get("/api/v1/reports/cash-flow")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", startDate.toString())
+                        .param("endDate", endDate.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.startDate").value(startDate.toString()))
+                .andExpect(jsonPath("$.endDate").value(endDate.toString()))
+                .andExpect(jsonPath("$.points.length()").value(3))
+                .andExpect(jsonPath("$.points[0].date").value(startDate.toString()))
+                .andExpect(jsonPath("$.points[0].totalIncome").value(250.00))
+                .andExpect(jsonPath("$.points[0].totalExpense").value(0.00))
+                .andExpect(jsonPath("$.points[1].totalIncome").value(0.00))
+                .andExpect(jsonPath("$.points[1].totalExpense").value(0.00))
+                .andExpect(jsonPath("$.points[2].totalIncome").value(0.00))
+                .andExpect(jsonPath("$.points[2].totalExpense").value(80.00))
+                .andExpect(jsonPath("$.points[2].netBalance").value(-80.00));
+    }
+
+    @Test
     void shouldReturnCurrentBalancesIncludingAccountWithoutTransactions() throws Exception {
         String token = registerAndLogin(uniqueEmail());
         String accountWithTransactions = createAccount(token, "Bradesco", "500.00");
@@ -125,6 +155,11 @@ class ReportControllerIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(get("/api/v1/reports/balances"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/reports/cash-flow")
+                        .param("startDate", "2026-08-01")
+                        .param("endDate", "2026-08-31"))
                 .andExpect(status().isUnauthorized());
     }
 

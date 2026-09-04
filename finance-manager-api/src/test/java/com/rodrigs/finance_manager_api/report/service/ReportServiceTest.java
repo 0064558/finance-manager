@@ -2,8 +2,10 @@ package com.rodrigs.finance_manager_api.report.service;
 
 import com.rodrigs.finance_manager_api.financial_account.repository.FinancialAccountRepository;
 import com.rodrigs.finance_manager_api.report.dto.CurrentBalanceResponseDTO;
+import com.rodrigs.finance_manager_api.report.dto.CashFlowResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
 import com.rodrigs.finance_manager_api.report.repository.AccountBalanceProjection;
+import com.rodrigs.finance_manager_api.report.repository.CashFlowProjection;
 import com.rodrigs.finance_manager_api.report.repository.ReportTotalsProjection;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.InvalidTransactionDateRangeException;
@@ -43,6 +45,9 @@ class ReportServiceTest {
 
     @Mock
     private AccountBalanceProjection secondAccountProjection;
+
+    @Mock
+    private CashFlowProjection firstCashFlowProjection;
 
     private ReportService reportService;
     private UUID userId;
@@ -117,6 +122,50 @@ class ReportServiceTest {
         ReportSummaryResponseDTO response = reportService.getSummary(userId, startDate, endDate);
 
         assertThat(response.netBalance()).isEqualByComparingTo("-50.00");
+    }
+
+    @Test
+    void shouldFillCashFlowWithZeroForDaysWithoutTransactions() {
+        LocalDate startDate = LocalDate.of(2026, 8, 1);
+        LocalDate endDate = LocalDate.of(2026, 8, 3);
+
+        when(transactionRepository.findCashFlowByUserAndPeriod(
+                userId,
+                startDate,
+                endDate,
+                TransactionType.INCOME,
+                TransactionType.EXPENSE
+        )).thenReturn(List.of(firstCashFlowProjection));
+        when(firstCashFlowProjection.getOccurredOn()).thenReturn(LocalDate.of(2026, 8, 2));
+        when(firstCashFlowProjection.getTotalIncome()).thenReturn(new BigDecimal("250.00"));
+        when(firstCashFlowProjection.getTotalExpense()).thenReturn(new BigDecimal("80.00"));
+
+        CashFlowResponseDTO response = reportService.getCashFlow(userId, startDate, endDate);
+
+        assertThat(response.points()).hasSize(3);
+        assertThat(response.points().get(0).date()).isEqualTo(startDate);
+        assertThat(response.points().get(0).totalIncome()).isEqualByComparingTo("0.00");
+        assertThat(response.points().get(1).totalIncome()).isEqualByComparingTo("250.00");
+        assertThat(response.points().get(1).totalExpense()).isEqualByComparingTo("80.00");
+        assertThat(response.points().get(1).netBalance()).isEqualByComparingTo("170.00");
+        assertThat(response.points().get(2).netBalance()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    void shouldRejectCashFlowWithInvalidDateRange() {
+        LocalDate startDate = LocalDate.of(2026, 8, 31);
+        LocalDate endDate = LocalDate.of(2026, 8, 1);
+
+        assertThatThrownBy(() -> reportService.getCashFlow(userId, startDate, endDate))
+                .isInstanceOf(InvalidTransactionDateRangeException.class);
+
+        verify(transactionRepository, never()).findCashFlowByUserAndPeriod(
+                eq(userId),
+                eq(startDate),
+                eq(endDate),
+                eq(TransactionType.INCOME),
+                eq(TransactionType.EXPENSE)
+        );
     }
 
     @Test
