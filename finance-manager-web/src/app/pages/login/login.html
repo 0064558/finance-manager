@@ -61,6 +61,12 @@
         </div>
       }
 
+      @if (successMessage()) {
+        <div class="success-alert" role="status" aria-live="polite">
+          {{ successMessage() }}
+        </div>
+      }
+
       <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
         <div class="form-field">
           <label for="email">E-mail</label>
@@ -154,6 +160,11 @@
           }
         </button>
       </form>
+
+      <p class="account-link">
+        Ainda não possui uma conta?
+        <a routerLink="/register">Criar cadastro</a>
+      </p>
 
       <p class="security-note">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">

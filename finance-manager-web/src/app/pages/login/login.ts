@@ -2,10 +2,10 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Auth } from '../../core/auth';
 import { finalize } from 'rxjs';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 @Component({
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-login',
   styleUrl: './login.css',
   templateUrl: './login.html',
@@ -23,6 +23,13 @@ export class Login {
 
   // Injeta o Router para navegação após o login bem-sucedido
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  protected readonly successMessage = signal(
+    this.route.snapshot.queryParamMap.get('registered') === 'true'
+      ? 'Cadastro realizado com sucesso. Faça login para continuar.'
+      : '',
+  );
 
   // Cria o formulário de login com validação para os campos de email e senha
   protected readonly loginForm = this.formBuilder.nonNullable.group({

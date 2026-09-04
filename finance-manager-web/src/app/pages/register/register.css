@@ -1,0 +1,335 @@
+:host {
+  --ink: #172033;
+  --muted: #697386;
+  --line: #dfe5ee;
+  --primary: #166b55;
+  --primary-dark: #105440;
+  --danger: #bd3d4d;
+  display: block;
+  min-height: 100dvh;
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+.auth-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(27rem, 0.92fr);
+  min-height: 100dvh;
+  background: #f7f9fc;
+}
+
+.brand-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: clamp(2.5rem, 7vw, 7rem);
+  color: #f5fffb;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 80% 12%, rgba(95, 205, 164, 0.27), transparent 30%),
+    linear-gradient(145deg, #0b3f33 0%, #12624e 52%, #17745b 100%);
+}
+
+.brand-panel::before,
+.brand-panel::after {
+  position: absolute;
+  z-index: -1;
+  border: 1px solid rgba(213, 255, 238, 0.13);
+  border-radius: 50%;
+  content: "";
+}
+
+.brand-panel::before {
+  width: 34rem;
+  height: 34rem;
+  right: -15rem;
+  bottom: -18rem;
+}
+
+.brand-panel::after {
+  width: 22rem;
+  height: 22rem;
+  right: -8rem;
+  bottom: -11rem;
+}
+
+.brand-content {
+  width: min(100%, 34rem);
+}
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: clamp(4rem, 9vh, 7.5rem);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brand-mark {
+  display: grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  place-items: center;
+  border-radius: 0.75rem;
+  color: #b9f5db;
+  background: rgba(225, 255, 242, 0.13);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  color: #4b997f;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.brand-panel .eyebrow {
+  color: #a8e9d0;
+}
+
+.brand-panel h1 {
+  max-width: 30rem;
+  margin: 0;
+  color: inherit;
+  font-size: clamp(2.65rem, 4.6vw, 4.35rem);
+  font-weight: 650;
+  line-height: 1.06;
+  letter-spacing: -0.065em;
+}
+
+.brand-copy {
+  max-width: 28rem;
+  margin: 1.6rem 0 0;
+  color: rgba(239, 255, 248, 0.73);
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+
+.register-panel {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  padding: clamp(1.5rem, 5vw, 5rem);
+  background: #f7f9fc;
+}
+
+.register-card {
+  width: min(100%, 31rem);
+  padding: clamp(1.75rem, 4vw, 3rem);
+  border: 1px solid rgba(220, 226, 235, 0.9);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 1.5rem 4rem rgba(27, 45, 72, 0.09);
+}
+
+.register-header {
+  margin-bottom: 1.8rem;
+}
+
+.register-header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.75rem, 3vw, 2.15rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.register-subtitle {
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.register-form {
+  display: grid;
+  gap: 1.05rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.form-field label {
+  color: #344054;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.form-field input {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  outline: 0;
+  color: var(--ink);
+  background: #fbfcfe;
+  font-size: 0.92rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.form-field input::placeholder {
+  color: #a8b0be;
+}
+
+.form-field input:focus {
+  border-color: #55a68a;
+  background: #fff;
+  box-shadow: 0 0 0 0.22rem rgba(38, 143, 107, 0.13);
+}
+
+.form-field input[aria-invalid="true"] {
+  border-color: #dc7180;
+}
+
+.field-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.2rem;
+  margin-top: 0.35rem;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.75rem;
+  color: #fff;
+  background: var(--primary);
+  box-shadow: 0 0.65rem 1.35rem rgba(22, 107, 85, 0.2);
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: var(--primary-dark);
+  box-shadow: 0 0.8rem 1.6rem rgba(22, 107, 85, 0.26);
+  transform: translateY(-1px);
+}
+
+.submit-button:focus-visible,
+.account-link a:focus-visible {
+  outline: 3px solid rgba(38, 143, 107, 0.3);
+  outline-offset: 3px;
+}
+
+.submit-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.alert {
+  margin-top: 1rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #f3c6cc;
+  border-radius: 0.75rem;
+  color: #9f3040;
+  background: #fff3f4;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.account-link {
+  margin: 1.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+.account-link a {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.account-link a:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+@media (max-width: 900px) {
+  .auth-page {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-panel {
+    min-height: 22rem;
+    padding: 2.75rem clamp(1.5rem, 7vw, 4rem);
+  }
+
+  .brand-lockup {
+    margin-bottom: 2.5rem;
+  }
+
+  .brand-panel h1 {
+    max-width: 38rem;
+    font-size: clamp(2.35rem, 7vw, 3.5rem);
+  }
+
+  .brand-copy {
+    max-width: 36rem;
+  }
+
+  .register-panel {
+    padding: 3.5rem 1.5rem 4.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-panel {
+    min-height: 17rem;
+    padding: 1.75rem 1.25rem 2.25rem;
+  }
+
+  .brand-lockup {
+    margin-bottom: 2rem;
+    font-size: 0.96rem;
+  }
+
+  .brand-mark {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+
+  .brand-panel h1 {
+    font-size: 2.2rem;
+  }
+
+  .brand-copy {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .register-panel {
+    align-items: start;
+    padding: 1.25rem 1rem 2.5rem;
+  }
+
+  .register-card {
+    padding: 1.5rem 1.15rem 1.35rem;
+    border-radius: 1.15rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .submit-button,
+  .form-field input {
+    transition: none;
+  }
+}

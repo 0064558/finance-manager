@@ -1,0 +1,143 @@
+<main class="auth-page register-page">
+  <section class="brand-panel" aria-labelledby="brand-title">
+    <div class="brand-content">
+      <div class="brand-lockup" aria-label="Finance Manager">
+        <span class="brand-mark" aria-hidden="true">FM</span>
+        <span>Finance Manager</span>
+      </div>
+
+      <p class="eyebrow">COMECE AGORA</p>
+      <h1 id="brand-title">Organize sua vida financeira com mais tranquilidade.</h1>
+      <p class="brand-copy">
+        Crie sua conta para acompanhar saldos, contas e transações em um só lugar.
+      </p>
+    </div>
+  </section>
+
+  <section class="register-panel" aria-labelledby="register-title">
+    <div class="register-card">
+      <div class="register-header">
+        <p class="eyebrow">NOVO POR AQUI?</p>
+        <h2 id="register-title">Crie sua conta</h2>
+        <p class="register-subtitle">
+          Preencha os dados abaixo para começar.
+        </p>
+      </div>
+
+      <form
+        class="register-form"
+        [formGroup]="registerForm"
+        (ngSubmit)="submit()"
+        novalidate
+      >
+        <div class="form-field">
+          <label for="name">Nome</label>
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            autocomplete="name"
+            placeholder="Como podemos chamar você?"
+            [attr.aria-invalid]="registerForm.controls.name.touched && registerForm.controls.name.invalid"
+          />
+
+          @if (registerForm.controls.name.touched && registerForm.controls.name.hasError('required')) {
+            <p class="field-error">O nome é obrigatório.</p>
+          }
+          @if (registerForm.controls.name.touched && registerForm.controls.name.hasError('minlength')) {
+            <p class="field-error">O nome deve ter pelo menos 2 caracteres.</p>
+          }
+          @if (registerForm.controls.name.touched && registerForm.controls.name.hasError('maxlength')) {
+            <p class="field-error">O nome deve ter no máximo 100 caracteres.</p>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="email">E-mail</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="seu@email.com"
+            [attr.aria-invalid]="registerForm.controls.email.touched && registerForm.controls.email.invalid"
+          />
+
+          @if (registerForm.controls.email.touched && registerForm.controls.email.hasError('required')) {
+            <p class="field-error">O e-mail é obrigatório.</p>
+          }
+          @if (registerForm.controls.email.touched && registerForm.controls.email.hasError('email')) {
+            <p class="field-error">Informe um e-mail válido.</p>
+          }
+          @if (registerForm.controls.email.touched && registerForm.controls.email.hasError('maxlength')) {
+            <p class="field-error">O e-mail deve ter no máximo 254 caracteres.</p>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="password">Senha</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            placeholder="Crie uma senha segura"
+            [attr.aria-invalid]="registerForm.controls.password.touched && registerForm.controls.password.invalid"
+          />
+
+          @if (registerForm.controls.password.touched && registerForm.controls.password.hasError('required')) {
+            <p class="field-error">A senha é obrigatória.</p>
+          }
+          @if (registerForm.controls.password.touched && registerForm.controls.password.hasError('minlength')) {
+            <p class="field-error">A senha deve ter pelo menos 8 caracteres.</p>
+          }
+          @if (registerForm.controls.password.touched && registerForm.controls.password.hasError('maxlength')) {
+            <p class="field-error">A senha deve ter no máximo 72 caracteres.</p>
+          }
+          @if (registerForm.controls.password.touched && registerForm.controls.password.hasError('pattern')) {
+            <p class="field-error">A senha deve conter pelo menos uma letra e um número.</p>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="confirmPassword">Confirmar senha</label>
+          <input
+            id="confirmPassword"
+            type="password"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+            placeholder="Digite a senha novamente"
+            [attr.aria-invalid]="registerForm.controls.confirmPassword.touched && (registerForm.controls.confirmPassword.invalid || registerForm.hasError('passwordsMismatch'))"
+          />
+
+          @if (registerForm.controls.confirmPassword.touched && registerForm.controls.confirmPassword.hasError('required')) {
+            <p class="field-error">Confirme sua senha.</p>
+          }
+          @if (registerForm.controls.confirmPassword.touched && registerForm.hasError('passwordsMismatch')) {
+            <p class="field-error">As senhas não coincidem.</p>
+          }
+        </div>
+
+        <button
+          class="submit-button"
+          type="submit"
+          [disabled]="isSubmitting()"
+          [attr.aria-busy]="isSubmitting()"
+        >
+          {{ isSubmitting() ? 'Criando conta...' : 'Criar conta' }}
+        </button>
+      </form>
+
+      @if (errorMessage()) {
+        <div class="alert" role="alert" aria-live="polite">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <p class="account-link">
+        Já possui uma conta?
+        <a routerLink="/login">Entrar</a>
+      </p>
+    </div>
+  </section>
+</main>

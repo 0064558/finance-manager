@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { Login } from './pages/login/login';
 import { Dashboard } from './pages/dashboard/dashboard';
 import { authGuard } from './core/auth-guard';
+import { Register } from './pages/register/register';
 
 export const routes: Routes = [
     {
@@ -18,5 +19,9 @@ export const routes: Routes = [
         component: Dashboard,
         // Aplica a guarda de rota para proteger a rota do dashboard, garantindo que apenas usuários autenticados possam acessá-la
         canActivate: [authGuard],
+    },
+    {
+        path: 'register',
+        component: Register,
     }
 ];

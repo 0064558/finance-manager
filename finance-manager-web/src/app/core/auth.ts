@@ -4,6 +4,8 @@ import { Observable, tap } from 'rxjs';
 import {
     LoginRequest,
     LoginResponse,
+    AuthUser,
+    RegisterRequest,
 } from './auth.models';
 
 @Service()
@@ -29,6 +31,10 @@ export class Auth {
                     );
                 }),
             );
+    }
+
+    register(request: RegisterRequest): Observable<AuthUser> {
+        return this.http.post<AuthUser>('/api/v1/auth/register', request);
     }
 
     getToken(): string | null {
