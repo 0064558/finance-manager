@@ -38,6 +38,8 @@ export class Register {
   protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal('');
 
+  // readonly serve para indicar que a propriedade não pode ser reatribuída após a inicialização, garantindo que o sinal seja imutável.
+
   // Cria o formulário de registro com validação para os campos de nome, email, senha e confirmação de senha
   protected readonly registerForm = this.formBuilder.nonNullable.group(
     {
@@ -95,19 +97,20 @@ export class Register {
     // Chama o método de registro do serviço de autenticação com os dados do formulário
     this.auth
       .register({ name, email, password })
-      // Finaliza o estado de envio quando a requisição é concluída, independentemente do resultado
+      // pipe é usado para encadear operadores que podem transformar, filtrar ou executar efeitos colaterais nos dados do Observable.
       .pipe(finalize(() => this.isSubmitting.set(false)))
+      // Assina o Observable retornado pelo método de registro para lidar com a resposta ou erro
       .subscribe({
+        // Se o registro for bem-sucedido, redireciona o usuário para a página de login com um parâmetro de consulta indicando sucesso
         next: () => {
           this.router.navigate(['/login'], {
             queryParams: { registered: 'true' },
           });
         },
+        // Se ocorrer um erro durante o registro, verifica o status e o código do erro para definir a mensagem de erro apropriada
         error: (error) => {
-          if (
-            error.status === 409 &&
-            error.error?.code === 'EMAIL_ALREADY_REGISTERED'
-          ) {
+          // Se o e-mail já estiver registrado, define uma mensagem de erro específica
+          if (error.status === 409 && error.error?.code === 'EMAIL_ALREADY_REGISTERED') {
             this.errorMessage.set('Este e-mail já está cadastrado.');
             return;
           }
@@ -118,7 +121,4 @@ export class Register {
         },
       });
   }
-
-
-
 }

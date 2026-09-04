@@ -20,7 +20,7 @@ export class Auth {
         return this.http
             // Realiza uma requisição POST para o endpoint de login da API, enviando os dados do formulário de login
             .post<LoginResponse>('/api/v1/auth/login', request)
-            // Armazena o token de acesso no armazenamento local quando a resposta for recebida
+            // Pipe é usado para encadear operadores que podem transformar, filtrar ou executar efeitos colaterais nos dados do Observable.
             .pipe(
                 // O operador tap é usado para executar efeitos colaterais sem alterar o fluxo de dados do Observable. 
                 // Neste caso, ele armazena o token de acesso no armazenamento local quando a resposta de login é recebida. 

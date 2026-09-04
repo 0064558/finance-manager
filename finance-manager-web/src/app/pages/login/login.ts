@@ -92,6 +92,7 @@ export class Login {
       });
   }
 
+  // Método para alternar a visibilidade da senha no formulário de login
   protected togglePasswordVisibility(): void {
     this.isPasswordVisible.update((visible) => !visible);
   }
