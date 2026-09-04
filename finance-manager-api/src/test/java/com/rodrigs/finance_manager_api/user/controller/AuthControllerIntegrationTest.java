@@ -89,6 +89,7 @@ class AuthControllerIntegrationTest extends PostgresIntegrationTest {
         mockMvc.perform(get("/api/v1/auth/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Rodrigo"))
                 .andExpect(jsonPath("$.email").value("login@email.com"));
     }
 

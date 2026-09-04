@@ -10,11 +10,13 @@ import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import com.rodrigs.finance_manager_api.shared.exception.EmailAlreadyRegisteredException;
 import com.rodrigs.finance_manager_api.shared.exception.InvalidCredentialsException;
+import com.rodrigs.finance_manager_api.shared.exception.UserNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -87,6 +89,14 @@ public class UserService {
                 jwtProperties.expirationSeconds(),
                 toResponse(user)
         );
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponseDTO findAuthenticatedUser(UUID authenticatedUserId) {
+        User user = userRepository.findById(authenticatedUserId)
+                .orElseThrow(UserNotFoundException::new);
+
+        return toResponse(user);
     }
 
     private UserResponseDTO toResponse(User user) {

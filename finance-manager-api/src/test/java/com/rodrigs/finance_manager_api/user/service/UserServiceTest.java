@@ -127,6 +127,18 @@ class UserServiceTest {
         verifyNoInteractions(jwtService);
     }
 
+    @Test
+    void shouldReturnAuthenticatedUserPublicData() {
+        User user = userWithId();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        UserResponseDTO response = userService.findAuthenticatedUser(user.getId());
+
+        assertThat(response.id()).isEqualTo(user.getId());
+        assertThat(response.name()).isEqualTo("Rodrigo");
+        assertThat(response.email()).isEqualTo("rodrigo@email.com");
+    }
+
     private User userWithId() {
         User user = new User("Rodrigo", "rodrigo@email.com", "hashed-password");
 

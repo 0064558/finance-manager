@@ -1,0 +1,71 @@
+<section class="transactions-panel" aria-labelledby="transactions-title">
+  <div class="transactions-heading">
+    <div class="panel-title-with-icon">
+      <span class="panel-title-icon" aria-hidden="true">
+        <svg lucideReceiptText></svg>
+      </span>
+      <div>
+        <h2 id="transactions-title">Transações recentes</h2>
+        <p>Últimas movimentações de {{ monthLabel }}</p>
+      </div>
+    </div>
+    <span class="transactions-count"> {{ transactions?.totalElements ?? 0 }} no período </span>
+  </div>
+
+  @if ((transactions?.content?.length ?? 0) > 0) {
+    <div class="transactions-table">
+      <div class="transactions-table-header" aria-hidden="true">
+        <span>Data</span>
+        <span>Descrição</span>
+        <span>Tipo</span>
+        <span>Valor</span>
+      </div>
+
+      @for (transaction of transactions?.content ?? []; track transaction.id) {
+        <article class="transaction-row">
+          <time [attr.datetime]="transaction.occurredOn">
+            {{ formatDate(transaction.occurredOn) }}
+          </time>
+
+          <div class="transaction-main">
+            <span
+              class="transaction-icon"
+              [class.transaction-icon--income]="transaction.type === 'INCOME'"
+              [class.transaction-icon--expense]="transaction.type === 'EXPENSE'"
+              aria-hidden="true"
+            >
+              @if (transaction.type === 'INCOME') {
+                <svg lucideArrowUpRight></svg>
+              } @else {
+                <svg lucideArrowDownLeft></svg>
+              }
+            </span>
+            <span class="transaction-copy">
+              <strong>{{ transaction.description || 'Sem descrição' }}</strong>
+              <small>{{ accountNameFor(transaction) }}</small>
+            </span>
+          </div>
+
+          <span
+            class="transaction-type"
+            [class.transaction-type--income]="transaction.type === 'INCOME'"
+            [class.transaction-type--expense]="transaction.type === 'EXPENSE'"
+          >
+            {{ transaction.type === 'INCOME' ? 'Receita' : 'Despesa' }}
+          </span>
+
+          <strong
+            class="transaction-amount"
+            [class.transaction-amount--income]="transaction.type === 'INCOME'"
+            [class.transaction-amount--expense]="transaction.type === 'EXPENSE'"
+          >
+            {{ transaction.type === 'INCOME' ? '+' : '−'
+            }}{{ transaction.amount | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          </strong>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="transactions-empty-state">Nenhuma transação encontrada em {{ monthLabel }}.</div>
+  }
+</section>

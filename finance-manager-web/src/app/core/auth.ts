@@ -1,47 +1,45 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import {
-    LoginRequest,
-    LoginResponse,
-    AuthUser,
-    RegisterRequest,
-} from './auth.models';
+import { LoginRequest, LoginResponse, AuthUser, RegisterRequest } from './auth.models';
 
 @Service()
 // Classe responsável por gerenciar a autenticação do usuário
 export class Auth {
-    // Injeta o HttpClient para realizar requisições HTTP
-    private readonly http = inject(HttpClient);
-    // Chave usada para armazenar o token de acesso no armazenamento local
-    private readonly tokenStorageKey = 'finance-manager.access-token';
+  // Injeta o HttpClient para realizar requisições HTTP
+  private readonly http = inject(HttpClient);
+  // Chave usada para armazenar o token de acesso no armazenamento local
+  private readonly tokenStorageKey = 'finance-manager.access-token';
 
-    login(request: LoginRequest): Observable<LoginResponse> {
-        return this.http
-            // Realiza uma requisição POST para o endpoint de login da API, enviando os dados do formulário de login
-            .post<LoginResponse>('/api/v1/auth/login', request)
-            // Pipe é usado para encadear operadores que podem transformar, filtrar ou executar efeitos colaterais nos dados do Observable.
-            .pipe(
-                // O operador tap é usado para executar efeitos colaterais sem alterar o fluxo de dados do Observable. 
-                // Neste caso, ele armazena o token de acesso no armazenamento local quando a resposta de login é recebida. 
-                tap((response) => {
-                    localStorage.setItem(
-                        this.tokenStorageKey,
-                        response.accessToken,
-                    );
-                }),
-            );
-    }
+  login(request: LoginRequest): Observable<LoginResponse> {
+    return (
+      this.http
+        // Realiza uma requisição POST para o endpoint de login da API, enviando os dados do formulário de login
+        .post<LoginResponse>('/api/v1/auth/login', request)
+        // Pipe é usado para encadear operadores que podem transformar, filtrar ou executar efeitos colaterais nos dados do Observable.
+        .pipe(
+          // O operador tap é usado para executar efeitos colaterais sem alterar o fluxo de dados do Observable.
+          // Neste caso, ele armazena o token de acesso no armazenamento local quando a resposta de login é recebida.
+          tap((response) => {
+            localStorage.setItem(this.tokenStorageKey, response.accessToken);
+          }),
+        )
+    );
+  }
 
-    register(request: RegisterRequest): Observable<AuthUser> {
-        return this.http.post<AuthUser>('/api/v1/auth/register', request);
-    }
+  register(request: RegisterRequest): Observable<AuthUser> {
+    return this.http.post<AuthUser>('/api/v1/auth/register', request);
+  }
 
-    getToken(): string | null {
-        return localStorage.getItem(this.tokenStorageKey);
-    }
+  getCurrentUser(): Observable<AuthUser> {
+    return this.http.get<AuthUser>('/api/v1/auth/me');
+  }
 
-    logout(): void {
-        localStorage.removeItem(this.tokenStorageKey);
-    }
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenStorageKey);
+  }
+
+  logout(): void {
+    localStorage.removeItem(this.tokenStorageKey);
+  }
 }

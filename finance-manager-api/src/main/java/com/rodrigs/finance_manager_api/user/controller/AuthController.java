@@ -71,7 +71,7 @@ public class AuthController {
     })
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/me")
-    public AuthenticatedUser me(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
-        return authenticatedUser;
+    public UserResponseDTO me(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+        return userService.findAuthenticatedUser(authenticatedUser.id());
     }
 }
