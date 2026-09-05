@@ -1,7 +1,7 @@
 <section class="dashboard-content" aria-labelledby="dashboard-title">
   <div class="page-heading">
     <div>
-      <p class="eyebrow">SEU RESUMO FINANCEIRO</p>
+      <p class="eyebrow"><span></span> SEU RESUMO FINANCEIRO</p>
       <h1 id="dashboard-title">Dashboard</h1>
       <p>Uma visão clara das suas movimentações e saldos.</p>
     </div>
@@ -15,7 +15,7 @@
       >
         <svg lucideChevronLeft aria-hidden="true"></svg>
       </button>
-      <span>{{ monthLabel() }}</span>
+      <span><svg lucideCalendarDays aria-hidden="true"></svg>{{ monthLabel() }}</span>
       <button
         type="button"
         [disabled]="isCurrentMonth() || isLoading()"
@@ -55,7 +55,7 @@
         <p>Disponível em todas as contas</p>
       </article>
 
-      <article class="stat-card">
+      <article class="stat-card stat-card--income">
         <div class="stat-card-heading">
           <span>Receitas</span>
           <span class="stat-icon stat-icon--income" aria-hidden="true">
@@ -68,7 +68,7 @@
         <p>{{ monthLabel() }}</p>
       </article>
 
-      <article class="stat-card">
+      <article class="stat-card stat-card--expense">
         <div class="stat-card-heading">
           <span>Despesas</span>
           <span class="stat-icon stat-icon--expense" aria-hidden="true">
@@ -96,66 +96,12 @@
     </section>
 
     <div class="dashboard-grid">
-      <section class="panel chart-panel" aria-labelledby="cash-flow-title">
-        <div class="panel-heading">
-          <div>
-            <h2 id="cash-flow-title">Fluxo de caixa</h2>
-            <p>Receitas e despesas por dia</p>
-          </div>
-          <span class="panel-period">{{ monthLabel() }}</span>
-        </div>
-
-        @if (hasCashFlowActivity()) {
-          <div
-            class="chart-scroll"
-            role="img"
-            [attr.aria-label]="'Fluxo de caixa de ' + monthLabel()"
-          >
-            <div class="chart-area">
-              <div class="chart-grid-lines" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <div class="chart-bars">
-                @for (point of cashFlow()?.points ?? []; track point.date) {
-                  <div class="chart-day" [attr.title]="cashFlowPointLabel(point)">
-                    <div class="bar-group">
-                      <span
-                        class="chart-bar chart-bar--income"
-                        [style.height.%]="barHeight(point.totalIncome)"
-                      ></span>
-                      <span
-                        class="chart-bar chart-bar--expense"
-                        [style.height.%]="barHeight(point.totalExpense)"
-                      ></span>
-                    </div>
-                    <span class="chart-day-label">{{ point.date.slice(8) }}</span>
-                  </div>
-                }
-              </div>
-            </div>
-          </div>
-          <div class="chart-legend" aria-label="Legenda do gráfico">
-            <span><i class="legend-dot legend-dot--income"></i>Receitas</span>
-            <span><i class="legend-dot legend-dot--expense"></i>Despesas</span>
-          </div>
-        } @else {
-          <div class="empty-state empty-state--chart">
-            <span class="empty-state-icon" aria-hidden="true">
-              <svg lucideChartNoAxesCombined></svg>
-            </span>
-            <div>
-              <strong>Sem movimentações em {{ monthLabel() }}</strong>
-              <p>O saldo atual continua considerando todo o histórico das suas contas.</p>
-            </div>
-            <button type="button" (click)="goToPreviousMonth()">
-              Ver {{ previousMonthLabel() }}
-            </button>
-          </div>
-        }
-      </section>
+      <app-cash-flow-chart
+        [points]="cashFlow()?.points ?? []"
+        [monthLabel]="monthLabel()"
+        [previousMonthLabel]="previousMonthLabel()"
+        (previousMonth)="goToPreviousMonth()"
+      />
 
       <section class="panel accounts-panel" aria-labelledby="accounts-title">
         <div class="panel-heading">
@@ -173,13 +119,20 @@
                 <span class="account-avatar" aria-hidden="true">
                   <svg lucideLandmark></svg>
                 </span>
-                <span class="account-name">{{ account.accountName }}</span>
+                <span class="account-copy"
+                  ><span class="account-name">{{ account.accountName }}</span
+                  ><small>Saldo disponível</small></span
+                >
                 <strong [class.value-negative]="account.balance < 0">
                   {{ account.balance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
                 </strong>
               </div>
             }
           </div>
+          <p class="accounts-note">
+            <svg lucideWalletCards aria-hidden="true"></svg>Os saldos consideram todo o histórico,
+            independentemente do mês selecionado.
+          </p>
         } @else {
           <div class="empty-state">Você ainda não cadastrou nenhuma conta.</div>
         }

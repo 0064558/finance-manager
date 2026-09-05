@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { Login } from './pages/login/login';
-import { Dashboard } from './pages/dashboard/dashboard';
 import { authGuard } from './core/auth-guard';
 import { Register } from './pages/register/register';
 import { AppShell } from './layout/app-shell/app-shell';
@@ -27,7 +26,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
-        component: Dashboard,
+        loadComponent: () => import('./pages/dashboard/dashboard').then((page) => page.Dashboard),
       },
     ],
   },

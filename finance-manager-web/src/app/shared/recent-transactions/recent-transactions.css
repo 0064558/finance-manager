@@ -1,14 +1,14 @@
 :host {
   display: block;
-  margin-top: 1rem;
+  margin-top: 1.2rem;
 }
 
 .transactions-panel {
   overflow: hidden;
-  border: 1px solid rgba(222, 229, 236, 0.98);
-  border-radius: 1.1rem;
+  border: 1px solid #e3e9e7;
+  border-radius: 1.25rem;
   background: var(--surface);
-  box-shadow: 0 0.75rem 2.3rem rgba(27, 45, 72, 0.045);
+  box-shadow: 0 4px 24px #183e2e04;
 }
 
 .transactions-heading {
@@ -81,7 +81,7 @@
   min-height: 2.7rem;
   padding: 0 1.4rem;
   color: #8d97a6;
-  background: #fafbfd;
+  background: #f8faf8;
   font-size: 0.66rem;
   font-weight: 750;
   letter-spacing: 0.04em;

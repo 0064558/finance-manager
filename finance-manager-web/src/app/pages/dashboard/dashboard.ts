@@ -1,7 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
-  LucideChartNoAxesCombined,
+  LucideCalendarDays,
   LucideChevronLeft,
   LucideChevronRight,
   LucideLandmark,
@@ -13,21 +13,17 @@ import {
 } from '@lucide/angular';
 import { finalize, forkJoin } from 'rxjs';
 import { Report } from '../../core/report';
-import {
-  CashFlowPoint,
-  CashFlowResponse,
-  CurrentBalance,
-  ReportSummary,
-} from '../../core/report.models';
+import { CashFlowResponse, CurrentBalance, ReportSummary } from '../../core/report.models';
 import { TransactionApi } from '../../core/transaction';
 import { PageResponse, TransactionResponse } from '../../core/transaction.models';
 import { RecentTransactions } from '../../shared/recent-transactions/recent-transactions';
+import { CashFlowChart } from '../../shared/cash-flow-chart/cash-flow-chart';
 
 @Component({
   selector: 'app-dashboard',
   imports: [
     CurrencyPipe,
-    LucideChartNoAxesCombined,
+    LucideCalendarDays,
     LucideChevronLeft,
     LucideChevronRight,
     LucideLandmark,
@@ -37,6 +33,7 @@ import { RecentTransactions } from '../../shared/recent-transactions/recent-tran
     LucideTrendingUp,
     LucideWalletCards,
     RecentTransactions,
+    CashFlowChart,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
@@ -48,11 +45,6 @@ export class Dashboard implements OnInit {
   private readonly monthFormatter = new Intl.DateTimeFormat('pt-BR', {
     month: 'long',
     year: 'numeric',
-  });
-
-  private readonly currencyFormatter = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
   });
 
   protected readonly isLoading = signal(true);
@@ -79,19 +71,6 @@ export class Dashboard implements OnInit {
     return selectedMonth.getTime() === currentMonth.getTime();
   });
 
-  protected readonly hasCashFlowActivity = computed(() =>
-    (this.cashFlow()?.points ?? []).some(
-      (point) => point.totalIncome > 0 || point.totalExpense > 0,
-    ),
-  );
-
-  protected readonly maxCashFlowValue = computed(() => {
-    const points = this.cashFlow()?.points ?? [];
-    const values = points.flatMap((point) => [point.totalIncome, point.totalExpense]);
-
-    return Math.max(...values, 1);
-  });
-
   ngOnInit(): void {
     this.loadDashboard();
   }
@@ -108,20 +87,6 @@ export class Dashboard implements OnInit {
     if (!this.isCurrentMonth()) {
       this.changeMonth(1);
     }
-  }
-
-  protected barHeight(value: number): number {
-    if (value === 0) {
-      return 0;
-    }
-
-    return Math.max((value / this.maxCashFlowValue()) * 100, 6);
-  }
-
-  protected cashFlowPointLabel(point: CashFlowPoint): string {
-    const date = new Intl.DateTimeFormat('pt-BR').format(new Date(`${point.date}T00:00:00`));
-
-    return `${date}: receitas ${this.currencyFormatter.format(point.totalIncome)}; despesas ${this.currencyFormatter.format(point.totalExpense)}`;
   }
 
   private changeMonth(offset: number): void {

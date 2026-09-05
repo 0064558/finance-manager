@@ -1,0 +1,186 @@
+<section class="cash-flow-panel" aria-label="Fluxo de caixa">
+  <header class="chart-heading">
+    <div>
+      <h2>Fluxo de caixa</h2>
+      <p>As entradas e saídas do seu mês, dia a dia.</p>
+    </div>
+    <div class="view-switcher" role="group" aria-label="Visualização do gráfico">
+      <button
+        type="button"
+        [class.is-selected]="view() === 'bars'"
+        [attr.aria-pressed]="view() === 'bars'"
+        (click)="view.set('bars')"
+      >
+        <svg lucideChartColumnIncreasing aria-hidden="true"></svg>Barras
+      </button>
+      <button
+        type="button"
+        [class.is-selected]="view() === 'lines'"
+        [attr.aria-pressed]="view() === 'lines'"
+        (click)="view.set('lines')"
+      >
+        <svg lucideChartNoAxesCombined aria-hidden="true"></svg>Linhas
+      </button>
+    </div>
+  </header>
+
+  <div class="chart-totals" aria-label="Totais no período e legenda">
+    <div>
+      <span><i class="legend-mark income-mark"></i>Receitas</span
+      ><strong>{{ money(totals().income) }}</strong>
+    </div>
+    <div>
+      <span><i class="legend-mark expense-mark"></i>Despesas</span
+      ><strong>{{ money(totals().expense) }}</strong>
+    </div>
+    <span class="chart-period">{{ monthLabel() }}</span>
+  </div>
+
+  <div class="chart-body" [class.chart-body--empty]="!hasActivity()">
+    <span class="axis-unit" aria-hidden="true">R$</span>
+    <div class="y-axis" aria-hidden="true">
+      @for (tick of ticks(); track tick.position) {
+        <span [style.top.%]="tick.position">{{ tick.label }}</span>
+      }
+    </div>
+    <div
+      class="plot"
+      role="group"
+      [attr.tabindex]="hasActivity() ? 0 : null"
+      [attr.aria-label]="
+        'Gráfico diário de ' + monthLabel() + '. Use as setas para consultar os dias.'
+      "
+      (pointermove)="selectFromPointer($event)"
+      (pointerdown)="selectFromPointer($event)"
+      (pointerleave)="clearHover($event)"
+      (keydown)="handleKeyboard($event)"
+      (blur)="activeDate.set(null)"
+    >
+      <div class="grid-lines" aria-hidden="true">
+        @for (tick of ticks(); track tick.position) {
+          <span [style.top.%]="tick.position"></span>
+        }
+      </div>
+      <svg class="chart-svg" viewBox="0 0 1000 240" preserveAspectRatio="none" aria-hidden="true">
+        @if (view() === 'bars') {
+          @for (bar of bars(); track bar.date) {
+            <g class="bar-pair" [class.is-muted]="activePoint() && activeDate() !== bar.date">
+              <rect
+                class="income-bar"
+                [attr.x]="bar.x - bar.width - 1.5"
+                [attr.y]="240 - bar.incomeHeight"
+                [attr.width]="bar.width"
+                [attr.height]="bar.incomeHeight"
+                rx="3"
+              />
+              <rect
+                class="expense-bar"
+                [attr.x]="bar.x + 1.5"
+                [attr.y]="240 - bar.expenseHeight"
+                [attr.width]="bar.width"
+                [attr.height]="bar.expenseHeight"
+                rx="3"
+              />
+            </g>
+          }
+        } @else {
+          <path class="income-area" [attr.d]="incomeArea()" />
+          <path class="expense-area" [attr.d]="expenseArea()" />
+          <path class="income-line" [attr.d]="incomeLine()" vector-effect="non-scaling-stroke" />
+          <path class="expense-line" [attr.d]="expenseLine()" vector-effect="non-scaling-stroke" />
+        }
+      </svg>
+      @if (activePoint(); as point) {
+        @if (hasActivity()) {
+          <div class="crosshair" [style.left.%]="activeX()" aria-hidden="true"></div>
+          @if (view() === 'lines') {
+            <span
+              class="point-marker point-marker--income"
+              [style.left.%]="activeX()"
+              [style.top.%]="yPercent(point.totalIncome)"
+              aria-hidden="true"
+            ></span>
+            <span
+              class="point-marker point-marker--expense"
+              [style.left.%]="activeX()"
+              [style.top.%]="yPercent(point.totalExpense)"
+              aria-hidden="true"
+            ></span>
+          }
+          <div
+            class="chart-tooltip"
+            [style.left.%]="tooltipX()"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <strong>{{ dateLabel(point.date) }}</strong>
+            <span
+              ><i class="legend-mark income-mark"></i>Receitas<b>{{
+                money(point.totalIncome)
+              }}</b></span
+            >
+            <span
+              ><i class="legend-mark expense-mark"></i>Despesas<b>{{
+                money(point.totalExpense)
+              }}</b></span
+            >
+            <span class="tooltip-net"
+              >Saldo do dia<b>{{ money(point.netBalance) }}</b></span
+            >
+          </div>
+        }
+      }
+    </div>
+    <div class="x-axis" aria-hidden="true">
+      @for (label of dateLabels(); track label.position) {
+        <span [style.left.%]="label.position">{{ label.label }}</span>
+      }
+    </div>
+    @if (!hasActivity()) {
+      <div class="chart-empty">
+        <span class="empty-icon"><svg lucideChartNoAxesCombined aria-hidden="true"></svg></span>
+        <strong>Um mês ainda sem movimentações</strong>
+        <p>Nenhuma receita ou despesa em {{ monthLabel() }}.</p>
+        <button type="button" (click)="previousMonth.emit()">Ver {{ previousMonthLabel() }}</button>
+      </div>
+    }
+  </div>
+
+  <footer class="chart-footer">
+    @if (hasActivity()) {
+      <span>Passe o cursor ou toque para ver os valores.</span>
+      <details>
+        <summary>Ver dados</summary>
+        <div class="data-table-wrapper">
+          <table>
+            <caption>
+              Movimentações diárias de
+              {{
+                monthLabel()
+              }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Dia</th>
+                <th scope="col">Receitas</th>
+                <th scope="col">Despesas</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (point of points(); track point.date) {
+                <tr>
+                  <th scope="row">{{ dateLabel(point.date) }}</th>
+                  <td>{{ money(point.totalIncome) }}</td>
+                  <td>{{ money(point.totalExpense) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </details>
+    } @else {
+      <span>O saldo atual das contas considera todo o histórico.</span>
+    }
+  </footer>
+</section>
