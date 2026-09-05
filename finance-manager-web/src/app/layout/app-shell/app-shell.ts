@@ -37,6 +37,10 @@ import { AuthUser } from '../../core/auth.models';
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.css',
 })
+// AppShell é um componente Angular que serve como moldura principal da aplicação, fornecendo uma barra lateral de navegação,
+// um cabeçalho e um espaço para exibir o conteúdo das páginas filhas. Ele gerencia o estado da barra lateral (colapsada ou expandida),
+// o menu móvel (aberto ou fechado) e as informações do usuário autenticado. O componente também lida com eventos de teclado e redimensionamento
+// da janela para melhorar a experiência do usuário em diferentes dispositivos.
 export class AppShell implements OnInit {
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
