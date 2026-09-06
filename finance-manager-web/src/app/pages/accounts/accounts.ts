@@ -12,7 +12,6 @@ import { Report } from '../../core/report';
 import { CurrencyPipe } from '@angular/common';
 import {
   LucideAlertCircle,
-  LucideArrowUpRight,
   LucideBanknote,
   LucideLandmark,
   LucidePiggyBank,
@@ -32,7 +31,6 @@ interface AccountViewModel extends FinancialAccount {
     CurrencyPipe,
     ReactiveFormsModule,
     LucideAlertCircle,
-    LucideArrowUpRight,
     LucideBanknote,
     LucideLandmark,
     LucidePiggyBank,
@@ -124,6 +122,7 @@ export class Accounts implements OnInit {
     return labels[type];
   }
 
+  // Formulário reativo para criar uma nova conta financeira, incluindo validação de campos como nome, tipo e saldo inicial.
   protected readonly accountForm = this.formBuilder.nonNullable.group({
     name: [
       '',

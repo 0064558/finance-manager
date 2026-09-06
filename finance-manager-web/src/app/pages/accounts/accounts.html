@@ -8,18 +8,35 @@
       </p>
     </div>
 
-    @if (!isLoading() && !errorMessage() && accounts().length > 0) {
-      <div class="heading-summary">
-        <span>{{ accounts().length }} {{ accounts().length === 1 ? 'conta cadastrada' : 'contas cadastradas' }}</span>
-        <strong>{{ totalBalance() | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
-      </div>
-    }
-
     <button class="primary-button" type="button" (click)="openCreateForm()">
       <svg lucidePlus aria-hidden="true"></svg>
       Nova conta
     </button>
   </div>
+
+  @if (!isLoading() && !errorMessage() && accounts().length > 0) {
+    <section class="accounts-overview" aria-label="Resumo das contas">
+      <div class="overview-item overview-item--balance">
+        <span class="overview-icon" aria-hidden="true"><svg lucideWalletCards></svg></span>
+        <div>
+          <span>Saldo total disponível</span>
+          <strong [class.value-negative]="totalBalance() < 0">
+            {{ totalBalance() | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          </strong>
+        </div>
+      </div>
+
+      <div class="overview-divider" aria-hidden="true"></div>
+
+      <div class="overview-item overview-item--count">
+        <strong>{{ accounts().length }}</strong>
+        <div>
+          <span>{{ accounts().length === 1 ? 'Conta cadastrada' : 'Contas cadastradas' }}</span>
+          <small>Incluída no saldo total</small>
+        </div>
+      </div>
+    </section>
+  }
 
   @if (isLoading()) {
     <div class="account-grid" aria-label="Carregando contas" aria-busy="true">
@@ -77,9 +94,6 @@
               <span>{{ accountTypeLabel(account.type) }}</span>
             </div>
 
-            <button class="account-action" type="button" disabled aria-label="Ações da conta">
-              <svg lucideArrowUpRight aria-hidden="true"></svg>
-            </button>
           </div>
 
           <div class="balance-block">
@@ -97,10 +111,6 @@
       }
     </div>
 
-    <section class="next-step-hint" aria-label="Próximo passo">
-      <span class="hint-icon" aria-hidden="true"><svg lucideWalletCards></svg></span>
-      <p><strong>Próximo passo:</strong> em breve você poderá criar, editar e organizar suas contas por aqui.</p>
-    </section>
   }
 </section>
 
