@@ -91,10 +91,17 @@
           <span>{{ accountTypeLabel(account.type) }}</span>
         </div>
 
-        <button class="account-action" type="button" [attr.aria-label]="'Editar conta ' + account.name"
-          (click)="openEditForm(account)">
-          <svg lucidePencil aria-hidden="true"></svg>
-        </button>
+        <div class="account-actions">
+          <button class="account-action" type="button" [attr.aria-label]="'Editar conta ' + account.name"
+            (click)="openEditForm(account)">
+            <svg lucidePencil aria-hidden="true"></svg>
+          </button>
+
+          <button class="account-action account-action--danger" type="button"
+            [attr.aria-label]="'Excluir conta ' + account.name" (click)="openDeleteConfirmation(account)">
+            <svg lucideTrash2 aria-hidden="true"></svg>
+          </button>
+        </div>
 
       </div>
 
@@ -178,6 +185,38 @@
         </button>
       </div>
     </form>
+  </section>
+</div>
+}
+
+@if (accountPendingDeletion(); as account) {
+<div class="modal-backdrop" (click)="closeDeleteConfirmation()">
+  <section class="delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title"
+    aria-describedby="delete-dialog-description" (click)="$event.stopPropagation()">
+    <span class="delete-icon" aria-hidden="true">
+      <svg lucideTrash2></svg>
+    </span>
+
+    <h2 id="delete-dialog-title">Excluir “{{ account.name }}”?</h2>
+
+    <p id="delete-dialog-description">
+      Essa ação não poderá ser desfeita. Contas com transações não podem ser excluídas.
+    </p>
+
+    @if (deleteError()) {
+    <p class="form-error" role="alert">{{ deleteError() }}</p>
+    }
+
+    <div class="dialog-actions">
+      <button class="secondary-button" type="button" [disabled]="isDeleting()"
+        (click)="closeDeleteConfirmation()">
+        Cancelar
+      </button>
+
+      <button class="danger-button" type="button" [disabled]="isDeleting()" (click)="confirmDelete()">
+        {{ isDeleting() ? 'Excluindo...' : 'Excluir conta' }}
+      </button>
+    </div>
   </section>
 </div>
 }

@@ -2,6 +2,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin, finalize } from 'rxjs';
 
+import { HttpErrorResponse } from '@angular/common/http';
+
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import {
   AccountType,
@@ -17,6 +19,7 @@ import {
   LucidePiggyBank,
   LucidePlus,
   LucideRefreshCw,
+  LucideTrash2,
   LucideWalletCards,
   LucideX,
 } from '@lucide/angular';
@@ -24,7 +27,6 @@ import {
 interface AccountViewModel extends FinancialAccount {
   currentBalance: number;
 }
-
 @Component({
   selector: 'app-accounts',
   imports: [
@@ -37,6 +39,7 @@ interface AccountViewModel extends FinancialAccount {
     LucidePiggyBank,
     LucidePlus,
     LucideRefreshCw,
+    LucideTrash2,
     LucideWalletCards,
     LucideX,
     LucidePencil,
@@ -66,6 +69,13 @@ export class Accounts implements OnInit {
   // Sinais para gerenciar o estado da conta selecionada para edição e se o formulário de edição está aberto.
   protected readonly selectedAccount = signal<AccountViewModel | null>(null);
   protected readonly isEditing = computed(() => this.selectedAccount() !== null);
+
+  // Sinal para gerenciar o estado da conta pendente de exclusão, incluindo a conta selecionada e se a exclusão está em andamento.
+  protected readonly accountPendingDeletion = signal<AccountViewModel | null>(null);
+
+  // Sinais para gerenciar o estado de exclusão de uma conta, incluindo se a exclusão está em andamento e mensagens de erro relacionadas à exclusão.
+  protected readonly isDeleting = signal(false);
+  protected readonly deleteError = signal('');
 
   // O método ngOnInit é chamado quando o componente é inicializado, e aqui ele chama o método para carregar as contas financeiras.
   ngOnInit(): void {
@@ -178,14 +188,64 @@ export class Accounts implements OnInit {
   }
 
   protected closeAccountForm(): void {
-  if (this.isSubmitting()) {
-    return;
+    if (this.isSubmitting()) {
+      return;
+    }
+
+    this.isFormOpen.set(false);
+    this.selectedAccount.set(null);
+    this.formError.set('');
   }
 
-  this.isFormOpen.set(false);
-  this.selectedAccount.set(null);
-  this.formError.set('');
-}
+  protected openDeleteConfirmation(account: AccountViewModel): void {
+    this.accountPendingDeletion.set(account);
+    this.deleteError.set('');
+  }
+
+  protected closeDeleteConfirmation(): void {
+    if (this.isDeleting()) {
+      return;
+    }
+
+    this.accountPendingDeletion.set(null);
+    this.deleteError.set('');
+  }
+
+  protected confirmDelete(): void {
+    const account = this.accountPendingDeletion();
+
+    if (!account) {
+      return;
+    }
+
+    this.isDeleting.set(true);
+    this.deleteError.set('');
+
+    this.accountApi
+      .delete(account.id)
+      .pipe(finalize(() => this.isDeleting.set(false)))
+      .subscribe({
+        next: () => {
+          this.accountPendingDeletion.set(null);
+          this.loadAccounts();
+        },
+        error: (error: HttpErrorResponse) => {
+          if (
+            error.status === 409 &&
+            error.error?.code === 'FINANCIAL_ACCOUNT_HAS_TRANSACTIONS'
+          ) {
+            this.deleteError.set(
+              'Esta conta possui transações e não pode ser excluída.',
+            );
+            return;
+          }
+
+          this.deleteError.set(
+            'Não foi possível excluir esta conta.',
+          );
+        },
+      });
+  }
 
   // Método protegido para enviar os dados do formulário de criação de conta para a API,
   // lidando com o estado de envio e mensagens de erro conforme necessário.
@@ -214,7 +274,18 @@ export class Accounts implements OnInit {
           this.selectedAccount.set(null);
           this.loadAccounts();
         },
-        error: () => {
+        error: (error: HttpErrorResponse) => {
+          if (
+            selectedAccount &&
+            error.status === 409 &&
+            error.error?.code === 'FINANCIAL_ACCOUNT_HAS_TRANSACTIONS'
+          ) {
+            this.formError.set(
+              'O saldo inicial não pode ser alterado porque esta conta possui transações.',
+            );
+            return;
+          }
+
           this.formError.set(
             selectedAccount
               ? 'Não foi possível atualizar esta conta.'
