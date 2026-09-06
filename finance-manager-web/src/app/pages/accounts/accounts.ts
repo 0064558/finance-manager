@@ -1,8 +1,13 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin, finalize } from 'rxjs';
 
 import { FinancialAccountApi } from '../../core/financial-accounts';
-import { FinancialAccount } from '../../core/financial-account.models';
+import {
+  AccountType,
+  CreateFinancialAccountRequest,
+  FinancialAccount,
+} from '../../core/financial-account.models';
 import { Report } from '../../core/report';
 import { CurrencyPipe } from '@angular/common';
 import {
@@ -11,8 +16,10 @@ import {
   LucideBanknote,
   LucideLandmark,
   LucidePiggyBank,
+  LucidePlus,
   LucideRefreshCw,
   LucideWalletCards,
+  LucideX,
 } from '@lucide/angular';
 
 interface AccountViewModel extends FinancialAccount {
@@ -23,13 +30,16 @@ interface AccountViewModel extends FinancialAccount {
   selector: 'app-accounts',
   imports: [
     CurrencyPipe,
+    ReactiveFormsModule,
     LucideAlertCircle,
     LucideArrowUpRight,
     LucideBanknote,
     LucideLandmark,
     LucidePiggyBank,
+    LucidePlus,
     LucideRefreshCw,
     LucideWalletCards,
+    LucideX,
   ],
   templateUrl: './accounts.html',
   styleUrl: './accounts.css',
@@ -37,6 +47,7 @@ interface AccountViewModel extends FinancialAccount {
 // Accounts é um componente Angular que exibe uma lista de contas financeiras, 
 // incluindo informações como nome, tipo, saldo inicial e saldo atual.
 export class Accounts implements OnInit {
+  private readonly formBuilder = inject(FormBuilder);
   // Injeção de dependências para interagir com a API de contas financeiras e gerar relatórios.
   private readonly accountApi = inject(FinancialAccountApi);
   private readonly report = inject(Report);
@@ -45,6 +56,9 @@ export class Accounts implements OnInit {
   protected readonly accounts = signal<AccountViewModel[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal('');
+  protected readonly isFormOpen = signal(false);
+  protected readonly isSubmitting = signal(false);
+  protected readonly formError = signal('');
   protected readonly totalBalance = computed(() =>
     this.accounts().reduce((total, account) => total + account.currentBalance, 0),
   );
@@ -108,5 +122,66 @@ export class Accounts implements OnInit {
     };
 
     return labels[type];
+  }
+
+  protected readonly accountForm = this.formBuilder.nonNullable.group({
+    name: [
+      '',
+      [Validators.required, Validators.minLength(2), Validators.maxLength(100)],
+    ],
+    type: ['CHECKING' as AccountType, [Validators.required]],
+    initialBalance: [
+      0,
+      [
+        Validators.required,
+        Validators.min(-99999999999999999.99),
+        Validators.max(99999999999999999.99),
+      ],
+    ],
+  });
+
+  protected openCreateForm(): void {
+    this.formError.set('');
+    this.accountForm.reset({
+      name: '',
+      type: 'CHECKING',
+      initialBalance: 0,
+    });
+    this.isFormOpen.set(true);
+  }
+
+  protected closeCreateForm(): void {
+    if (this.isSubmitting()) {
+      return;
+    }
+
+    this.isFormOpen.set(false);
+    this.formError.set('');
+  }
+
+  protected submitAccount(): void {
+    if (this.accountForm.invalid) {
+      this.accountForm.markAllAsTouched();
+      return;
+    }
+
+    const request: CreateFinancialAccountRequest =
+      this.accountForm.getRawValue();
+
+    this.isSubmitting.set(true);
+    this.formError.set('');
+
+    this.accountApi
+      .create(request)
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: () => {
+          this.isFormOpen.set(false);
+          this.loadAccounts();
+        },
+        error: () => {
+          this.formError.set('Não foi possível criar esta conta.');
+        },
+      });
   }
 }

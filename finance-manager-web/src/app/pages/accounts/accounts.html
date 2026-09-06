@@ -14,6 +14,11 @@
         <strong>{{ totalBalance() | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
       </div>
     }
+
+    <button class="primary-button" type="button" (click)="openCreateForm()">
+      <svg lucidePlus aria-hidden="true"></svg>
+      Nova conta
+    </button>
   </div>
 
   @if (isLoading()) {
@@ -98,3 +103,85 @@
     </section>
   }
 </section>
+
+@if (isFormOpen()) {
+  <div class="modal-backdrop" (click)="closeCreateForm()">
+    <section
+      class="account-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="account-dialog-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">NOVA CONTA</p>
+          <h2 id="account-dialog-title">Cadastre uma conta</h2>
+          <p>Informe os dados iniciais para acompanhar seu saldo.</p>
+        </div>
+        <button class="dialog-close" type="button" aria-label="Fechar formulário" (click)="closeCreateForm()">
+          <svg lucideX aria-hidden="true"></svg>
+        </button>
+      </div>
+
+      <form class="account-form" [formGroup]="accountForm" (ngSubmit)="submitAccount()" novalidate>
+        <label class="form-field">
+          <span>Nome da conta</span>
+          <input
+            type="text"
+            formControlName="name"
+            placeholder="Ex.: Nubank"
+            autocomplete="off"
+          />
+          @if (accountForm.controls.name.invalid && accountForm.controls.name.touched) {
+            <small>Digite um nome entre 2 e 100 caracteres.</small>
+          }
+        </label>
+
+        <label class="form-field">
+          <span>Tipo de conta</span>
+          <select formControlName="type">
+            <option value="CASH">Dinheiro</option>
+            <option value="CHECKING">Conta corrente</option>
+            <option value="SAVINGS">Poupança</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span>Saldo inicial</span>
+          <div class="money-input">
+            <span aria-hidden="true">R$</span>
+            <input
+              type="number"
+              formControlName="initialBalance"
+              min="-99999999999999999.99"
+              max="99999999999999999.99"
+              step="0.01"
+              inputmode="decimal"
+            />
+          </div>
+          @if (accountForm.controls.initialBalance.invalid && accountForm.controls.initialBalance.touched) {
+            <small>Informe um saldo válido com até duas casas decimais.</small>
+          }
+        </label>
+
+        @if (formError()) {
+          <p class="form-error" role="alert">{{ formError() }}</p>
+        }
+
+        <div class="dialog-actions">
+          <button class="secondary-button" type="button" (click)="closeCreateForm()" [disabled]="isSubmitting()">
+            Cancelar
+          </button>
+          <button class="primary-button" type="submit" [disabled]="isSubmitting()">
+            @if (isSubmitting()) {
+              Salvando...
+            } @else {
+              Criar conta
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
