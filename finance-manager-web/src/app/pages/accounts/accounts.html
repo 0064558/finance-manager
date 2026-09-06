@@ -15,183 +15,169 @@
   </div>
 
   @if (!isLoading() && !errorMessage() && accounts().length > 0) {
-    <section class="accounts-overview" aria-label="Resumo das contas">
-      <div class="overview-item overview-item--balance">
-        <span class="overview-icon" aria-hidden="true"><svg lucideWalletCards></svg></span>
-        <div>
-          <span>Saldo total disponível</span>
-          <strong [class.value-negative]="totalBalance() < 0">
-            {{ totalBalance() | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
-          </strong>
-        </div>
+  <section class="accounts-overview" aria-label="Resumo das contas">
+    <div class="overview-item overview-item--balance">
+      <span class="overview-icon" aria-hidden="true"><svg lucideWalletCards></svg></span>
+      <div>
+        <span>Saldo total disponível</span>
+        <strong [class.value-negative]="totalBalance() < 0">
+          {{ totalBalance() | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+        </strong>
       </div>
+    </div>
 
-      <div class="overview-divider" aria-hidden="true"></div>
+    <div class="overview-divider" aria-hidden="true"></div>
 
-      <div class="overview-item overview-item--count">
-        <strong>{{ accounts().length }}</strong>
-        <div>
-          <span>{{ accounts().length === 1 ? 'Conta cadastrada' : 'Contas cadastradas' }}</span>
-          <small>Incluída no saldo total</small>
-        </div>
+    <div class="overview-item overview-item--count">
+      <strong>{{ accounts().length }}</strong>
+      <div>
+        <span>{{ accounts().length === 1 ? 'Conta cadastrada' : 'Contas cadastradas' }}</span>
+        <small>Incluída no saldo total</small>
       </div>
-    </section>
+    </div>
+  </section>
   }
 
   @if (isLoading()) {
-    <div class="account-grid" aria-label="Carregando contas" aria-busy="true">
-      @for (placeholder of [1, 2, 3]; track placeholder) {
-        <article class="account-card account-card--skeleton">
-          <div class="skeleton skeleton-icon"></div>
-          <div class="skeleton skeleton-title"></div>
-          <div class="skeleton skeleton-label"></div>
-          <div class="skeleton skeleton-value"></div>
-        </article>
-      }
-    </div>
+  <div class="account-grid" aria-label="Carregando contas" aria-busy="true">
+    @for (placeholder of [1, 2, 3]; track placeholder) {
+    <article class="account-card account-card--skeleton">
+      <div class="skeleton skeleton-icon"></div>
+      <div class="skeleton skeleton-title"></div>
+      <div class="skeleton skeleton-label"></div>
+      <div class="skeleton skeleton-value"></div>
+    </article>
+    }
+  </div>
   } @else if (errorMessage()) {
-    <section class="state-panel state-panel--error" role="alert">
-      <span class="state-icon" aria-hidden="true"><svg lucideAlertCircle></svg></span>
-      <div>
-        <h2>Não foi possível carregar as contas</h2>
-        <p>{{ errorMessage() }}</p>
-      </div>
-      <button class="secondary-button" type="button" (click)="loadAccounts()">
-        <svg lucideRefreshCw aria-hidden="true"></svg>
-        Tentar novamente
-      </button>
-    </section>
-  } @else if (accounts().length === 0) {
-    <section class="state-panel state-panel--empty">
-      <span class="state-icon" aria-hidden="true"><svg lucideWalletCards></svg></span>
-      <div>
-        <h2>Nenhuma conta cadastrada</h2>
-        <p>Quando você criar sua primeira conta, ela aparecerá aqui com o saldo atualizado.</p>
-      </div>
-    </section>
-  } @else {
-    <div class="account-grid">
-      @for (account of accounts(); track account.id) {
-        <article
-          class="account-card"
-          [class.account-card--checking]="account.type === 'CHECKING'"
-          [class.account-card--savings]="account.type === 'SAVINGS'"
-          [class.account-card--negative]="account.currentBalance < 0"
-        >
-          <div class="account-card-header">
-            <span class="account-icon" aria-hidden="true">
-              @if (account.type === 'CASH') {
-                <svg lucideBanknote></svg>
-              } @else if (account.type === 'CHECKING') {
-                <svg lucideLandmark></svg>
-              } @else {
-                <svg lucidePiggyBank></svg>
-              }
-            </span>
-
-            <div class="account-heading">
-              <h2>{{ account.name }}</h2>
-              <span>{{ accountTypeLabel(account.type) }}</span>
-            </div>
-
-          </div>
-
-          <div class="balance-block">
-            <span class="balance-label">Saldo atual</span>
-            <strong [class.value-negative]="account.currentBalance < 0">
-              {{ account.currentBalance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
-            </strong>
-          </div>
-
-          <div class="account-card-footer">
-            <span>Saldo inicial</span>
-            <span>{{ account.initialBalance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</span>
-          </div>
-        </article>
-      }
+  <section class="state-panel state-panel--error" role="alert">
+    <span class="state-icon" aria-hidden="true"><svg lucideAlertCircle></svg></span>
+    <div>
+      <h2>Não foi possível carregar as contas</h2>
+      <p>{{ errorMessage() }}</p>
     </div>
+    <button class="secondary-button" type="button" (click)="loadAccounts()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Tentar novamente
+    </button>
+  </section>
+  } @else if (accounts().length === 0) {
+  <section class="state-panel state-panel--empty">
+    <span class="state-icon" aria-hidden="true"><svg lucideWalletCards></svg></span>
+    <div>
+      <h2>Nenhuma conta cadastrada</h2>
+      <p>Quando você criar sua primeira conta, ela aparecerá aqui com o saldo atualizado.</p>
+    </div>
+  </section>
+  } @else {
+  <div class="account-grid">
+    @for (account of accounts(); track account.id) {
+    <article class="account-card" [class.account-card--checking]="account.type === 'CHECKING'"
+      [class.account-card--savings]="account.type === 'SAVINGS'"
+      [class.account-card--negative]="account.currentBalance < 0">
+      <div class="account-card-header">
+        <span class="account-icon" aria-hidden="true">
+          @if (account.type === 'CASH') {
+          <svg lucideBanknote></svg>
+          } @else if (account.type === 'CHECKING') {
+          <svg lucideLandmark></svg>
+          } @else {
+          <svg lucidePiggyBank></svg>
+          }
+        </span>
+
+        <div class="account-heading">
+          <h2>{{ account.name }}</h2>
+          <span>{{ accountTypeLabel(account.type) }}</span>
+        </div>
+
+        <button class="account-action" type="button" [attr.aria-label]="'Editar conta ' + account.name"
+          (click)="openEditForm(account)">
+          <svg lucidePencil aria-hidden="true"></svg>
+        </button>
+
+      </div>
+
+      <div class="balance-block">
+        <span class="balance-label">Saldo atual</span>
+        <strong [class.value-negative]="account.currentBalance < 0">
+          {{ account.currentBalance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+        </strong>
+      </div>
+
+      <div class="account-card-footer">
+        <span>Saldo inicial</span>
+        <span>{{ account.initialBalance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</span>
+      </div>
+    </article>
+    }
+  </div>
 
   }
 </section>
 
 @if (isFormOpen()) {
-  <div class="modal-backdrop" (click)="closeCreateForm()">
-    <section
-      class="account-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="account-dialog-title"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="dialog-header">
-        <div>
-          <p class="eyebrow">NOVA CONTA</p>
-          <h2 id="account-dialog-title">Cadastre uma conta</h2>
-          <p>Informe os dados iniciais para acompanhar seu saldo.</p>
+<div class="modal-backdrop" (click)="closeAccountForm()">
+  <section class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title"
+    (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <div>
+        <p class="eyebrow">{{ isEditing() ? 'EDITAR CONTA' : 'NOVA CONTA' }}</p>
+        <h2 id="account-dialog-title">{{ isEditing() ? 'Editar conta' : 'Nova conta' }}</h2>
+        <p>Informe os dados iniciais para acompanhar seu saldo.</p>
+      </div>
+      <button class="dialog-close" type="button" aria-label="Fechar formulário" (click)="closeAccountForm()">
+        <svg lucideX aria-hidden="true"></svg>
+      </button>
+    </div>
+
+    <form class="account-form" [formGroup]="accountForm" (ngSubmit)="submitAccount()" novalidate>
+      <label class="form-field">
+        <span>Nome da conta</span>
+        <input type="text" formControlName="name" placeholder="Ex.: Nubank" autocomplete="off" />
+        @if (accountForm.controls.name.invalid && accountForm.controls.name.touched) {
+        <small>Digite um nome entre 2 e 100 caracteres.</small>
+        }
+      </label>
+
+      <label class="form-field">
+        <span>Tipo de conta</span>
+        <select formControlName="type">
+          <option value="CASH">Dinheiro</option>
+          <option value="CHECKING">Conta corrente</option>
+          <option value="SAVINGS">Poupança</option>
+        </select>
+      </label>
+
+      <label class="form-field">
+        <span>Saldo inicial</span>
+        <div class="money-input">
+          <span aria-hidden="true">R$</span>
+          <input type="number" formControlName="initialBalance" min="-99999999999999999.99" max="99999999999999999.99"
+            step="0.01" inputmode="decimal" />
         </div>
-        <button class="dialog-close" type="button" aria-label="Fechar formulário" (click)="closeCreateForm()">
-          <svg lucideX aria-hidden="true"></svg>
+        @if (accountForm.controls.initialBalance.invalid && accountForm.controls.initialBalance.touched) {
+        <small>Informe um saldo válido com até duas casas decimais.</small>
+        }
+      </label>
+
+      @if (formError()) {
+      <p class="form-error" role="alert">{{ formError() }}</p>
+      }
+
+      <div class="dialog-actions">
+        <button class="secondary-button" type="button" (click)="closeAccountForm()" [disabled]="isSubmitting()">
+          Cancelar
+        </button>
+        <button class="primary-button" type="submit" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+          Salvando...
+          } @else {
+          {{ isEditing() ? 'Salvar alterações' : 'Criar conta' }}
+          }
         </button>
       </div>
-
-      <form class="account-form" [formGroup]="accountForm" (ngSubmit)="submitAccount()" novalidate>
-        <label class="form-field">
-          <span>Nome da conta</span>
-          <input
-            type="text"
-            formControlName="name"
-            placeholder="Ex.: Nubank"
-            autocomplete="off"
-          />
-          @if (accountForm.controls.name.invalid && accountForm.controls.name.touched) {
-            <small>Digite um nome entre 2 e 100 caracteres.</small>
-          }
-        </label>
-
-        <label class="form-field">
-          <span>Tipo de conta</span>
-          <select formControlName="type">
-            <option value="CASH">Dinheiro</option>
-            <option value="CHECKING">Conta corrente</option>
-            <option value="SAVINGS">Poupança</option>
-          </select>
-        </label>
-
-        <label class="form-field">
-          <span>Saldo inicial</span>
-          <div class="money-input">
-            <span aria-hidden="true">R$</span>
-            <input
-              type="number"
-              formControlName="initialBalance"
-              min="-99999999999999999.99"
-              max="99999999999999999.99"
-              step="0.01"
-              inputmode="decimal"
-            />
-          </div>
-          @if (accountForm.controls.initialBalance.invalid && accountForm.controls.initialBalance.touched) {
-            <small>Informe um saldo válido com até duas casas decimais.</small>
-          }
-        </label>
-
-        @if (formError()) {
-          <p class="form-error" role="alert">{{ formError() }}</p>
-        }
-
-        <div class="dialog-actions">
-          <button class="secondary-button" type="button" (click)="closeCreateForm()" [disabled]="isSubmitting()">
-            Cancelar
-          </button>
-          <button class="primary-button" type="submit" [disabled]="isSubmitting()">
-            @if (isSubmitting()) {
-              Salvando...
-            } @else {
-              Criar conta
-            }
-          </button>
-        </div>
-      </form>
-    </section>
-  </div>
+    </form>
+  </section>
+</div>
 }

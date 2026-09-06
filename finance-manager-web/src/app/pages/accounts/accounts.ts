@@ -5,7 +5,6 @@ import { forkJoin, finalize } from 'rxjs';
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import {
   AccountType,
-  CreateFinancialAccountRequest,
   FinancialAccount,
 } from '../../core/financial-account.models';
 import { Report } from '../../core/report';
@@ -14,6 +13,7 @@ import {
   LucideAlertCircle,
   LucideBanknote,
   LucideLandmark,
+  LucidePencil,
   LucidePiggyBank,
   LucidePlus,
   LucideRefreshCw,
@@ -30,6 +30,7 @@ interface AccountViewModel extends FinancialAccount {
   imports: [
     CurrencyPipe,
     ReactiveFormsModule,
+    // Ícones do Lucide para representar diferentes tipos de contas e ações no componente.
     LucideAlertCircle,
     LucideBanknote,
     LucideLandmark,
@@ -38,6 +39,7 @@ interface AccountViewModel extends FinancialAccount {
     LucideRefreshCw,
     LucideWalletCards,
     LucideX,
+    LucidePencil,
   ],
   templateUrl: './accounts.html',
   styleUrl: './accounts.css',
@@ -61,12 +63,17 @@ export class Accounts implements OnInit {
     this.accounts().reduce((total, account) => total + account.currentBalance, 0),
   );
 
+  // Sinais para gerenciar o estado da conta selecionada para edição e se o formulário de edição está aberto.
+  protected readonly selectedAccount = signal<AccountViewModel | null>(null);
+  protected readonly isEditing = computed(() => this.selectedAccount() !== null);
+
   // O método ngOnInit é chamado quando o componente é inicializado, e aqui ele chama o método para carregar as contas financeiras.
   ngOnInit(): void {
     this.loadAccounts();
   }
 
-  // Pode ser chamado pelo template para repetir a consulta após uma falha.
+  // Método protegido para carregar as contas financeiras e seus saldos atuais, 
+  // lidando com o estado de carregamento e mensagens de erro conforme necessário.
   protected loadAccounts(): void {
     // Define o estado de carregamento como verdadeiro e limpa qualquer mensagem de erro anterior.
     this.isLoading.set(true);
@@ -78,8 +85,8 @@ export class Accounts implements OnInit {
       accounts: this.accountApi.getAll(),
       balances: this.report.getCurrentBalance(),
     })
-    // O operador finalize é usado para garantir que o estado de carregamento seja definido como falso, 
-    // independentemente de a chamada ter sido bem-sucedida ou ter falhado.
+      // O operador finalize é usado para garantir que o estado de carregamento seja definido como falso, 
+      // independentemente de a chamada ter sido bem-sucedida ou ter falhado.
       .pipe(finalize(() => this.isLoading.set(false)))
       // O método subscribe é usado para lidar com os resultados da chamada à API, atualizando a lista de contas ou definindo uma mensagem de erro conforme necessário.
       .subscribe({
@@ -139,47 +146,80 @@ export class Accounts implements OnInit {
     ],
   });
 
+  // Métodos protegidos para abrir, editar e fechar o formulário de criação de conta, 
+  // bem como para enviar os dados do formulário para a API.
+
   protected openCreateForm(): void {
+    this.selectedAccount.set(null);
     this.formError.set('');
+
     this.accountForm.reset({
       name: '',
       type: 'CHECKING',
       initialBalance: 0,
     });
+
     this.isFormOpen.set(true);
   }
 
-  protected closeCreateForm(): void {
-    if (this.isSubmitting()) {
-      return;
-    }
-
-    this.isFormOpen.set(false);
+  // Método protegido para abrir o formulário de edição de uma conta existente, 
+  // preenchendo os campos do formulário com os dados da conta selecionada.
+  protected openEditForm(account: AccountViewModel): void {
+    this.selectedAccount.set(account);
     this.formError.set('');
+
+    this.accountForm.reset({
+      name: account.name,
+      type: account.type,
+      initialBalance: account.initialBalance,
+    });
+
+    this.isFormOpen.set(true);
   }
 
+  protected closeAccountForm(): void {
+  if (this.isSubmitting()) {
+    return;
+  }
+
+  this.isFormOpen.set(false);
+  this.selectedAccount.set(null);
+  this.formError.set('');
+}
+
+  // Método protegido para enviar os dados do formulário de criação de conta para a API,
+  // lidando com o estado de envio e mensagens de erro conforme necessário.
   protected submitAccount(): void {
     if (this.accountForm.invalid) {
       this.accountForm.markAllAsTouched();
       return;
     }
 
-    const request: CreateFinancialAccountRequest =
-      this.accountForm.getRawValue();
+    const request = this.accountForm.getRawValue();
+    const selectedAccount = this.selectedAccount();
+
+    // Determina se a operação é de criação ou atualização com base na presença de uma conta selecionada.
+    const request$ = selectedAccount
+      ? this.accountApi.update(selectedAccount.id, request)
+      : this.accountApi.create(request);
 
     this.isSubmitting.set(true);
     this.formError.set('');
 
-    this.accountApi
-      .create(request)
+    request$
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
         next: () => {
           this.isFormOpen.set(false);
+          this.selectedAccount.set(null);
           this.loadAccounts();
         },
         error: () => {
-          this.formError.set('Não foi possível criar esta conta.');
+          this.formError.set(
+            selectedAccount
+              ? 'Não foi possível atualizar esta conta.'
+              : 'Não foi possível criar esta conta.',
+          );
         },
       });
   }
