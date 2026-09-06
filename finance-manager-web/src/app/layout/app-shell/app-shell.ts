@@ -1,6 +1,6 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideArrowLeftRight,
   LucideChartNoAxesCombined,
@@ -21,6 +21,7 @@ import { AuthUser } from '../../core/auth.models';
   selector: 'app-shell',
   imports: [
     RouterLink,
+    RouterLinkActive,
     RouterOutlet,
     LucideArrowLeftRight,
     LucideChartNoAxesCombined,

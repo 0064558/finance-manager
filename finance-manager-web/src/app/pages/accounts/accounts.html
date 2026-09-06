@@ -1,0 +1,100 @@
+<section class="accounts-page" aria-labelledby="accounts-title">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span> ORGANIZAÇÃO FINANCEIRA</p>
+      <h1 id="accounts-title">Minhas contas</h1>
+      <p class="page-description">
+        Acompanhe onde seu dinheiro está e mantenha seus saldos sempre atualizados.
+      </p>
+    </div>
+
+    @if (!isLoading() && !errorMessage() && accounts().length > 0) {
+      <div class="heading-summary">
+        <span>{{ accounts().length }} {{ accounts().length === 1 ? 'conta cadastrada' : 'contas cadastradas' }}</span>
+        <strong>{{ totalBalance() | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+      </div>
+    }
+  </div>
+
+  @if (isLoading()) {
+    <div class="account-grid" aria-label="Carregando contas" aria-busy="true">
+      @for (placeholder of [1, 2, 3]; track placeholder) {
+        <article class="account-card account-card--skeleton">
+          <div class="skeleton skeleton-icon"></div>
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton skeleton-label"></div>
+          <div class="skeleton skeleton-value"></div>
+        </article>
+      }
+    </div>
+  } @else if (errorMessage()) {
+    <section class="state-panel state-panel--error" role="alert">
+      <span class="state-icon" aria-hidden="true"><svg lucideAlertCircle></svg></span>
+      <div>
+        <h2>Não foi possível carregar as contas</h2>
+        <p>{{ errorMessage() }}</p>
+      </div>
+      <button class="secondary-button" type="button" (click)="loadAccounts()">
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Tentar novamente
+      </button>
+    </section>
+  } @else if (accounts().length === 0) {
+    <section class="state-panel state-panel--empty">
+      <span class="state-icon" aria-hidden="true"><svg lucideWalletCards></svg></span>
+      <div>
+        <h2>Nenhuma conta cadastrada</h2>
+        <p>Quando você criar sua primeira conta, ela aparecerá aqui com o saldo atualizado.</p>
+      </div>
+    </section>
+  } @else {
+    <div class="account-grid">
+      @for (account of accounts(); track account.id) {
+        <article
+          class="account-card"
+          [class.account-card--checking]="account.type === 'CHECKING'"
+          [class.account-card--savings]="account.type === 'SAVINGS'"
+          [class.account-card--negative]="account.currentBalance < 0"
+        >
+          <div class="account-card-header">
+            <span class="account-icon" aria-hidden="true">
+              @if (account.type === 'CASH') {
+                <svg lucideBanknote></svg>
+              } @else if (account.type === 'CHECKING') {
+                <svg lucideLandmark></svg>
+              } @else {
+                <svg lucidePiggyBank></svg>
+              }
+            </span>
+
+            <div class="account-heading">
+              <h2>{{ account.name }}</h2>
+              <span>{{ accountTypeLabel(account.type) }}</span>
+            </div>
+
+            <button class="account-action" type="button" disabled aria-label="Ações da conta">
+              <svg lucideArrowUpRight aria-hidden="true"></svg>
+            </button>
+          </div>
+
+          <div class="balance-block">
+            <span class="balance-label">Saldo atual</span>
+            <strong [class.value-negative]="account.currentBalance < 0">
+              {{ account.currentBalance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+            </strong>
+          </div>
+
+          <div class="account-card-footer">
+            <span>Saldo inicial</span>
+            <span>{{ account.initialBalance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</span>
+          </div>
+        </article>
+      }
+    </div>
+
+    <section class="next-step-hint" aria-label="Próximo passo">
+      <span class="hint-icon" aria-hidden="true"><svg lucideWalletCards></svg></span>
+      <p><strong>Próximo passo:</strong> em breve você poderá criar, editar e organizar suas contas por aqui.</p>
+    </section>
+  }
+</section>

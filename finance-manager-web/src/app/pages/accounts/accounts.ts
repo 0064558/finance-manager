@@ -1,0 +1,112 @@
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { forkJoin, finalize } from 'rxjs';
+
+import { FinancialAccountApi } from '../../core/financial-accounts';
+import { FinancialAccount } from '../../core/financial-account.models';
+import { Report } from '../../core/report';
+import { CurrencyPipe } from '@angular/common';
+import {
+  LucideAlertCircle,
+  LucideArrowUpRight,
+  LucideBanknote,
+  LucideLandmark,
+  LucidePiggyBank,
+  LucideRefreshCw,
+  LucideWalletCards,
+} from '@lucide/angular';
+
+interface AccountViewModel extends FinancialAccount {
+  currentBalance: number;
+}
+
+@Component({
+  selector: 'app-accounts',
+  imports: [
+    CurrencyPipe,
+    LucideAlertCircle,
+    LucideArrowUpRight,
+    LucideBanknote,
+    LucideLandmark,
+    LucidePiggyBank,
+    LucideRefreshCw,
+    LucideWalletCards,
+  ],
+  templateUrl: './accounts.html',
+  styleUrl: './accounts.css',
+})
+// Accounts é um componente Angular que exibe uma lista de contas financeiras, 
+// incluindo informações como nome, tipo, saldo inicial e saldo atual.
+export class Accounts implements OnInit {
+  // Injeção de dependências para interagir com a API de contas financeiras e gerar relatórios.
+  private readonly accountApi = inject(FinancialAccountApi);
+  private readonly report = inject(Report);
+
+  // Sinais para gerenciar o estado do componente, incluindo a lista de contas, o estado de carregamento e mensagens de erro.
+  protected readonly accounts = signal<AccountViewModel[]>([]);
+  protected readonly isLoading = signal(true);
+  protected readonly errorMessage = signal('');
+  protected readonly totalBalance = computed(() =>
+    this.accounts().reduce((total, account) => total + account.currentBalance, 0),
+  );
+
+  // O método ngOnInit é chamado quando o componente é inicializado, e aqui ele chama o método para carregar as contas financeiras.
+  ngOnInit(): void {
+    this.loadAccounts();
+  }
+
+  // Pode ser chamado pelo template para repetir a consulta após uma falha.
+  protected loadAccounts(): void {
+    // Define o estado de carregamento como verdadeiro e limpa qualquer mensagem de erro anterior.
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    // Usa forkJoin para fazer chamadas paralelas à API de contas financeiras e ao serviço de relatórios    
+    // combinando os resultados em um único fluxo de dados.
+    forkJoin({
+      accounts: this.accountApi.getAll(),
+      balances: this.report.getCurrentBalance(),
+    })
+    // O operador finalize é usado para garantir que o estado de carregamento seja definido como falso, 
+    // independentemente de a chamada ter sido bem-sucedida ou ter falhado.
+      .pipe(finalize(() => this.isLoading.set(false)))
+      // O método subscribe é usado para lidar com os resultados da chamada à API, atualizando a lista de contas ou definindo uma mensagem de erro conforme necessário.
+      .subscribe({
+        // Se a chamada for bem-sucedida, os saldos das contas são combinados com as informações das contas e armazenados no sinal accounts.
+        next: ({ accounts, balances }) => {
+          const balanceByAccountId = new Map(
+            balances.accounts.map((account) => [
+              account.accountId,
+              account.balance,
+            ]),
+          );
+
+          // Atualiza o sinal accounts com as contas financeiras e seus saldos atuais.
+          this.accounts.set(
+            // Mapeia cada conta financeira para um objeto AccountViewModel, incluindo o saldo atual obtido do relatório de saldos.
+            accounts.map((account) => ({
+              ...account,
+              currentBalance:
+                balanceByAccountId.get(account.id) ?? account.initialBalance,
+            })),
+          );
+        },
+        // Se houver um erro ao carregar as contas, uma mensagem de erro é definida no sinal errorMessage.
+        error: () => {
+          this.errorMessage.set(
+            'Não foi possível carregar suas contas.',
+          );
+        },
+      });
+  }
+
+  // Método protegido para obter o rótulo legível do tipo de conta financeira, mapeando os tipos internos para strings amigáveis.
+  protected accountTypeLabel(type: FinancialAccount['type']): string {
+    const labels: Record<FinancialAccount['type'], string> = {
+      CASH: 'Dinheiro',
+      CHECKING: 'Conta corrente',
+      SAVINGS: 'Poupança',
+    };
+
+    return labels[type];
+  }
+}

@@ -1,8 +1,5 @@
-<div
-  class="app-shell"
-  [class.app-shell--collapsed]="sidebarCollapsed()"
-  [class.app-shell--mobile-open]="mobileMenuOpen()"
->
+<div class="app-shell" [class.app-shell--collapsed]="sidebarCollapsed()"
+  [class.app-shell--mobile-open]="mobileMenuOpen()">
   <aside id="primary-sidebar" class="sidebar" aria-label="Navegação principal">
     <div class="sidebar-header">
       <a class="brand-lockup" routerLink="/dashboard" (click)="closeMobileNavigation()">
@@ -12,67 +9,37 @@
         <span class="sidebar-copy">Finance Manager</span>
       </a>
 
-      <button
-        class="sidebar-toggle"
-        type="button"
-        aria-controls="primary-sidebar"
-        [attr.aria-expanded]="!sidebarCollapsed()"
-        aria-label="Expandir ou recolher menu"
-        (click)="toggleNavigation()"
-      >
+      <button class="sidebar-toggle" type="button" aria-controls="primary-sidebar"
+        [attr.aria-expanded]="!sidebarCollapsed()" aria-label="Expandir ou recolher menu" (click)="toggleNavigation()">
         <svg lucideMenu aria-hidden="true"></svg>
       </button>
 
-      <button
-        class="sidebar-close"
-        type="button"
-        aria-label="Fechar menu"
-        (click)="closeMobileNavigation()"
-      >
+      <button class="sidebar-close" type="button" aria-label="Fechar menu" (click)="closeMobileNavigation()">
         <svg lucideX aria-hidden="true"></svg>
       </button>
     </div>
 
     <div class="sidebar-section-label sidebar-copy">MENU</div>
     <nav class="sidebar-nav">
-      <a
-        class="sidebar-link sidebar-link--active"
-        routerLink="/dashboard"
-        title="Dashboard"
-        (click)="closeMobileNavigation()"
-      >
+      <a class="sidebar-link" routerLink="/dashboard" routerLinkActive="sidebar-link--active"
+        [routerLinkActiveOptions]="{ exact: true }" title="Dashboard" (click)="closeMobileNavigation()">
         <svg lucideLayoutDashboard class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Dashboard</span>
       </a>
-      <span
-        class="sidebar-link sidebar-link--disabled"
-        aria-disabled="true"
-        title="Contas — em breve"
-      >
+      <a class="sidebar-link" routerLink="/accounts" routerLinkActive="sidebar-link--active" title="Contas"
+        (click)="closeMobileNavigation()">
         <svg lucideWalletCards class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Contas</span>
-      </span>
-      <span
-        class="sidebar-link sidebar-link--disabled"
-        aria-disabled="true"
-        title="Transações — em breve"
-      >
+      </a>
+      <span class="sidebar-link sidebar-link--disabled" aria-disabled="true" title="Transações — em breve">
         <svg lucideArrowLeftRight class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Transações</span>
       </span>
-      <span
-        class="sidebar-link sidebar-link--disabled"
-        aria-disabled="true"
-        title="Categorias — em breve"
-      >
+      <span class="sidebar-link sidebar-link--disabled" aria-disabled="true" title="Categorias — em breve">
         <svg lucideTags class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Categorias</span>
       </span>
-      <span
-        class="sidebar-link sidebar-link--disabled"
-        aria-disabled="true"
-        title="Relatórios — em breve"
-      >
+      <span class="sidebar-link sidebar-link--disabled" aria-disabled="true" title="Relatórios — em breve">
         <svg lucideChartNoAxesCombined class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Relatórios</span>
       </span>
@@ -80,44 +47,25 @@
 
     <div class="sidebar-section-label sidebar-section-label--secondary sidebar-copy">GERAL</div>
     <nav class="sidebar-nav sidebar-nav--secondary">
-      <span
-        class="sidebar-link sidebar-link--disabled"
-        aria-disabled="true"
-        title="Configurações — em breve"
-      >
+      <span class="sidebar-link sidebar-link--disabled" aria-disabled="true" title="Configurações — em breve">
         <svg lucideSettings class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Configurações</span>
       </span>
-      <button
-        class="sidebar-link sidebar-link--logout"
-        type="button"
-        title="Sair"
-        (click)="logout()"
-      >
+      <button class="sidebar-link sidebar-link--logout" type="button" title="Sair" (click)="logout()">
         <svg lucideLogOut class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Sair</span>
       </button>
     </nav>
   </aside>
 
-  <button
-    class="sidebar-backdrop"
-    type="button"
-    aria-label="Fechar menu"
-    (click)="closeMobileNavigation()"
-  ></button>
+  <button class="sidebar-backdrop" type="button" aria-label="Fechar menu" (click)="closeMobileNavigation()"></button>
 
   <main class="app-main">
     <header class="topbar">
       <div class="topbar-leading">
-        <button
-          class="menu-button"
-          type="button"
-          aria-controls="primary-sidebar"
-          [attr.aria-expanded]="isNavigationExpanded()"
-          aria-label="Expandir ou recolher menu"
-          (click)="toggleNavigation()"
-        >
+        <button class="menu-button" type="button" aria-controls="primary-sidebar"
+          [attr.aria-expanded]="isNavigationExpanded()" aria-label="Expandir ou recolher menu"
+          (click)="toggleNavigation()">
           <svg lucideMenu aria-hidden="true"></svg>
         </button>
         <div>
@@ -129,9 +77,9 @@
       <div class="topbar-profile" aria-label="Usuário autenticado">
         <span class="profile-avatar" aria-hidden="true">
           @if (userInitials()) {
-            {{ userInitials() }}
+          {{ userInitials() }}
           } @else {
-            <svg lucideUserRound></svg>
+          <svg lucideUserRound></svg>
           }
         </span>
         <div class="profile-copy">
