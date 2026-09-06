@@ -36,6 +36,13 @@ export const routes: Routes = [
         // A página de contas financeiras também é carregada de forma preguiçosa (lazy loading).
         loadComponent: () => import('./pages/accounts/accounts').then((page) => page.Accounts),
       },
+      {
+        path: 'categories',
+        // A página de categorias é carregada de forma preguiçosa (lazy loading).
+        // loadComponent é uma função assíncrona que retorna uma Promise que resolve para o componente da página, 
+        // permitindo que o Angular carregue o módulo apenas quando a rota for acessada.
+        loadComponent: () => import('./pages/categories/categories').then((page) => page.Categories),
+      }
     ],
   },
 ];

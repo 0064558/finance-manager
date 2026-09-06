@@ -1,0 +1,104 @@
+<section class="categories-page" aria-labelledby="categories-title">
+  <header class="page-heading">
+    <p class="eyebrow"><span aria-hidden="true"></span> ORGANIZAÇÃO FINANCEIRA</p>
+    <h1 id="categories-title">Categorias</h1>
+    <p>Organize suas movimentações para entender melhor de onde seu dinheiro vem e para onde ele vai.</p>
+  </header>
+
+  @if (isLoading()) {
+    <section class="state-card" aria-live="polite" aria-busy="true">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <div>
+        <h2>Carregando categorias</h2>
+        <p>Estamos organizando suas receitas e despesas.</p>
+      </div>
+    </section>
+  } @else if (errorMessage()) {
+    <section class="state-card state-card--error" role="alert">
+      <span class="state-symbol" aria-hidden="true">!</span>
+      <div>
+        <h2>Não foi possível carregar as categorias</h2>
+        <p>{{ errorMessage() }}</p>
+      </div>
+      <button class="retry-button" type="button" (click)="loadCategories()">
+        Tentar novamente
+      </button>
+    </section>
+  } @else if (categories().length === 0) {
+    <section class="state-card state-card--empty">
+      <span class="state-symbol" aria-hidden="true">#</span>
+      <div>
+        <h2>Nenhuma categoria encontrada</h2>
+        <p>Suas categorias de receita e despesa aparecerão aqui.</p>
+      </div>
+    </section>
+  } @else {
+    <section class="category-overview" aria-label="Resumo das categorias">
+      <div class="overview-item overview-item--income">
+        <span class="overview-symbol" aria-hidden="true">+</span>
+        <div>
+          <strong>{{ incomeCategories().length }}</strong>
+          <span>{{ incomeCategories().length === 1 ? 'categoria de receita' : 'categorias de receita' }}</span>
+        </div>
+      </div>
+
+      <div class="overview-divider" aria-hidden="true"></div>
+
+      <div class="overview-item overview-item--expense">
+        <span class="overview-symbol" aria-hidden="true">−</span>
+        <div>
+          <strong>{{ expenseCategories().length }}</strong>
+          <span>{{ expenseCategories().length === 1 ? 'categoria de despesa' : 'categorias de despesa' }}</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="categories-grid" aria-label="Lista de categorias">
+      <section class="category-panel category-panel--income" aria-labelledby="income-title">
+        <header class="panel-header">
+          <span class="panel-symbol" aria-hidden="true">+</span>
+          <div>
+            <h2 id="income-title">Receitas</h2>
+            <p>Dinheiro que entra</p>
+          </div>
+          <span class="category-count">{{ incomeCategories().length }}</span>
+        </header>
+
+        <ul class="category-list">
+          @for (category of incomeCategories(); track category.id) {
+            <li class="category-item">
+              <span class="category-marker" aria-hidden="true">+</span>
+              <span class="category-name">{{ category.name }}</span>
+              <span class="category-type">Receita</span>
+            </li>
+          } @empty {
+            <li class="list-empty">Nenhuma categoria de receita.</li>
+          }
+        </ul>
+      </section>
+
+      <section class="category-panel category-panel--expense" aria-labelledby="expense-title">
+        <header class="panel-header">
+          <span class="panel-symbol" aria-hidden="true">−</span>
+          <div>
+            <h2 id="expense-title">Despesas</h2>
+            <p>Dinheiro que sai</p>
+          </div>
+          <span class="category-count">{{ expenseCategories().length }}</span>
+        </header>
+
+        <ul class="category-list">
+          @for (category of expenseCategories(); track category.id) {
+            <li class="category-item">
+              <span class="category-marker" aria-hidden="true">−</span>
+              <span class="category-name">{{ category.name }}</span>
+              <span class="category-type">Despesa</span>
+            </li>
+          } @empty {
+            <li class="list-empty">Nenhuma categoria de despesa.</li>
+          }
+        </ul>
+      </section>
+    </div>
+  }
+</section>

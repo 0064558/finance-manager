@@ -35,10 +35,12 @@
         <svg lucideArrowLeftRight class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Transações</span>
       </span>
-      <span class="sidebar-link sidebar-link--disabled" aria-disabled="true" title="Categorias — em breve">
+      <a class="sidebar-link" routerLink="/categories" routerLinkActive="sidebar-link--active" title="Categorias"
+        (click)="closeMobileNavigation()">
         <svg lucideTags class="sidebar-icon" aria-hidden="true"></svg>
+
         <span class="sidebar-copy">Categorias</span>
-      </span>
+      </a>
       <span class="sidebar-link sidebar-link--disabled" aria-disabled="true" title="Relatórios — em breve">
         <svg lucideChartNoAxesCombined class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Relatórios</span>

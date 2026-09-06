@@ -11,7 +11,7 @@ export class CategoryApi {
     // Endpoint base da API para categorias.
     private readonly endpoint = '/api/v1/categories';
 
-    // Método para listar todas as contas categorias.
+    // Método para listar todas as categorias do usuário autenticado.
     getAll(): Observable<Category[]> {
         return this.http.get<Category[]>(this.endpoint);
     }
