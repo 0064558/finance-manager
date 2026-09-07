@@ -12,13 +12,35 @@ export interface TransactionResponse {
   updatedAt: string;
 }
 
+export interface CreateTransactionRequest {
+  accountId: string;
+  categoryId: string;
+  type: TransactionType;
+  amount: number;
+  occurredOn: string;
+  description?: string;
+}
+
+export type UpdateTransactionRequest = CreateTransactionRequest;
+
+export interface TransactionFilters {
+  startDate?: string;
+  endDate?: string;
+  type?: TransactionType;
+  accountId?: string;
+  categoryId?: string;
+  page?: number;
+  size?: number;
+}
+
 export interface PageResponse<T> {
   content: T[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
+  empty: boolean;
   first: boolean;
   last: boolean;
-  empty: boolean;
+  number: number;
+  numberOfElements: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
 }
