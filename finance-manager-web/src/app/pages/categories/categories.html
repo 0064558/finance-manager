@@ -78,10 +78,17 @@
           <span class="category-name">{{ category.name }}</span>
           <span class="category-type">Receita</span>
 
-          <button class="category-action" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
-            (click)="openEditForm(category)">
-            <svg lucidePencil aria-hidden="true"></svg>
-          </button>
+          <div class="category-actions">
+            <button class="category-action" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
+              (click)="openEditForm(category)">
+              <svg lucidePencil aria-hidden="true"></svg>
+            </button>
+
+            <button class="category-action category-action--danger" type="button"
+              [attr.aria-label]="'Excluir categoria ' + category.name" (click)="openDeleteConfirmation(category)">
+              <svg lucideTrash2 aria-hidden="true"></svg>
+            </button>
+          </div>
         </li>
         } @empty {
         <li class="list-empty">Nenhuma categoria de receita.</li>
@@ -106,10 +113,17 @@
           <span class="category-name">{{ category.name }}</span>
           <span class="category-type">Despesa</span>
 
-          <button class="category-action" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
-            (click)="openEditForm(category)">
-            <svg lucidePencil aria-hidden="true"></svg>
-          </button>
+          <div class="category-actions">
+            <button class="category-action" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
+              (click)="openEditForm(category)">
+              <svg lucidePencil aria-hidden="true"></svg>
+            </button>
+
+            <button class="category-action category-action--danger" type="button"
+              [attr.aria-label]="'Excluir categoria ' + category.name" (click)="openDeleteConfirmation(category)">
+              <svg lucideTrash2 aria-hidden="true"></svg>
+            </button>
+          </div>
         </li>
         } @empty {
         <li class="list-empty">Nenhuma categoria de despesa.</li>
@@ -132,13 +146,13 @@
         </p>
         <h2 id="category-form-title">
           {{ isEditing() ? 'Editar categoria' : 'Criar categoria' }}
-          </h2>
-          <p>
-            {{ isEditing()
-            ? 'Atualize o nome ou o tipo desta categoria.'
-            : 'Escolha um nome e indique como essa categoria afeta seu saldo.'
-            }}
-          </p>
+        </h2>
+        <p>
+          {{ isEditing()
+          ? 'Atualize o nome ou o tipo desta categoria.'
+          : 'Escolha um nome e indique como essa categoria afeta seu saldo.'
+          }}
+        </p>
       </div>
 
       <button class="dialog-close" type="button" aria-label="Fechar formulário" [disabled]="isSubmitting()"
@@ -206,6 +220,38 @@
         </button>
       </div>
     </form>
+  </section>
+</div>
+}
+
+@if (categoryPendingDeletion(); as category) {
+<div class="modal-backdrop" (click)="closeDeleteConfirmation()">
+  <section class="category-dialog delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title"
+    aria-describedby="delete-dialog-description" (click)="$event.stopPropagation()">
+    <span class="delete-icon" aria-hidden="true">
+      <svg lucideTrash2></svg>
+    </span>
+
+    <h2 id="delete-dialog-title">Excluir “{{ category.name }}”?</h2>
+
+    <p id="delete-dialog-description">
+      Essa ação não poderá ser desfeita. Categorias que possuem transações não podem ser excluídas.
+    </p>
+
+    @if (deleteError()) {
+    <p class="form-error" role="alert">{{ deleteError() }}</p>
+    }
+
+    <div class="dialog-actions">
+      <button class="secondary-button" type="button" [disabled]="isDeleting()"
+        (click)="closeDeleteConfirmation()">
+        Cancelar
+      </button>
+
+      <button class="danger-button" type="button" [disabled]="isDeleting()" (click)="confirmDelete()">
+        {{ isDeleting() ? 'Excluindo...' : 'Excluir categoria' }}
+      </button>
+    </div>
   </section>
 </div>
 }

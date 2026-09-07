@@ -53,7 +53,8 @@
 }
 
 .primary-button,
-.secondary-button {
+.secondary-button,
+.danger-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -88,14 +89,28 @@
   background: #f3f8f5;
 }
 
+.danger-button {
+  border: 1px solid #c84f5d;
+  color: #fff;
+  background: #c84f5d;
+  box-shadow: 0 6px 14px #c84f5d24;
+}
+
+.danger-button:hover:not(:disabled) {
+  border-color: #aa3d4a;
+  background: #aa3d4a;
+}
+
 .primary-button:focus-visible,
-.secondary-button:focus-visible {
+.secondary-button:focus-visible,
+.danger-button:focus-visible {
   outline: 2px solid #19856a;
   outline-offset: 2px;
 }
 
 .primary-button:disabled,
 .secondary-button:disabled,
+.danger-button:disabled,
 .dialog-close:disabled {
   cursor: wait;
   opacity: 0.65;
@@ -320,6 +335,13 @@
   background: #feedef;
 }
 
+.category-actions {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.35rem;
+}
+
 .category-action {
   display: grid;
   width: 2rem;
@@ -343,6 +365,16 @@
   border-color: #b9dccb;
   color: #177655;
   background: #eaf7f0;
+}
+
+.category-action--danger {
+  color: #a95761;
+}
+
+.category-action--danger:hover {
+  border-color: #efc5ca;
+  color: #b53f4d;
+  background: #fff0f2;
 }
 
 .category-action:focus-visible {
@@ -678,6 +710,56 @@
   min-width: 8rem;
 }
 
+.delete-dialog {
+  width: min(100%, 27rem);
+  text-align: center;
+}
+
+.delete-icon {
+  display: grid;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin: 0 auto 1rem;
+  place-items: center;
+  border-radius: 1rem;
+  color: #bd4654;
+  background: #feedef;
+  box-shadow: 0 8px 18px #bd46541c;
+}
+
+.delete-icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.delete-dialog h2 {
+  margin: 0;
+  color: #263c30;
+  font-size: 1.25rem;
+  letter-spacing: -0.035em;
+}
+
+.delete-dialog>p:not(.form-error) {
+  margin: 0.65rem auto 0;
+  color: #78887f;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.delete-dialog .form-error {
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.delete-dialog .dialog-actions {
+  justify-content: center;
+  margin-top: 1.35rem;
+}
+
+.delete-dialog .danger-button {
+  min-width: 9rem;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -748,7 +830,8 @@
   }
 
   .dialog-actions .primary-button,
-  .dialog-actions .secondary-button {
+  .dialog-actions .secondary-button,
+  .dialog-actions .danger-button {
     width: 100%;
   }
 }
