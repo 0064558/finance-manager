@@ -77,6 +77,11 @@
           <span class="category-marker" aria-hidden="true">+</span>
           <span class="category-name">{{ category.name }}</span>
           <span class="category-type">Receita</span>
+
+          <button class="category-action" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
+            (click)="openEditForm(category)">
+            <svg lucidePencil aria-hidden="true"></svg>
+          </button>
         </li>
         } @empty {
         <li class="list-empty">Nenhuma categoria de receita.</li>
@@ -100,6 +105,11 @@
           <span class="category-marker" aria-hidden="true">−</span>
           <span class="category-name">{{ category.name }}</span>
           <span class="category-type">Despesa</span>
+
+          <button class="category-action" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
+            (click)="openEditForm(category)">
+            <svg lucidePencil aria-hidden="true"></svg>
+          </button>
         </li>
         } @empty {
         <li class="list-empty">Nenhuma categoria de despesa.</li>
@@ -117,9 +127,18 @@
     (click)="$event.stopPropagation()">
     <header class="dialog-header">
       <div>
-        <p class="dialog-eyebrow">NOVA CATEGORIA</p>
-        <h2 id="category-form-title">Criar categoria</h2>
-        <p>Escolha um nome e indique como essa categoria afeta seu saldo.</p>
+        <p class="dialog-eyebrow">
+          {{ isEditing() ? 'EDITAR CATEGORIA' : 'NOVA CATEGORIA' }}
+        </p>
+        <<h2 id="category-form-title">
+          {{ isEditing() ? 'Editar categoria' : 'Criar categoria' }}
+          </h2>
+          <p>
+            {{ isEditing()
+            ? 'Atualize o nome ou o tipo desta categoria.'
+            : 'Escolha um nome e indique como essa categoria afeta seu saldo.'
+            }}
+          </p>
       </div>
 
       <button class="dialog-close" type="button" aria-label="Fechar formulário" [disabled]="isSubmitting()"
@@ -131,8 +150,8 @@
     <form class="category-form" [formGroup]="categoryForm" (ngSubmit)="submitCategory()" novalidate>
       <label class="form-field" for="category-name">
         <span>Nome da categoria</span>
-        <input id="category-name" type="text" formControlName="name" placeholder="Ex.: Alimentação"
-          autocomplete="off" maxlength="80"
+        <input id="category-name" type="text" formControlName="name" placeholder="Ex.: Alimentação" autocomplete="off"
+          maxlength="80"
           [attr.aria-invalid]="categoryForm.controls.name.touched && categoryForm.controls.name.invalid" />
 
         @if (categoryForm.controls.name.touched && categoryForm.controls.name.invalid) {
@@ -179,7 +198,11 @@
         </button>
 
         <button class="primary-button" type="submit" [disabled]="isSubmitting()">
-          {{ isSubmitting() ? 'Salvando...' : 'Criar categoria' }}
+          @if (isSubmitting()) {
+          Salvando...
+          } @else {
+          {{ isEditing() ? 'Salvar alterações' : 'Criar categoria' }}
+          }
         </button>
       </div>
     </form>
