@@ -7,8 +7,10 @@ import { TransactionApi } from '../../core/transaction';
 
 import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
-import { TransactionResponse } from '../../core/transaction.models';
+import { TransactionResponse, TransactionType } from '../../core/transaction.models';
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { FormBuilder } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 
 // Representa uma transação financeira, incluindo informações como conta, categoria, tipo, valor, data de ocorrência e descrição.
 interface TransactionViewModel extends TransactionResponse {
@@ -17,7 +19,7 @@ interface TransactionViewModel extends TransactionResponse {
 }
 
 @Component({
-  imports: [CurrencyPipe, DatePipe],
+  imports: [CurrencyPipe, DatePipe, ReactiveFormsModule],
   selector: 'app-transactions',
   styleUrl: './transactions.css',
   templateUrl: './transactions.html',
@@ -39,6 +41,17 @@ export class Transactions implements OnInit {
   protected readonly totalPages = signal(0);
   protected readonly totalElements = signal(0);
 
+  // FormBuilder é injetado para criar formulários reativos, permitindo a criação e validação de formulários de maneira mais fácil e estruturada.
+   protected readonly formBuilder = inject(FormBuilder);
+
+   protected readonly filterForm = this.formBuilder.nonNullable.group({
+    startDate: [''],
+    endDate: [''],
+    type: this.formBuilder.nonNullable.control<TransactionType | ''>(''),
+    accountId: [''],
+    categoryId: [''],
+   });
+
 
   ngOnInit(): void {
     this.loadTransactions();
@@ -55,7 +68,7 @@ export class Transactions implements OnInit {
     const request$ = forkJoin({
       accounts: this.accountApi.getAll(),
       categories: this.categoryApi.getAll(),
-      transactionsPage: this.transactionApi.getAll({ page: this.currentPage(), size: 1 }), // Aqui você pode ajustar o tamanho da página conforme necessário
+      transactionsPage: this.transactionApi.getAll({ page: this.currentPage(), size: 10 }), // Aqui você pode ajustar o tamanho da página conforme necessário
     });
 
     // Assina o Observable resultante para processar os dados recebidos.
@@ -132,5 +145,7 @@ export class Transactions implements OnInit {
     this.currentPage.set(this.currentPage() + 1);
     this.loadTransactions();
   }
+
+ 
 
 }
