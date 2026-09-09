@@ -31,10 +31,12 @@
         <svg lucideWalletCards class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Contas</span>
       </a>
-      <span class="sidebar-link sidebar-link--disabled" aria-disabled="true" title="Transações — em breve">
+      <a class="sidebar-link" routerLink="/transactions" routerLinkActive="sidebar-link--active" title="Transações"
+        (click)="closeMobileNavigation()">
         <svg lucideArrowLeftRight class="sidebar-icon" aria-hidden="true"></svg>
+
         <span class="sidebar-copy">Transações</span>
-      </span>
+      </a>
       <a class="sidebar-link" routerLink="/categories" routerLinkActive="sidebar-link--active" title="Categorias"
         (click)="closeMobileNavigation()">
         <svg lucideTags class="sidebar-icon" aria-hidden="true"></svg>

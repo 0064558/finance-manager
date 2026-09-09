@@ -9,6 +9,8 @@ export class TransactionApi {
 
   private readonly endpoint = '/api/v1/transactions';
 
+  // Busca as transações financeiras mais recentes com base nas datas de início e término fornecidas, 
+  // limitando o número de resultados retornados.
   getRecent(
     startDate: string,
     endDate: string,
@@ -22,10 +24,16 @@ export class TransactionApi {
     });
   }
 
+  // Busca todas as transações financeiras com base nos filtros fornecidos, incluindo data de início, 
+  // data de término, tipo de transação, ID da conta, ID da categoria, página e tamanho da página.
   getAll(filters: TransactionFilters = {}): Observable<PageResponse<TransactionResponse>> {
+    // Cria um objeto HttpParams para armazenar os parâmetros de consulta da solicitação HTTP,
+    // definindo os valores padrão para a página e o tamanho da página, e adicionando os filtros fornecidos.
     let params = new HttpParams()
       .set('page', filters.page ?? 0)
       .set('size', filters.size ?? 20);
+
+    // Adiciona os filtros fornecidos aos parâmetros de consulta, se estiverem presentes.
 
     if (filters.startDate) {
       params = params.set(

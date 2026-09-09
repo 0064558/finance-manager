@@ -1,0 +1,69 @@
+<div class="transactions-page">
+
+    <header>
+        <h1>Transações</h1>
+        <p>Lista de transações financeiras</p>
+
+        <button type="button">Nova Transação</button>
+    </header>
+
+    <section>
+        @if (isLoading()) {
+        <p>Carregando...</p>
+        } @else if(errorMessage()) {
+        <p class="error">{{ errorMessage() }}</p>
+        <button type="button" (click)="loadTransactions()">Recarregar</button>
+        } @else if (transactions().length === 0) {
+        <p>Nenhuma transação encontrada.</p>
+        } @else {
+        <p>Mostrando {{ totalElements() }} transações em {{ totalPages() }} páginas</p>
+
+        
+        <table> <!-- representa o conjunto de dados relacionados -->
+            <thead> <!-- agrupa o cabeçalho da tabela -->
+                <tr> <!-- tr representa uma linha -->
+                    <th scope="col">Conta</th> <!-- th representa uma célula de cabeçalho -->
+                    <th scope="col">Categoria</th>
+                    <th scope="col">Tipo</th>
+                    <th scope="col">Valor</th>
+                    <th scope="col">Data</th>
+                    <th scope="col">Descrição</th>
+                </tr>
+            </thead>
+            <tbody> <!-- agrupa os dados -->
+                @for (transaction of transactions(); track transaction.id) {
+                <tr>
+                    <td>{{ transaction.accountName }}</td> <!-- td representa uma célula de dados -->
+                    <td>{{ transaction.categoryName }}</td>
+                    <td>@if (transaction.type === 'INCOME') {
+                        <span class="income">Receita</span>
+                    } @else {
+                        <span class="expense">Despesa</span>
+                    }
+                </td>
+                    <td>@if (transaction.type === 'INCOME') {
+                       <span class="income">+ {{ transaction.amount | currency:'BRL' : 'symbol' }}</span>
+                    } @else {
+                       <span class="expense">- {{ transaction.amount | currency:'BRL' : 'symbol' }}</span>
+                    }
+                    </td>
+                    <td><time [attr.datetime]="transaction.occurredOn">{{ transaction.occurredOn | date:'dd/MM/yyyy'
+                            : 'UTC' }}</time></td>
+                    <td>{{ transaction.description || 'Sem descrição' }}</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+
+        <nav aria-label="Navegação de páginas">
+            <button type="button" (click)="goToPreviousPage()" [disabled]="currentPage() === 0">Anterior</button>
+            <span aria-live="polite">Página {{  currentPage() + 1 }} de {{ totalPages() }} </span>
+            <button type="button" (click)="goToNextPage()" [disabled]="currentPage() >= totalPages() - 1">Próxima</button>
+        </nav>
+
+
+
+        }
+    </section>
+
+</div>
