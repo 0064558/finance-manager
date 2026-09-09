@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
-import { PageResponse, TransactionFilters, TransactionResponse } from './transaction.models';
+import { CreateTransactionRequest, PageResponse, TransactionFilters, TransactionResponse } from './transaction.models';
 
 @Service()
 export class TransactionApi {
@@ -70,6 +70,13 @@ export class TransactionApi {
     return this.http.get<PageResponse<TransactionResponse>>(
       this.endpoint,
       { params },
+    );
+  }
+
+  create(transactionRequest: CreateTransactionRequest): Observable<TransactionResponse> {
+    return this.http.post<TransactionResponse>(
+      this.endpoint,
+      transactionRequest,
     );
   }
 }
