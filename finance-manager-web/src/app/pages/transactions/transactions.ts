@@ -36,6 +36,39 @@ function dateRangeValidator(
 
 }
 
+// Valida se a data fornecida não é uma data futura, retornando um erro de validação se for o caso.
+function notFutureDate(
+  control: AbstractControl,
+): ValidationErrors | null {
+  // Obtém o valor do controle de formulário, que é esperado ser uma string representando uma data no formato "YYYY-MM-DD".
+  const value = control.value;
+
+  // Se o valor estiver vazio, não há erro de validação.
+  if (!value) {
+    return null;
+  }
+
+  // Cria uma data representando a data atual para comparação com a data fornecida.
+  const today = new Date();
+
+  // Compara a data fornecida com a data atual. Se a data fornecida for menor ou igual à data atual, 
+  // não há erro de validação. Caso contrário, retorna um erro de validação indicando que a data é futura.
+  if (value <= formatLocalDate(today)) {
+    return null; // Se a data for menor ou igual à data atual, não há erro de validação.
+  }
+
+  return { futureDate: true }; // Retorna um erro de validação.
+}
+
+// Formata uma data no formato "YYYY-MM-DD" para ser usada em campos de entrada de data.
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
 @Component({
   imports: [CurrencyPipe, DatePipe, ReactiveFormsModule],
   selector: 'app-transactions',
@@ -178,7 +211,7 @@ export class Transactions implements OnInit {
 
   // Aplica os filtros definidos no formulário de filtro e recarrega as transações com base nos filtros aplicados.
   protected applyFilters(): void {
-  
+
     if (this.filterForm.invalid) {
       // Se o formulário de filtro for inválido, marca todos os campos como "tocados" para exibir mensagens de erro de validação.
       this.filterForm.markAllAsTouched();
