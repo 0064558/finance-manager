@@ -7,15 +7,33 @@ import { TransactionApi } from '../../core/transaction';
 
 import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
-import { TransactionResponse, TransactionType } from '../../core/transaction.models';
+import { TransactionFilters, TransactionResponse, TransactionType } from '../../core/transaction.models';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { FormBuilder } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors } from '@angular/forms';
 import { ReactiveFormsModule } from '@angular/forms';
 
 // Representa uma transação financeira, incluindo informações como conta, categoria, tipo, valor, data de ocorrência e descrição.
 interface TransactionViewModel extends TransactionResponse {
   accountName: string;
   categoryName: string;
+}
+
+function dateRangeValidator(
+  control: AbstractControl,
+): ValidationErrors | null {
+  const startDate = control.get('startDate')?.value;
+  const endDate = control.get('endDate')?.value;
+
+  if (!startDate || !endDate) {
+    return null; // Se qualquer uma das datas estiver vazia, não há erro de validação.
+  }
+
+  if (startDate <= endDate) {
+    return null; // Se a data de início for menor ou igual à data de término, não há erro de validação.
+  }
+
+  return { invalidDateRange: true }; // Retorna um erro de validação.
+
 }
 
 @Component({
@@ -42,15 +60,23 @@ export class Transactions implements OnInit {
   protected readonly totalElements = signal(0);
 
   // FormBuilder é injetado para criar formulários reativos, permitindo a criação e validação de formulários de maneira mais fácil e estruturada.
-   protected readonly formBuilder = inject(FormBuilder);
+  protected readonly formBuilder = inject(FormBuilder);
 
-   protected readonly filterForm = this.formBuilder.nonNullable.group({
+  // Cria um formulário reativo para filtrar transações com campos para data de início, data de término, 
+  // tipo de transação, ID da conta e ID da categoria. E valida o intervalo de datas usando a função dateRangeValidator.
+  protected readonly filterForm = this.formBuilder.nonNullable.group({
     startDate: [''],
     endDate: [''],
     type: this.formBuilder.nonNullable.control<TransactionType | ''>(''),
     accountId: [''],
     categoryId: [''],
-   });
+  }, {
+    validators: [dateRangeValidator],
+  });
+
+
+  // Sinal para armazenar os filtros aplicados, permitindo que o componente rastreie e aplique filtros de transações com base nos valores do formulário de filtro.
+  private readonly appliedFilters = signal<TransactionFilters>({});
 
 
   ngOnInit(): void {
@@ -62,13 +88,19 @@ export class Transactions implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
+    const filters = this.appliedFilters();
+
     // forkJoin é usado para criar um único observable que aguarda a conclusão de várias requisições HTTP simultâneas, 
     // que emite um objeto contendo os resultados de todas as requisições quando todas forem concluídas.
     // "$" indica que a variável é um Observable, e o forkJoin aguarda todos os Observables completarem antes de emitir os resultados.
     const request$ = forkJoin({
       accounts: this.accountApi.getAll(),
       categories: this.categoryApi.getAll(),
-      transactionsPage: this.transactionApi.getAll({ page: this.currentPage(), size: 10 }), // Aqui você pode ajustar o tamanho da página conforme necessário
+      transactionsPage: this.transactionApi.getAll({
+        ...filters,
+        page: this.currentPage(),
+        size: 10
+      }),
     });
 
     // Assina o Observable resultante para processar os dados recebidos.
@@ -80,10 +112,6 @@ export class Transactions implements OnInit {
       )
       .subscribe({
         next: ({ accounts, categories, transactionsPage }) => {
-          console.log('Accounts:', accounts);
-          console.log('Categories:', categories);
-          console.log('Transactions Page:', transactionsPage);
-
           this.accounts.set(accounts);
           this.categories.set(categories);
 
@@ -129,6 +157,7 @@ export class Transactions implements OnInit {
       });
   }
 
+  // Navega para a página anterior de transações, se houver uma página anterior disponível. Se a página atual for a primeira, a função não faz nada.
   protected goToPreviousPage(): void {
     if (this.currentPage() === 0) {
       return;
@@ -138,6 +167,7 @@ export class Transactions implements OnInit {
     this.loadTransactions();
   }
 
+  // Navega para a próxima página de transações, se houver uma próxima página disponível. Se a página atual for a última, a função não faz nada.
   protected goToNextPage(): void {
     if (this.currentPage() >= this.totalPages() - 1) {
       return;
@@ -146,6 +176,64 @@ export class Transactions implements OnInit {
     this.loadTransactions();
   }
 
- 
+  // Aplica os filtros definidos no formulário de filtro e recarrega as transações com base nos filtros aplicados.
+  protected applyFilters(): void {
+  
+    if (this.filterForm.invalid) {
+      // Se o formulário de filtro for inválido, marca todos os campos como "tocados" para exibir mensagens de erro de validação.
+      this.filterForm.markAllAsTouched();
+      return;
+    }
 
+    // Obtém os valores do formulário de filtro.
+    const formValue = this.filterForm.getRawValue();
+
+    // Cria um objeto TransactionFilters com os filtros aplicados, usando os valores do formulário de filtro.
+    const filters: TransactionFilters = {
+      startDate: formValue.startDate || undefined,
+      endDate: formValue.endDate || undefined,
+      type: formValue.type || undefined,
+      accountId: formValue.accountId || undefined,
+      categoryId: formValue.categoryId || undefined,
+    };
+
+    // Atualiza o sinal appliedFilters com os filtros aplicados, permitindo que o componente rastreie e aplique os filtros de transações.
+    this.appliedFilters.set(filters);
+
+    this.currentPage.set(0); // Reseta para a primeira página ao aplicar filtros
+    this.loadTransactions();
+
+
+  }
+
+  protected availableCategories(): Category[] {
+    const selectedType = this.filterForm.controls.type.value;
+
+    if (selectedType === '') {
+      return this.categories();
+    }
+
+    return this.categories().filter(category => category.transactionType === selectedType);
+  }
+
+  // Reseta a categoria selecionada no formulário de filtro, definindo o valor do campo categoryId como uma string vazia. 
+  // Isso é útil quando o tipo de transação é alterado, garantindo que a categoria selecionada seja compatível com o novo tipo de transação.
+  protected resetCategory(): void {
+    this.filterForm.controls.categoryId.setValue(''); // Reseta a categoria selecionada
+  }
+
+  // Limpa os filtros aplicados no formulário de filtro, redefinindo todos os campos para seus valores padrão (vazios) e recarregando as transações sem filtros.
+  protected clearFilters(): void {
+    this.filterForm.reset({
+      startDate: '',
+      endDate: '',
+      type: '',
+      accountId: '',
+      categoryId: '',
+    });
+    this.appliedFilters.set({});
+    this.currentPage.set(0);
+    this.loadTransactions();
+  }
 }
+

@@ -7,6 +7,50 @@
         <button type="button">Nova Transação</button>
     </header>
 
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+        <label for="start-date">Data Inicial</label> <!-- label representa o rótulo de um campo de entrada -->
+        <input id="start-date" type="date" formControlName="startDate"> <!-- input representa o campo de entrada -->
+
+        <label for="end-date">Data Final</label>
+        <input id="end-date" type="date" formControlName="endDate">
+
+        @if (filterForm.hasError('invalidDateRange') && (filterForm.controls.startDate.touched ||
+        filterForm.controls.endDate.touched)) {
+        <p class="error">A data inicial não pode ser posterior à data final.</p>
+        }
+
+        <label for="type">Tipo</label>
+        <select id="type" formControlName="type" (change)="resetCategory()">
+            <option value="">Todos</option>
+            <option value="INCOME">Receita</option>
+            <option value="EXPENSE">Despesa</option>
+        </select>
+
+        <label for="account">Conta</label>
+        <select id="account" formControlName="accountId">
+            <option value="">Todas as contas</option>
+
+            @for (account of accounts(); track account.id) {
+            <option [value]="account.id">
+                {{ account.name }}
+            </option>
+            }
+        </select>
+
+        <label for="category">Categoria</label>
+        <select id="category" formControlName="categoryId">
+            <option value="">Todas as categorias</option>
+            @for (category of availableCategories(); track category.id) {
+            <option [value]="category.id">
+                {{ category.name }}
+            </option>
+            }
+        </select>
+
+        <button type="submit">Aplicar Filtros</button>
+        <button type="button" (click)="clearFilters()">Limpar Filtros</button>
+    </form>
+
     <section>
         @if (isLoading()) {
         <p>Carregando...</p>
@@ -18,7 +62,7 @@
         } @else {
         <p>Mostrando {{ totalElements() }} transações em {{ totalPages() }} páginas</p>
 
-        
+
         <table> <!-- representa o conjunto de dados relacionados -->
             <thead> <!-- agrupa o cabeçalho da tabela -->
                 <tr> <!-- tr representa uma linha -->
@@ -37,15 +81,15 @@
                     <td>{{ transaction.categoryName }}</td>
                     <td>@if (transaction.type === 'INCOME') {
                         <span class="income">Receita</span>
-                    } @else {
+                        } @else {
                         <span class="expense">Despesa</span>
-                    }
-                </td>
+                        }
+                    </td>
                     <td>@if (transaction.type === 'INCOME') {
-                       <span class="income">+ {{ transaction.amount | currency:'BRL' : 'symbol' }}</span>
-                    } @else {
-                       <span class="expense">- {{ transaction.amount | currency:'BRL' : 'symbol' }}</span>
-                    }
+                        <span class="income">+ {{ transaction.amount | currency:'BRL' : 'symbol' }}</span>
+                        } @else {
+                        <span class="expense">- {{ transaction.amount | currency:'BRL' : 'symbol' }}</span>
+                        }
                     </td>
                     <td><time [attr.datetime]="transaction.occurredOn">{{ transaction.occurredOn | date:'dd/MM/yyyy'
                             : 'UTC' }}</time></td>
@@ -57,10 +101,10 @@
 
         <nav aria-label="Navegação de páginas">
             <button type="button" (click)="goToPreviousPage()" [disabled]="currentPage() === 0">Anterior</button>
-            <span aria-live="polite">Página {{  currentPage() + 1 }} de {{ totalPages() }} </span>
-            <button type="button" (click)="goToNextPage()" [disabled]="currentPage() >= totalPages() - 1">Próxima</button>
+            <span aria-live="polite">Página {{ currentPage() + 1 }} de {{ totalPages() }} </span>
+            <button type="button" (click)="goToNextPage()"
+                [disabled]="currentPage() >= totalPages() - 1">Próxima</button>
         </nav>
-
 
 
         }
