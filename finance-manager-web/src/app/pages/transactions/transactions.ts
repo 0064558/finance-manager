@@ -9,8 +9,13 @@ import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
 import { CreateTransactionRequest, TransactionFilters, TransactionResponse, TransactionType } from '../../core/transaction.models';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
-import { ReactiveFormsModule } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 
 // Representa uma transação financeira, incluindo informações como conta, categoria, tipo, valor, data de ocorrência e descrição.
@@ -123,9 +128,10 @@ export class Transactions implements OnInit {
     accountId: ['',
       [Validators.required]
     ],
-    categoryId: ['',
-      [Validators.required]
-    ],
+    categoryId: this.formBuilder.nonNullable.control(
+      { value: '', disabled: true },
+      [Validators.required],
+    ),
     type: this.formBuilder.nonNullable.control<TransactionType | ''>('', [Validators.required]),
     amount: this.formBuilder.control<number | null>(null, [Validators.required,
     Validators.min(0.01), Validators.pattern(/^\d{1,17}(\.\d{1,2})?$/)]),
@@ -264,13 +270,17 @@ export class Transactions implements OnInit {
     this.loadTransactions();
   }
 
-  protected availableCategories(): Category[] {
+  // Retorna uma lista de categorias disponíveis com base no tipo de transação selecionado no formulário de filtro.
+  protected availableFilterCategories(): Category[] {
+    // Obtém o tipo de transação selecionado no formulário de filtro.
     const selectedType = this.filterForm.controls.type.value;
 
+    // Se nenhum tipo de transação estiver selecionado (string vazia), retorna todas as categorias disponíveis. Caso contrário, filtra as categorias com base no tipo de transação selecionado.
     if (selectedType === '') {
       return this.categories();
     }
 
+    // Filtra as categorias disponíveis com base no tipo de transação selecionado, retornando apenas as categorias que correspondem ao tipo de transação selecionado.
     return this.categories().filter(category => category.transactionType === selectedType);
   }
 
@@ -294,10 +304,11 @@ export class Transactions implements OnInit {
     this.loadTransactions();
   }
 
-  // Abre o formulário de criação de trans
+  // Abre o formulário de criação de transação.
   protected openCreateForm(): void {
     this.transactionFormError.set(null);
 
+    // Reseta o formulário de transação para seus valores padrão, incluindo accountId, categoryId, type, amount, occurredOn e description.
     this.transactionForm.reset({
       accountId: '',
       categoryId: '',
@@ -307,10 +318,13 @@ export class Transactions implements OnInit {
       description: '',
     });
 
+    // Desabilita o campo de categoria no formulário de transação, garantindo que o usuário não possa selecionar uma categoria até que um tipo de transação seja selecionado.
+    this.transactionForm.controls.categoryId.disable();
+
     this.isTransactionFormOpen.set(true);
   }
 
-  // Fecha o formulário de criação de trans
+  // Fecha o formulário de criação de transação.
   protected closeTransactionForm(): void {
     if (this.isTransactionSubmitting()) {
       return; // Impede o fechamento do formulário enquanto a transação está sendo enviada.
@@ -369,30 +383,54 @@ export class Transactions implements OnInit {
 
     // Chama o método create da API de transações para enviar a solicitação de criação da transação, e usa o operador finalize para definir isTransactionSubmitting como false quando a solicitação for concluída (independentemente de ter sido bem-sucedida ou não).
     this.transactionApi.create(transactionRequest)
-    .pipe(
-      finalize(() => this.isTransactionSubmitting.set(false))
-    )
-    // Assina o Observable retornado pelo método create para lidar com a resposta da solicitação de criação da transação. 
-    // Se a solicitação for bem-sucedida, o formulário de transação é fechado e os filtros são limpos. 
-    // Se houver um erro, uma mensagem de erro apropriada é definida com base no tipo de erro retornado pela API.
-    .subscribe({
-      next: () => {
-        this.isTransactionFormOpen.set(false);
-        this.clearFilters();
-      },
-      error: (error: HttpErrorResponse) => {
-        if (error.status === 409 && error.error?.code === 'TRANSACTION_TYPE_MISMATCH') {
-          this.transactionFormError.set('O tipo da transação deve ser igual ao tipo da categoria.');
-        } else {
-          this.transactionFormError.set('Erro ao criar a transação.');
+      .pipe(
+        finalize(() => this.isTransactionSubmitting.set(false))
+      )
+      // Assina o Observable retornado pelo método create para lidar com a resposta da solicitação de criação da transação. 
+      // Se a solicitação for bem-sucedida, o formulário de transação é fechado e os filtros são limpos. 
+      // Se houver um erro, uma mensagem de erro apropriada é definida com base no tipo de erro retornado pela API.
+      .subscribe({
+        next: () => {
+          this.isTransactionFormOpen.set(false);
+          this.clearFilters();
+        },
+        error: (error: HttpErrorResponse) => {
+          if (error.status === 409 && error.error?.code === 'TRANSACTION_TYPE_MISMATCH') {
+            this.transactionFormError.set('O tipo da transação deve ser igual ao tipo da categoria.');
+          } else {
+            this.transactionFormError.set('Erro ao criar a transação.');
+          }
         }
-      }
-    });
+      });
+  }
 
+  // Retorna uma lista de categorias disponíveis com base no tipo de transação selecionado no formulário de criação de transação.
+  protected availableTransactionCategories(): Category[] {
+    // Obtém o tipo de transação selecionado no formulário de criação de transação.
+    const selectedType = this.transactionForm.controls.type.value;
+
+    // Se nenhum tipo de transação estiver selecionado (string vazia), retorna uma lista vazia, indicando que não há categorias disponíveis. Caso contrário, filtra as categorias com base no tipo de transação selecionado.
+    if (selectedType === '') {
+      return [];
+    }
+
+    // Filtra as categorias disponíveis com base no tipo de transação selecionado, retornando apenas as categorias que correspondem ao tipo de transação selecionado.
+    return this.categories().filter(category => category.transactionType === selectedType);
+  }
+
+  // Quando o tipo de transação é alterado no formulário de criação de transação, reseta a categoria selecionada para garantir que a categoria seja compatível com o novo tipo de transação.
+  protected onTransactionTypeChange(): void {
+    this.transactionForm.controls.categoryId.setValue('');
+
+    if (this.transactionForm.controls.type.value === '') {
+      this.transactionForm.controls.categoryId.disable();
+      return;
+    }
+
+    this.transactionForm.controls.categoryId.enable();
   }
 
 }
-
 
 
 
