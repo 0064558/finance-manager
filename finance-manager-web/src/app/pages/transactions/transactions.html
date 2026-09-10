@@ -72,6 +72,7 @@
                     <th scope="col">Valor</th>
                     <th scope="col">Data</th>
                     <th scope="col">Descrição</th>
+                    <th scope="col">Ações</th>
                 </tr>
             </thead>
             <tbody> <!-- agrupa os dados -->
@@ -94,6 +95,12 @@
                     <td><time [attr.datetime]="transaction.occurredOn">{{ transaction.occurredOn | date:'dd/MM/yyyy'
                             : 'UTC' }}</time></td>
                     <td>{{ transaction.description || 'Sem descrição' }}</td>
+                    <td>
+                        <button type="button" (click)="openEditForm(transaction)"
+                            [attr.aria-label]="'Editar transação ' + (transaction.description || transaction.categoryName)">
+                            Editar
+                        </button>
+                    </td>
                 </tr>
                 }
             </tbody>
@@ -118,8 +125,14 @@
             aria-labelledby="transaction-dialog-title">
             <header class="transaction-modal__header">
                 <div>
-                    <h2 id="transaction-dialog-title">Nova transação</h2>
-                    <p>Preencha os dados da movimentação financeira.</p>
+                    <h2 id="transaction-dialog-title">
+                        {{ selectedTransaction() ? 'Editar transação' : 'Nova transação' }}
+                    </h2>
+                    <p>
+                        {{ selectedTransaction()
+                            ? 'Atualize os dados da movimentação financeira.'
+                            : 'Preencha os dados da movimentação financeira.' }}
+                    </p>
                 </div>
 
                 <button type="button" class="transaction-modal__close" (click)="closeTransactionForm()"
@@ -236,7 +249,9 @@
                     <button type="button" (click)="closeTransactionForm()"
                         [disabled]="isTransactionSubmitting()">Cancelar</button>
                     <button type="submit" [disabled]="isTransactionSubmitting()">
-                        {{ isTransactionSubmitting() ? 'Salvando...' : 'Salvar transação' }}
+                        {{ isTransactionSubmitting()
+                            ? 'Salvando...'
+                            : (selectedTransaction() ? 'Salvar alterações' : 'Salvar transação') }}
                     </button>
                 </div>
             </form>
