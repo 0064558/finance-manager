@@ -9,7 +9,7 @@ import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
 import { TransactionFilters, TransactionResponse, TransactionType } from '../../core/transaction.models';
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { ReactiveFormsModule } from '@angular/forms';
 
 // Representa uma transação financeira, incluindo informações como conta, categoria, tipo, valor, data de ocorrência e descrição.
@@ -95,6 +95,14 @@ export class Transactions implements OnInit {
   // FormBuilder é injetado para criar formulários reativos, permitindo a criação e validação de formulários de maneira mais fácil e estruturada.
   protected readonly formBuilder = inject(FormBuilder);
 
+  // Sinal para armazenar os filtros aplicados, permitindo que o componente rastreie e aplique filtros de transações com base nos valores do formulário de filtro.
+  private readonly appliedFilters = signal<TransactionFilters>({});
+
+  // Sinais para controlar o estado do formulário de transação, incluindo se o formulário está aberto, se está sendo enviado e mensagens de erro relacionadas ao envio do formulário.
+  protected readonly isTransactionFormOpen = signal(false);
+  protected readonly isTransactionSubmitting = signal(false);
+  protected readonly transactionFormError = signal<string | null>(null);
+
   // Cria um formulário reativo para filtrar transações com campos para data de início, data de término, 
   // tipo de transação, ID da conta e ID da categoria. E valida o intervalo de datas usando a função dateRangeValidator.
   protected readonly filterForm = this.formBuilder.nonNullable.group({
@@ -107,15 +115,34 @@ export class Transactions implements OnInit {
     validators: [dateRangeValidator],
   });
 
+  // Cria um formulário reativo para criar ou editar transações com campos para ID da conta, 
+  // ID da categoria, tipo de transação, valor, data de ocorrência e descrição.
+  // Incluindo validações para cada campo, como obrigatoriedade, valores mínimos e máximos, padrões de formato e limites de comprimento.
+  protected readonly transactionForm = this.formBuilder.nonNullable.group({
+    accountId: ['',
+      [Validators.required]
+    ],
+    categoryId: ['',
+      [Validators.required]
+    ],
+    type: this.formBuilder.nonNullable.control<TransactionType | ''>('', [Validators.required]),
+    amount: this.formBuilder.control<number | null>(null, [Validators.required,
+    Validators.min(0.01), Validators.pattern(/^\d{1,17}(\.\d{1,2})?$/)]),
+    occurredOn: [formatLocalDate(new Date()),
+    [Validators.required, notFutureDate]
+    ],
+    description: ['',
+      [Validators.maxLength(255)]
+    ],
+  });
 
-  // Sinal para armazenar os filtros aplicados, permitindo que o componente rastreie e aplique filtros de transações com base nos valores do formulário de filtro.
-  private readonly appliedFilters = signal<TransactionFilters>({});
-
-
+  // ngOnInit é um método do ciclo de vida do Angular que é chamado após a criação do componente.
+  // Neste caso, ele é usado para carregar as transações financeiras, contas e categorias quando o componente é inicializado.
   ngOnInit(): void {
     this.loadTransactions();
   }
 
+  // Carrega as transações financeiras, contas e categorias com base nos filtros aplicados, atualizando os sinais correspondentes e lidando com erros de carregamento.
   protected loadTransactions(): void {
 
     this.isLoading.set(true);
@@ -211,7 +238,6 @@ export class Transactions implements OnInit {
 
   // Aplica os filtros definidos no formulário de filtro e recarrega as transações com base nos filtros aplicados.
   protected applyFilters(): void {
-
     if (this.filterForm.invalid) {
       // Se o formulário de filtro for inválido, marca todos os campos como "tocados" para exibir mensagens de erro de validação.
       this.filterForm.markAllAsTouched();
@@ -235,8 +261,6 @@ export class Transactions implements OnInit {
 
     this.currentPage.set(0); // Reseta para a primeira página ao aplicar filtros
     this.loadTransactions();
-
-
   }
 
   protected availableCategories(): Category[] {
@@ -267,6 +291,32 @@ export class Transactions implements OnInit {
     this.appliedFilters.set({});
     this.currentPage.set(0);
     this.loadTransactions();
+  }
+
+  // Abre o formulário de criação de trans
+  protected openCreateForm(): void {
+    this.transactionFormError.set(null);
+
+    this.transactionForm.reset({
+      accountId: '',
+      categoryId: '',
+      type: '',
+      amount: null,
+      occurredOn: formatLocalDate(new Date()),
+      description: '',
+    });
+
+    this.isTransactionFormOpen.set(true);
+  }
+
+  // Fecha o formulário de criação de trans
+  protected closeTransactionForm(): void {
+    if(this.isTransactionSubmitting()) {
+      return; // Impede o fechamento do formulário enquanto a transação está sendo enviada.
+    }
+
+    this.isTransactionFormOpen.set(false);
+    this.transactionFormError.set(null);
   }
 }
 
