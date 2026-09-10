@@ -109,6 +109,9 @@ export class Transactions implements OnInit {
   protected readonly isTransactionSubmitting = signal(false);
   protected readonly transactionFormError = signal<string | null>(null);
 
+  // Sinal para armazenar a transação selecionada, permitindo que o componente rastreie qual transação está sendo visualizada ou editada.
+  protected readonly selectedTransaction = signal<TransactionViewModel | null>(null);
+
   // Cria um formulário reativo para filtrar transações com campos para data de início, data de término, 
   // tipo de transação, ID da conta e ID da categoria. E valida o intervalo de datas usando a função dateRangeValidator.
   protected readonly filterForm = this.formBuilder.nonNullable.group({
@@ -307,6 +310,7 @@ export class Transactions implements OnInit {
   // Abre o formulário de criação de transação.
   protected openCreateForm(): void {
     this.transactionFormError.set(null);
+    this.selectedTransaction.set(null);
 
     // Reseta o formulário de transação para seus valores padrão, incluindo accountId, categoryId, type, amount, occurredOn e description.
     this.transactionForm.reset({
@@ -332,6 +336,7 @@ export class Transactions implements OnInit {
 
     this.isTransactionFormOpen.set(false);
     this.transactionFormError.set(null);
+    this.selectedTransaction.set(null);
   }
 
   protected submitTransaction(): void {
@@ -377,12 +382,22 @@ export class Transactions implements OnInit {
       description: descriptionTrimmed === '' ? undefined : descriptionTrimmed,
     };
 
+    const selectedTransaction = this.selectedTransaction();
+
     // Define o sinal isTransactionSubmitting como true para indicar que a transação está sendo enviada, e limpa qualquer mensagem de erro anterior.
     this.isTransactionSubmitting.set(true);
     this.transactionFormError.set(null);
 
+    // Se houver uma transação selecionada, significa que estamos editando uma transação existente, caso contrário, estamos criando uma nova transação.
+    const request$ = selectedTransaction
+      ? this.transactionApi.update(selectedTransaction.id, transactionRequest)
+      : this.transactionApi.create(transactionRequest);
+
+    // Define a ação como "atualizar" se houver uma transação selecionada (indicando que estamos editando), ou "criar" se não houver transação selecionada (indicando que estamos criando uma nova transação).
+    const action = selectedTransaction ? 'atualizar' : 'criar';
+
     // Chama o método create da API de transações para enviar a solicitação de criação da transação, e usa o operador finalize para definir isTransactionSubmitting como false quando a solicitação for concluída (independentemente de ter sido bem-sucedida ou não).
-    this.transactionApi.create(transactionRequest)
+    request$
       .pipe(
         finalize(() => this.isTransactionSubmitting.set(false))
       )
@@ -391,6 +406,7 @@ export class Transactions implements OnInit {
       // Se houver um erro, uma mensagem de erro apropriada é definida com base no tipo de erro retornado pela API.
       .subscribe({
         next: () => {
+          this.selectedTransaction.set(null);
           this.isTransactionFormOpen.set(false);
           this.clearFilters();
         },
@@ -398,7 +414,7 @@ export class Transactions implements OnInit {
           if (error.status === 409 && error.error?.code === 'TRANSACTION_TYPE_MISMATCH') {
             this.transactionFormError.set('O tipo da transação deve ser igual ao tipo da categoria.');
           } else {
-            this.transactionFormError.set('Erro ao criar a transação.');
+            this.transactionFormError.set(`Erro ao ${action} a transação.`);
           }
         }
       });
@@ -429,6 +445,30 @@ export class Transactions implements OnInit {
 
     this.transactionForm.controls.categoryId.enable();
   }
+
+  protected openEditForm(transaction: TransactionViewModel): void {
+  // Limpar transactionFormError
+  this.transactionFormError.set(null);
+
+  // Armazenar transaction em selectedTransaction
+  this.selectedTransaction.set(transaction);
+
+  // Resetar o formulário preenchendo os seis campos
+  this.transactionForm.reset({
+    accountId: transaction.accountId,
+    categoryId: transaction.categoryId,
+    type: transaction.type,
+    amount: transaction.amount,
+    occurredOn: transaction.occurredOn,
+    description: transaction.description ?? '',
+  })
+
+  // Habilitar categoryId, pois existe um tipo selecionado
+  this.transactionForm.controls.categoryId.enable();
+
+  // Abrir o modal
+  this.isTransactionFormOpen.set(true);
+}
 
 }
 

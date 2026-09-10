@@ -234,6 +234,7 @@ export class Categories implements OnInit {
     const selectedCategory = this.selectedCategory();
 
     // Se houver uma categoria selecionada, significa que estamos editando uma categoria existente, caso contrário, estamos criando uma nova categoria.
+    // $ significa que estamos lidando com um Observable, que é uma forma de lidar com fluxos de dados assíncronos no Angular.
     const request$ = selectedCategory
       ? this.categoriesApi.update(selectedCategory.id, request)
       : this.categoriesApi.create(request);
