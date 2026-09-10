@@ -7,10 +7,11 @@ import { TransactionApi } from '../../core/transaction';
 
 import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
-import { TransactionFilters, TransactionResponse, TransactionType } from '../../core/transaction.models';
+import { CreateTransactionRequest, TransactionFilters, TransactionResponse, TransactionType } from '../../core/transaction.models';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { ReactiveFormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 
 // Representa uma transação financeira, incluindo informações como conta, categoria, tipo, valor, data de ocorrência e descrição.
 interface TransactionViewModel extends TransactionResponse {
@@ -311,12 +312,87 @@ export class Transactions implements OnInit {
 
   // Fecha o formulário de criação de trans
   protected closeTransactionForm(): void {
-    if(this.isTransactionSubmitting()) {
+    if (this.isTransactionSubmitting()) {
       return; // Impede o fechamento do formulário enquanto a transação está sendo enviada.
     }
 
     this.isTransactionFormOpen.set(false);
     this.transactionFormError.set(null);
   }
+
+  protected submitTransaction(): void {
+    if (this.transactionForm.invalid) {
+      // Se o formulário de transação for inválido, não envia o formulário.
+      this.transactionForm.markAllAsTouched();
+      return;
+    }
+
+    // Obtém os valores do formulário de transação usando getRawValue(), que retorna um objeto contendo os valores dos campos do formulário.
+    const {
+      accountId,
+      categoryId,
+      type,
+      amount,
+      occurredOn,
+      description,
+    } = this.transactionForm.getRawValue();
+
+    // Verifica se algum campo obrigatório está vazio (accountId, categoryId, type, amount ou occurredOn). Se algum desses campos estiver vazio, o formulário não será enviado e todos os campos serão marcados como "tocados" para exibir mensagens de erro de validação.
+    if (
+      !accountId ||
+      !categoryId ||
+      !type ||
+      amount === null ||
+      !occurredOn
+    ) {
+      // Se algum campo obrigatório estiver vazio, não envia o formulário.
+      this.transactionForm.markAllAsTouched();
+      return;
+    }
+
+    const descriptionTrimmed = description.trim();
+
+    // Cria um objeto CreateTransactionRequest com os valores do formulário de transação, incluindo accountId, categoryId, type, amount, occurredOn e description (se não estiver vazia).
+    const transactionRequest: CreateTransactionRequest = {
+      accountId,
+      categoryId,
+      type,
+      amount,
+      occurredOn,
+      // Se a descrição estiver vazia, define como undefined para não enviar uma string vazia.
+      description: descriptionTrimmed === '' ? undefined : descriptionTrimmed,
+    };
+
+    // Define o sinal isTransactionSubmitting como true para indicar que a transação está sendo enviada, e limpa qualquer mensagem de erro anterior.
+    this.isTransactionSubmitting.set(true);
+    this.transactionFormError.set(null);
+
+    // Chama o método create da API de transações para enviar a solicitação de criação da transação, e usa o operador finalize para definir isTransactionSubmitting como false quando a solicitação for concluída (independentemente de ter sido bem-sucedida ou não).
+    this.transactionApi.create(transactionRequest)
+    .pipe(
+      finalize(() => this.isTransactionSubmitting.set(false))
+    )
+    // Assina o Observable retornado pelo método create para lidar com a resposta da solicitação de criação da transação. 
+    // Se a solicitação for bem-sucedida, o formulário de transação é fechado e os filtros são limpos. 
+    // Se houver um erro, uma mensagem de erro apropriada é definida com base no tipo de erro retornado pela API.
+    .subscribe({
+      next: () => {
+        this.isTransactionFormOpen.set(false);
+        this.clearFilters();
+      },
+      error: (error: HttpErrorResponse) => {
+        if (error.status === 409 && error.error?.code === 'TRANSACTION_TYPE_MISMATCH') {
+          this.transactionFormError.set('O tipo da transação deve ser igual ao tipo da categoria.');
+        } else {
+          this.transactionFormError.set('Erro ao criar a transação.');
+        }
+      }
+    });
+
+  }
+
 }
+
+
+
 
