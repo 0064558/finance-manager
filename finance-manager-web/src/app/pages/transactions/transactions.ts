@@ -112,6 +112,12 @@ export class Transactions implements OnInit {
   // Sinal para armazenar a transação selecionada, permitindo que o componente rastreie qual transação está sendo visualizada ou editada.
   protected readonly selectedTransaction = signal<TransactionViewModel | null>(null);
 
+  // Sinais para controlar o estado da exclusão de transações, incluindo a transação pendente de exclusão, 
+  // se a exclusão está em andamento e mensagens de erro relacionadas à exclusão.
+  protected readonly transactionPendingDeletion = signal<TransactionViewModel | null>(null);
+  protected readonly isDeleting = signal(false);
+  protected readonly deleteError = signal<string | null>(null);
+
   // Cria um formulário reativo para filtrar transações com campos para data de início, data de término, 
   // tipo de transação, ID da conta e ID da categoria. E valida o intervalo de datas usando a função dateRangeValidator.
   protected readonly filterForm = this.formBuilder.nonNullable.group({
@@ -447,28 +453,76 @@ export class Transactions implements OnInit {
   }
 
   protected openEditForm(transaction: TransactionViewModel): void {
-  // Limpar transactionFormError
-  this.transactionFormError.set(null);
+    // Limpar transactionFormError
+    this.transactionFormError.set(null);
 
-  // Armazenar transaction em selectedTransaction
-  this.selectedTransaction.set(transaction);
+    // Armazenar transaction em selectedTransaction
+    this.selectedTransaction.set(transaction);
 
-  // Resetar o formulário preenchendo os seis campos
-  this.transactionForm.reset({
-    accountId: transaction.accountId,
-    categoryId: transaction.categoryId,
-    type: transaction.type,
-    amount: transaction.amount,
-    occurredOn: transaction.occurredOn,
-    description: transaction.description ?? '',
-  })
+    // Resetar o formulário preenchendo os seis campos
+    this.transactionForm.reset({
+      accountId: transaction.accountId,
+      categoryId: transaction.categoryId,
+      type: transaction.type,
+      amount: transaction.amount,
+      occurredOn: transaction.occurredOn,
+      description: transaction.description ?? '',
+    })
 
-  // Habilitar categoryId, pois existe um tipo selecionado
-  this.transactionForm.controls.categoryId.enable();
+    // Habilitar categoryId, pois existe um tipo selecionado
+    this.transactionForm.controls.categoryId.enable();
 
-  // Abrir o modal
-  this.isTransactionFormOpen.set(true);
-}
+    // Abrir o modal
+    this.isTransactionFormOpen.set(true);
+  }
+
+  protected openDeleteConfirmation(transaction: TransactionViewModel): void {
+    // limpar deleteError
+    this.deleteError.set(null);
+
+    // armazenar transaction em transactionPendingDeletion
+    this.transactionPendingDeletion.set(transaction);
+  }
+
+  protected closeDeleteConfirmation(): void {
+    // impedir fechamento quando isDeleting for true
+    if (this.isDeleting()) {
+      return;
+    }
+
+    // limpar transactionPendingDeletion
+    this.transactionPendingDeletion.set(null);
+
+    // limpar deleteError
+    this.deleteError.set(null);
+  }
+
+  protected confirmDelete(): void {
+    const transactionToDelete = this.transactionPendingDeletion();
+
+    if (!transactionToDelete || this.isDeleting()) {
+      return;
+    }
+
+    this.isDeleting.set(true);
+    this.deleteError.set(null);
+
+    this.transactionApi.delete(transactionToDelete.id)
+      .pipe(finalize(() => this.isDeleting.set(false)))
+      .subscribe({
+        next: () => {
+          if (this.currentPage() > 0 && this.transactions().length === 1) {
+            this.currentPage.set(this.currentPage() - 1);
+          }
+          this.transactionPendingDeletion.set(null);
+          this.loadTransactions();
+        },
+        error: (error: HttpErrorResponse) => {
+          console.error('Error deleting transaction:', error);
+          this.deleteError.set('Não foi possível excluir a transação.');
+        }
+      });
+  }
 
 }
 
