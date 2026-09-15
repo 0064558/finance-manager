@@ -20,3 +20,113 @@ button,
 input {
   font: inherit;
 }
+
+/* Shared visual language across the authenticated pages. */
+:root {
+  --fm-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fm-shadow: 0 4px 6px -4px #163e3008, 0 12px 32px -16px #163e301c;
+}
+body { -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; }
+::selection { color: #104b39; background: #c9efde; }
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid #238565;
+  outline-offset: 3px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.app-main :is(.stat-card, .panel, .cash-flow-panel, .account-card, .category-panel, .filter-panel) {
+  box-shadow: var(--fm-shadow);
+}
+.app-main .page-heading h1 { text-wrap: balance; }
+.app-main .page-heading > div { min-width: 0; }
+.app-main :is(.primary-button, .dashboard-shortcuts a) {
+  box-shadow: 0 4px 10px -5px #12543f45;
+}
+.app-main :is(.form-field, .filter-field) :is(input, select),
+.input-wrap {
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+.app-main :is(.form-field, .filter-field) :is(input, select):focus {
+  box-shadow: 0 0 0 4px #19856a12;
+}
+.app-main :is(.category-item, .account-row, tbody tr) {
+  transition: background-color 180ms ease;
+}
+.app-main :is(.stat-card, .account-card) {
+  transition: box-shadow 240ms ease, border-color 240ms ease, translate 240ms var(--fm-ease);
+}
+.app-main :is(.stat-icon, .account-icon, .account-avatar, .sidebar-icon) {
+  transition: transform 240ms var(--fm-ease);
+}
+.fm-modal-backdrop { backdrop-filter: blur(5px); }
+.fm-modal { box-shadow: 0 24px 90px -20px #102e3859; }
+.fm-skeleton {
+  display: block;
+  width: 100%;
+  height: 1rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(100deg, #e9f0ec 20%, #f7faf8 45%, #e9f0ec 70%);
+  background-size: 220% 100%;
+  animation: fm-shimmer 1.8s ease-in-out infinite;
+}
+.fm-skeleton--label { width: 55%; height: 0.7rem; }
+.fm-skeleton--value { width: 80%; height: 2rem; margin: 1.6rem 0 1rem; }
+@media (hover: hover) and (pointer: fine) {
+  .app-main :is(.stat-card, .account-card):hover {
+    translate: 0 -4px;
+    box-shadow: 0 16px 32px -16px #163e3038;
+    border-color: #b4d2c2;
+  }
+  .app-main :is(.stat-card, .account-card):hover :is(.stat-icon, .account-icon) { transform: rotate(-6deg) scale(1.08); }
+  .app-main :is(.category-item, .account-row, tbody tr):hover { background-color: #f3f8f5; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .page-heading, .login-card, .register-card, .brand-content {
+    animation: fm-rise-in 600ms var(--fm-ease) both;
+  }
+  .stats-grid > *, .account-grid > *, .categories-grid > *,
+  .accounts-overview, .category-overview, .filter-panel {
+    animation: fm-rise-in 560ms var(--fm-ease) both;
+  }
+  :is(.stats-grid, .account-grid, .categories-grid) > :nth-child(2) { animation-delay: 65ms; }
+  :is(.stats-grid, .account-grid) > :nth-child(3) { animation-delay: 130ms; }
+  :is(.stats-grid, .account-grid) > :nth-child(n + 4) { animation-delay: 195ms; }
+  .dashboard-grid > *, app-recent-transactions {
+    animation: fm-rise-in 650ms 120ms var(--fm-ease) backwards;
+  }
+  .income-bar, .expense-bar {
+    transform-box: fill-box;
+    transform-origin: center bottom;
+    animation: fm-bar-grow 750ms var(--fm-ease) both;
+  }
+  .expense-bar { animation-delay: 90ms; }
+  .income-line, .expense-line, .income-area, .expense-area {
+    animation: fm-chart-reveal 850ms var(--fm-ease) both;
+  }
+  .chart-tooltip { animation: fm-fade-in 150ms ease-out; }
+  .brand-panel::before, .brand-panel::after { animation: fm-orbit 12s ease-in-out 2 alternate; }
+}
+@keyframes fm-rise-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes fm-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@keyframes fm-bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes fm-chart-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes fm-orbit { to { transform: translate(-18px, -24px) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .app-main :is(.stat-card, .account-card):hover { translate: none; }
+  .app-main :is(.stat-card, .account-card):hover :is(.stat-icon, .account-icon) { transform: none; }
+}

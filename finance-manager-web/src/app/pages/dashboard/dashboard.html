@@ -28,9 +28,21 @@
   </div>
 
   @if (isLoading()) {
-    <section class="state-card" aria-live="polite">
-      <span class="spinner" aria-hidden="true"></span>
-      <span>Carregando seus dados...</span>
+    <section aria-busy="true" aria-label="Carregando resumo financeiro">
+      <p class="sr-only" role="status">Carregando seus dados...</p>
+      <div class="stats-grid" aria-hidden="true">
+        @for (placeholder of [1, 2, 3, 4]; track placeholder) {
+          <div class="stat-card dashboard-placeholder">
+            <span class="fm-skeleton fm-skeleton--label"></span>
+            <span class="fm-skeleton fm-skeleton--value"></span>
+            <span class="fm-skeleton fm-skeleton--label"></span>
+          </div>
+        }
+      </div>
+      <div class="dashboard-grid" aria-hidden="true">
+        <div class="panel dashboard-placeholder dashboard-placeholder--panel"><span class="fm-skeleton"></span></div>
+        <div class="panel dashboard-placeholder dashboard-placeholder--panel"><span class="fm-skeleton"></span></div>
+      </div>
     </section>
   } @else if (errorMessage()) {
     <section class="state-card state-card--error" role="alert">
@@ -95,6 +107,12 @@
       </article>
     </section>
 
+    <nav class="dashboard-shortcuts" aria-label="Atalhos financeiros">
+      <span>Seu próximo passo</span>
+      <a routerLink="/transactions"><svg lucideTrendingUp aria-hidden="true"></svg>Gerenciar transações<svg lucideChevronRight aria-hidden="true"></svg></a>
+      <a routerLink="/accounts"><svg lucideWalletCards aria-hidden="true"></svg>Organizar contas<svg lucideChevronRight aria-hidden="true"></svg></a>
+    </nav>
+
     <div class="dashboard-grid">
       <app-cash-flow-chart
         [points]="cashFlow()?.points ?? []"
@@ -134,7 +152,7 @@
             independentemente do mês selecionado.
           </p>
         } @else {
-          <div class="empty-state">Você ainda não cadastrou nenhuma conta.</div>
+          <div class="empty-state"><span>Você ainda não cadastrou nenhuma conta.</span><a class="empty-account-link" routerLink="/accounts">Criar minha primeira conta <span aria-hidden="true">→</span></a></div>
         }
       </section>
     </div>

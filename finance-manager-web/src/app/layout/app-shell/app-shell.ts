@@ -1,6 +1,8 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
 import {
   LucideArrowLeftRight,
   LucideChartNoAxesCombined,
@@ -45,6 +47,22 @@ import { AuthUser } from '../../core/auth.models';
 export class AppShell implements OnInit {
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  protected readonly pageContext = computed(() => {
+    const path = this.currentUrl().split(/[?#]/)[0];
+    switch (path) {
+      case '/accounts': return { label: 'SUAS CONTAS', caption: 'Cada saldo no seu lugar' };
+      case '/transactions': return { label: 'TRANSAÇÕES', caption: 'Clareza em cada movimentação' };
+      case '/categories': return { label: 'CATEGORIAS', caption: 'Mais organização para suas finanças' };
+      default: return { label: 'VISÃO GERAL', caption: 'Acompanhe sua saúde financeira' };
+    }
+  });
 
   protected readonly sidebarCollapsed = signal(false);
   protected readonly mobileMenuOpen = signal(false);

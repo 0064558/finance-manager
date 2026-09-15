@@ -468,3 +468,42 @@
     animation: none;
   }
 }
+
+.dashboard-shortcuts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.2rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #dce9e1;
+  border-radius: 1rem;
+  background: linear-gradient(110deg, #eaf4ee, #f6faf7);
+}
+.dashboard-shortcuts > span { margin-right: auto; color: #527363; font-size: 0.73rem; font-weight: 600; }
+.dashboard-shortcuts a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.65rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #d8e5dc;
+  border-radius: 0.7rem;
+  background: #ffffffc9;
+  color: #1a624a;
+  text-decoration: none;
+  font-size: 0.73rem;
+  font-weight: 600;
+  transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+.dashboard-shortcuts a:hover { background: #fff; box-shadow: 0 4px 12px #163e3012; }
+.dashboard-shortcuts svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+.empty-account-link { color: #166b55; font-weight: 650; text-underline-offset: 4px; }
+.dashboard-placeholder { min-height: 10rem; }
+.dashboard-placeholder--panel { min-height: 28rem; }
+.dashboard-placeholder--panel .fm-skeleton { height: 17rem; margin-top: 3rem; }
+@media (max-width: 600px) {
+  .dashboard-shortcuts > span { flex-basis: 100%; }
+  .dashboard-shortcuts a { flex: 1 1 12rem; }
+}

@@ -1,4 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
   LucideCalendarDays,
@@ -23,6 +24,7 @@ import { CashFlowChart } from '../../shared/cash-flow-chart/cash-flow-chart';
   selector: 'app-dashboard',
   imports: [
     CurrencyPipe,
+    RouterLink,
     LucideCalendarDays,
     LucideChevronLeft,
     LucideChevronRight,

@@ -1,3 +1,4 @@
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
 <div class="app-shell" [class.app-shell--collapsed]="sidebarCollapsed()"
   [class.app-shell--mobile-open]="mobileMenuOpen()">
   <aside id="primary-sidebar" class="sidebar" aria-label="Navegação principal">
@@ -64,7 +65,7 @@
 
   <button class="sidebar-backdrop" type="button" aria-label="Fechar menu" (click)="closeMobileNavigation()"></button>
 
-  <main class="app-main">
+  <main class="app-main" id="main-content" tabindex="-1">
     <header class="topbar">
       <div class="topbar-leading">
         <button class="menu-button" type="button" aria-controls="primary-sidebar"
@@ -73,8 +74,8 @@
           <svg lucideMenu aria-hidden="true"></svg>
         </button>
         <div>
-          <p class="topbar-label">VISÃO GERAL</p>
-          <p class="topbar-caption">Acompanhe sua saúde financeira</p>
+          <p class="topbar-label">{{ pageContext().label }}</p>
+          <p class="topbar-caption">{{ pageContext().caption }}</p>
         </div>
       </div>
 

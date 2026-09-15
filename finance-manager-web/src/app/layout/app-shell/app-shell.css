@@ -427,3 +427,30 @@
     transition: none;
   }
 }
+
+/* Soft depth and a clearer active navigation state. */
+.app-main { background: radial-gradient(ellipse at 80% 0, #e1f0e866, transparent 42%), #f6f8f6; }
+.sidebar { background: linear-gradient(180deg, #ffffff, #f6faf7); }
+.sidebar-link { transition: background-color 180ms ease, color 180ms ease; }
+.sidebar-link:not(.sidebar-link--disabled):hover { color: #176449; background: #eaf3ed; }
+.sidebar-link--active { background: #e2f1e8; box-shadow: inset 0 0 0 1px #cce5d7; }
+.sidebar-link--active::before { left: 0; height: 1.2rem; width: 3px; }
+.sidebar-link--logout:hover { color: #9f3040; background: #fff0f1; }
+.brand-mark { box-shadow: 0 4px 12px #166b5524; }
+.profile-avatar { box-shadow: 0 0 0 4px #edf7f1; }
+.topbar { border-bottom-color: #dfe9e3; }
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.8rem 1rem;
+  border-radius: 0.65rem;
+  color: #fff;
+  background: #166b55;
+  transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .sidebar-link:hover .sidebar-icon { transform: translateX(2px); }
+}
