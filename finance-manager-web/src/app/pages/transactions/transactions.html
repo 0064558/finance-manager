@@ -565,75 +565,52 @@
   }
 
   @if (transactionPendingDeletion(); as transaction) {
-    <div class="transaction-modal-backdrop">
+    <div class="transaction-modal-backdrop" (click)="closeDeleteConfirmation()">
       <section
         class="delete-modal"
-        role="dialog"
+        role="alertdialog"
         aria-modal="true"
         aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-description"
+        (click)="$event.stopPropagation()"
       >
-        <div class="delete-modal__icon" aria-hidden="true">!</div>
+        <span class="delete-modal__icon" aria-hidden="true"><svg lucideTrash2></svg></span>
 
-        <div class="delete-modal__content">
-          <h2 id="delete-dialog-title">Excluir transação?</h2>
-          <p id="delete-dialog-description">
-            Esta ação removerá permanentemente
-            <strong>{{ transaction.description || transaction.categoryName }}</strong
-            >.
-          </p>
+        <h2 id="delete-dialog-title">
+          Excluir “{{ transaction.description || transaction.categoryName }}”?
+        </h2>
+        <p id="delete-dialog-description">
+          Essa ação não poderá ser desfeita. Você está excluindo uma
+          {{ transaction.type === 'INCOME' ? 'receita' : 'despesa' }} de
+          <strong>{{ transaction.amount | currency: 'BRL' : 'symbol' }}</strong
+          >, registrada em
+          <time [attr.datetime]="transaction.occurredOn">{{
+            transaction.occurredOn | date: 'dd/MM/yyyy' : 'UTC'
+          }}</time
+          >.
+        </p>
 
-          <dl class="transaction-details transaction-details--delete">
-            <div>
-              <dt>Conta</dt>
-              <dd>{{ transaction.accountName }}</dd>
-            </div>
-            <div>
-              <dt>Categoria</dt>
-              <dd>{{ transaction.categoryName }}</dd>
-            </div>
-            <div>
-              <dt>Valor</dt>
-              <dd
-                [class.income]="transaction.type === 'INCOME'"
-                [class.expense]="transaction.type === 'EXPENSE'"
-              >
-                {{ transaction.type === 'INCOME' ? '+' : '-' }}
-                {{ transaction.amount | currency: 'BRL' : 'symbol' }}
-              </dd>
-            </div>
-            <div>
-              <dt>Data</dt>
-              <dd>
-                <time [attr.datetime]="transaction.occurredOn">
-                  {{ transaction.occurredOn | date: 'dd/MM/yyyy' : 'UTC' }}
-                </time>
-              </dd>
-            </div>
-          </dl>
+        @if (deleteError()) {
+          <p class="delete-modal__error" role="alert">{{ deleteError() }}</p>
+        }
 
-          @if (deleteError()) {
-            <p class="delete-modal__error" role="alert">{{ deleteError() }}</p>
-          }
-
-          <div class="delete-modal__actions">
-            <button
-              type="button"
-              class="delete-modal__cancel"
-              (click)="closeDeleteConfirmation()"
-              [disabled]="isDeleting()"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              class="delete-modal__confirm"
-              (click)="confirmDelete()"
-              [disabled]="isDeleting()"
-            >
-              {{ isDeleting() ? 'Excluindo...' : 'Excluir transação' }}
-            </button>
-          </div>
+        <div class="delete-modal__actions">
+          <button
+            type="button"
+            class="delete-modal__cancel"
+            (click)="closeDeleteConfirmation()"
+            [disabled]="isDeleting()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="delete-modal__confirm"
+            (click)="confirmDelete()"
+            [disabled]="isDeleting()"
+          >
+            {{ isDeleting() ? 'Excluindo...' : 'Excluir transação' }}
+          </button>
         </div>
       </section>
     </div>

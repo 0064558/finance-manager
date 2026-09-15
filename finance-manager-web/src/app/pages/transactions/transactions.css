@@ -143,9 +143,11 @@
   background: #fff3f4;
 }
 .delete-modal__actions .delete-modal__confirm {
-  border-color: #bd4b59;
+  min-width: 9rem;
+  border-color: #c84f5d;
   color: #fff;
-  background: #bd4b59;
+  background: #c84f5d;
+  box-shadow: 0 6px 14px #c84f5d24;
 }
 
 .filter-panel,
@@ -457,15 +459,6 @@
   margin: 0.2rem 0 0;
   overflow-wrap: anywhere;
 }
-.transaction-details--delete {
-  padding: 0.9rem;
-  border: 1px solid #e5ece8;
-  border-radius: 0.8rem;
-  background: #f8fbf9;
-}
-.transaction-details--delete dd {
-  font-weight: 700;
-}
 @container (max-width: 58rem) {
   .table-scroll {
     display: none;
@@ -576,18 +569,39 @@
   grid-column: 1 / -1;
 }
 .delete-modal {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 1rem;
-  width: min(100%, 31rem);
-  border-color: #f1d9dc;
+  width: min(100%, 27rem);
+  text-align: center;
 }
 .delete-modal__icon {
-  border-radius: 50%;
-  font-size: 1.2rem;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin: 0 auto 1rem;
+  border-radius: 1rem;
+  color: #bd4654;
+  background: #feedef;
+  box-shadow: 0 8px 18px #bd46541c;
 }
-.delete-modal__content {
-  min-width: 0;
+.delete-modal__icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.delete-modal h2 {
+  font-size: 1.25rem;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+.delete-modal #delete-dialog-description {
+  margin: 0.65rem auto 0;
+  color: #78887f;
+  font-size: 0.78rem;
+}
+.delete-modal__error {
+  margin-top: 1rem;
+  text-align: left;
+}
+.delete-modal__actions {
+  justify-content: center;
+  margin-top: 1.35rem;
 }
 
 @media (max-width: 1200px) {
