@@ -1,12 +1,18 @@
 import { inject, Service } from "@angular/core";
 import { Observable } from "rxjs";
-import { CashFlowResponse, CurrentBalance, ReportSummary } from "./report.models";
+import { CashFlowResponse, CategoryExpensesResponse, CurrentBalance, ReportSummary } from "./report.models";
 import { HttpClient } from "@angular/common/http";
 
 @Service()
 export class Report {
 
     private readonly http = inject(HttpClient);
+
+    getExpensesByCategory(startDate: string, endDate: string): Observable<CategoryExpensesResponse> {
+        return this.http.get<CategoryExpensesResponse>('/api/v1/reports/expenses-by-category', {
+            params: { startDate, endDate },
+        });
+    }
 
     // Obtém o resumo do relatório financeiro para um intervalo de datas específico
     getSummary(startDate: string, endDate: string): Observable<ReportSummary> {

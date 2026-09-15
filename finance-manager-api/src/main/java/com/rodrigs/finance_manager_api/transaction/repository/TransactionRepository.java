@@ -2,6 +2,7 @@ package com.rodrigs.finance_manager_api.transaction.repository;
 
 import com.rodrigs.finance_manager_api.report.repository.ReportTotalsProjection;
 import com.rodrigs.finance_manager_api.report.repository.CashFlowProjection;
+import com.rodrigs.finance_manager_api.report.repository.CategoryExpenseProjection;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.transaction.entity.Transaction;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,24 @@ import java.util.UUID;
 @Repository
 public interface TransactionRepository
         extends JpaRepository<Transaction, UUID>, JpaSpecificationExecutor<Transaction> {
+
+    @Query("""
+    SELECT t.category.id AS categoryId,
+           t.category.name AS categoryName,
+           SUM(t.amount) AS totalExpense
+    FROM Transaction t
+    WHERE t.user.id = :userId
+      AND t.type = :expenseType
+      AND t.occurredOn BETWEEN :startDate AND :endDate
+    GROUP BY t.category.id, t.category.name
+    ORDER BY SUM(t.amount) DESC, t.category.name ASC, t.category.id ASC
+    """)
+    List<CategoryExpenseProjection> findExpensesByCategoryAndPeriod(
+            @Param("userId") UUID userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("expenseType") TransactionType expenseType
+    );
 
     // Verifica se existe uma transação associada a uma conta financeira específica e a um usuário específico
     boolean existsByFinancialAccount_IdAndUser_Id(

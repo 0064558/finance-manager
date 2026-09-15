@@ -163,6 +163,61 @@ class ReportControllerIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void shouldGroupEveryExpenseAcrossAccountsWithoutIncludingIncomeOrOtherUsers() throws Exception {
+        String token = registerAndLogin(uniqueEmail());
+        String otherToken = registerAndLogin(uniqueEmail());
+        String firstAccount = createAccount(token, "Conta principal", "0.00");
+        String secondAccount = createAccount(token, "Carteira", "0.00");
+        String food = createCategory(token, "Alimentação", "EXPENSE");
+        String home = createCategory(token, "Moradia", "EXPENSE");
+        String salary = createCategory(token, "Salário", "INCOME");
+        String otherAccount = createAccount(otherToken, "Outra conta", "0.00");
+        String otherCategory = createCategory(otherToken, "Outra categoria", "EXPENSE");
+        LocalDate end = LocalDate.now().minusDays(1);
+        LocalDate start = end.minusDays(2);
+        // More than five transactions ensures the report is not limited to the recent list.
+        for (int i = 0; i < 6; i++) {
+            createTransaction(token, i % 2 == 0 ? firstAccount : secondAccount, food, "EXPENSE", "10.01", start);
+        }
+        createTransaction(token, secondAccount, home, "EXPENSE", "100.00", end);
+        createTransaction(token, firstAccount, salary, "INCOME", "900.00", start);
+        createTransaction(token, firstAccount, food, "EXPENSE", "800.00", start.minusDays(1));
+        createTransaction(token, firstAccount, food, "EXPENSE", "700.00", end.plusDays(1));
+        createTransaction(otherToken, otherAccount, otherCategory, "EXPENSE", "600.00", start);
+        mockMvc.perform(get("/api/v1/reports/expenses-by-category")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", start.toString()).param("endDate", end.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalExpense").value(160.06))
+                .andExpect(jsonPath("$.categories.length()").value(2))
+                .andExpect(jsonPath("$.categories[0].categoryId").value(home))
+                .andExpect(jsonPath("$.categories[0].totalExpense").value(100.00))
+                .andExpect(jsonPath("$.categories[1].categoryId").value(food))
+                .andExpect(jsonPath("$.categories[1].totalExpense").value(60.06));
+    }
+
+    @Test
+    void shouldValidateExpenseReportAuthenticationDatesAndEmptyPeriod() throws Exception {
+        String token = registerAndLogin(uniqueEmail());
+        mockMvc.perform(get("/api/v1/reports/expenses-by-category")
+                        .param("startDate", "2026-08-01").param("endDate", "2026-08-31"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/reports/expenses-by-category")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", "2026-08-31").param("endDate", "2026-08-01"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/reports/expenses-by-category")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/reports/expenses-by-category")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", "2026-08-01").param("endDate", "2026-08-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalExpense").value(0.00))
+                .andExpect(jsonPath("$.categories.length()").value(0));
+    }
+
     private String createAccount(String token, String name, String initialBalance) throws Exception {
         String response = mockMvc.perform(post("/api/v1/financial-accounts")
                         .header("Authorization", "Bearer " + token)

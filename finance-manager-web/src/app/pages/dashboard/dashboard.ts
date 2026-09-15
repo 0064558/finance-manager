@@ -1,6 +1,7 @@
 import { AnimatedNumber } from '../../shared/animated-number/animated-number';
 import { RouterLink } from '@angular/router';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   LucideCalendarDays,
   LucideChevronLeft,
@@ -12,13 +13,14 @@ import {
   LucideTrendingUp,
   LucideWalletCards,
 } from '@lucide/angular';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, Subscription } from 'rxjs';
 import { Report } from '../../core/report';
-import { CashFlowResponse, CurrentBalance, ReportSummary } from '../../core/report.models';
+import { CashFlowResponse, CategoryExpensesResponse, CurrentBalance, ReportSummary } from '../../core/report.models';
 import { TransactionApi } from '../../core/transaction';
 import { PageResponse, TransactionResponse } from '../../core/transaction.models';
 import { RecentTransactions } from '../../shared/recent-transactions/recent-transactions';
 import { CashFlowChart } from '../../shared/cash-flow-chart/cash-flow-chart';
+import { CategoryExpenses } from '../../shared/category-expenses/category-expenses';
 
 @Component({
   selector: 'app-dashboard',
@@ -36,6 +38,7 @@ import { CashFlowChart } from '../../shared/cash-flow-chart/cash-flow-chart';
     LucideWalletCards,
     RecentTransactions,
     CashFlowChart,
+    CategoryExpenses,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
@@ -43,6 +46,12 @@ import { CashFlowChart } from '../../shared/cash-flow-chart/cash-flow-chart';
 export class Dashboard implements OnInit {
   private readonly report = inject(Report);
   private readonly transactionApi = inject(TransactionApi);
+  private readonly destroyRef = inject(DestroyRef);
+  private expenseSubscription?: Subscription;
+
+  protected readonly categoryExpenses = signal<CategoryExpensesResponse | null>(null);
+  protected readonly expensesLoading = signal(true);
+  protected readonly expensesError = signal(false);
 
   private readonly monthFormatter = new Intl.DateTimeFormat('pt-BR', {
     month: 'long',
@@ -74,7 +83,24 @@ export class Dashboard implements OnInit {
   });
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.expenseSubscription?.unsubscribe());
     this.loadDashboard();
+  }
+
+  protected loadCategoryExpenses(): void {
+    this.expenseSubscription?.unsubscribe();
+    this.categoryExpenses.set(null);
+    this.expensesLoading.set(true);
+    this.expensesError.set(false);
+    const month = this.selectedMonth();
+    this.expenseSubscription = this.report.getExpensesByCategory(
+      this.formatDate(month),
+      this.formatDate(new Date(month.getFullYear(), month.getMonth() + 1, 0)),
+    ).pipe(finalize(() => this.expensesLoading.set(false)))
+      .subscribe({
+        next: (data) => this.categoryExpenses.set(data),
+        error: () => this.expensesError.set(true),
+      });
   }
 
   protected retry(): void {
@@ -100,6 +126,7 @@ export class Dashboard implements OnInit {
   }
 
   private loadDashboard(): void {
+    this.loadCategoryExpenses();
     const selectedMonth = this.selectedMonth();
     const startDate = this.formatDate(selectedMonth);
     const endDate = this.formatDate(
@@ -115,7 +142,7 @@ export class Dashboard implements OnInit {
       cashFlow: this.report.getCashFlow(startDate, endDate),
       recentTransactions: this.transactionApi.getRecent(startDate, endDate),
     })
-      .pipe(finalize(() => this.isLoading.set(false)))
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (response) => {
           this.summary.set(response.summary);

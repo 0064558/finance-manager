@@ -1,0 +1,69 @@
+<section class="expenses-panel" aria-labelledby="category-expenses-title" [attr.aria-busy]="loading()">
+  <header class="expenses-heading">
+    <div class="heading-copy">
+      <span class="heading-icon" aria-hidden="true"><svg lucideChartPie></svg></span>
+      <div><h2 id="category-expenses-title">Gastos por categoria</h2><p>Entenda para onde seu dinheiro vai.</p></div>
+    </div>
+    <span class="month-badge">{{ monthLabel() }}</span>
+  </header>
+
+  @if (loading()) {
+    <div class="expenses-body expenses-loading" role="status">
+      <span class="sr-only">Carregando gastos por categoria...</span>
+      <div class="ring-placeholder fm-skeleton" aria-hidden="true"></div>
+      <div class="list-placeholder" aria-hidden="true">
+        @for (row of [1, 2, 3]; track row) { <span class="fm-skeleton"></span> }
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="expenses-state" role="alert">
+      <span class="state-icon" aria-hidden="true"><svg lucideChartPie></svg></span>
+      <strong>Não foi possível carregar os gastos</strong>
+      <p>Tente novamente para ver a distribuição por categoria.</p>
+      <button class="retry-button fm-button" type="button" (click)="retry.emit()"><svg lucideRefreshCw aria-hidden="true"></svg>Tentar novamente</button>
+    </div>
+  } @else if (total() > 0 && categories().length > 0) {
+    <div class="expenses-body">
+      <div class="distribution-summary">
+        <div class="expense-ring">
+          <svg viewBox="0 0 120 120" class="ring-svg" aria-hidden="true">
+            <circle cx="60" cy="60" r="49" class="ring-track" />
+            @for (category of categories(); track category.categoryId) {
+              <circle cx="60" cy="60" r="49" pathLength="100" class="ring-segment"
+                [attr.stroke]="category.color" [attr.stroke-dasharray]="category.share + ' ' + (100 - category.share)"
+                [attr.stroke-dashoffset]="-category.offset" />
+            }
+          </svg>
+          <div class="ring-center"><span>Total de despesas</span><strong><app-animated-number [value]="total()" /></strong><small>{{ categories().length }} {{ categories().length === 1 ? 'categoria' : 'categorias' }}</small></div>
+        </div>
+        <p class="distribution-insight"><strong>{{ categories()[0].categoryName }}</strong> representa <b>{{ categories()[0].share | number: '1.0-1' : 'pt-BR' }}%</b> dos gastos neste mês.</p>
+      </div>
+
+      <div class="category-breakdown">
+        <div class="list-heading"><span>Categoria</span><span>Valor e participação</span></div>
+        <ul id="expense-category-list" class="expense-category-list">
+          @for (category of visibleCategories(); track category.categoryId) {
+            <li class="expense-category-row" [style.--category-color]="category.color">
+              <div class="row-heading"><span class="category-label"><i aria-hidden="true"></i>{{ category.categoryName }}</span><span class="category-amount"><app-animated-number [value]="category.totalExpense" /><small>{{ category.share | number: '1.0-1' : 'pt-BR' }}%</small></span></div>
+              <div class="share-track" aria-hidden="true"><span [style.width.%]="category.share"></span></div>
+            </li>
+          }
+        </ul>
+        @if (remainingCount() > 0) {
+          <button type="button" class="expand-button fm-button" aria-controls="expense-category-list" [attr.aria-expanded]="expanded()" (click)="expanded.set(!expanded())">
+            {{ expanded() ? 'Mostrar menos' : 'Ver mais ' + remainingCount() + (remainingCount() === 1 ? ' categoria' : ' categorias') }}
+            @if (!expanded()) { <span>{{ remainingShare() | number: '1.0-1' : 'pt-BR' }}% do total</span> }
+          </button>
+        }
+      </div>
+    </div>
+    <footer class="expenses-footer"><span>Todas as despesas do mês, em todas as contas.</span><a routerLink="/transactions">Ver transações <svg lucideArrowUpRight aria-hidden="true"></svg></a></footer>
+  } @else {
+    <div class="expenses-state">
+      <span class="state-icon" aria-hidden="true"><svg lucideChartPie></svg></span>
+      <strong>Um mês sem despesas por aqui</strong>
+      <p>Quando você registrar uma despesa em {{ monthLabel() }}, a distribuição aparecerá aqui.</p>
+      <a routerLink="/transactions">Gerenciar transações <svg lucideArrowUpRight aria-hidden="true"></svg></a>
+    </div>
+  }
+</section>

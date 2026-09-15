@@ -6,6 +6,8 @@ import com.rodrigs.finance_manager_api.report.dto.CurrentBalanceResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.CashFlowPointResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.CashFlowResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
+import com.rodrigs.finance_manager_api.report.dto.CategoryExpenseResponseDTO;
+import com.rodrigs.finance_manager_api.report.dto.CategoryExpensesResponseDTO;
 import com.rodrigs.finance_manager_api.report.repository.AccountBalanceProjection;
 import com.rodrigs.finance_manager_api.report.repository.CashFlowProjection;
 import com.rodrigs.finance_manager_api.report.repository.ReportTotalsProjection;
@@ -121,6 +123,20 @@ public class ReportService {
                 .toList();
 
         return new CashFlowResponseDTO(startDate, endDate, points);
+    }
+
+    @Transactional(readOnly = true)
+    public CategoryExpensesResponseDTO getExpensesByCategory(UUID authenticatedUserId, LocalDate startDate, LocalDate endDate) {
+        validateDateRange(startDate, endDate);
+        List<CategoryExpenseResponseDTO> categories = transactionRepository.findExpensesByCategoryAndPeriod(
+                authenticatedUserId, startDate, endDate, TransactionType.EXPENSE
+        ).stream().map(category -> new CategoryExpenseResponseDTO(
+                category.getCategoryId(), category.getCategoryName(), category.getTotalExpense()
+        )).toList();
+        BigDecimal totalExpense = categories.stream()
+                .map(CategoryExpenseResponseDTO::totalExpense)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new CategoryExpensesResponseDTO(startDate, endDate, totalExpense, categories);
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

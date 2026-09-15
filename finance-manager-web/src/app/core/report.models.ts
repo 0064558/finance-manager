@@ -9,6 +9,19 @@ export interface ReportSummary {
     netBalance: number;
 };
 
+export interface CategoryExpense {
+    categoryId: string;
+    categoryName: string;
+    totalExpense: number;
+}
+
+export interface CategoryExpensesResponse {
+    startDate: string;
+    endDate: string;
+    totalExpense: number;
+    categories: CategoryExpense[];
+}
+
 export interface AccountBalance {
     accountId: string;
     accountName: string;

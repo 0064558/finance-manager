@@ -6,6 +6,7 @@ import com.rodrigs.finance_manager_api.report.dto.CashFlowResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
 import com.rodrigs.finance_manager_api.report.repository.AccountBalanceProjection;
 import com.rodrigs.finance_manager_api.report.repository.CashFlowProjection;
+import com.rodrigs.finance_manager_api.report.repository.CategoryExpenseProjection;
 import com.rodrigs.finance_manager_api.report.repository.ReportTotalsProjection;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.InvalidTransactionDateRangeException;
@@ -27,6 +28,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ReportServiceTest {
@@ -56,6 +58,46 @@ class ReportServiceTest {
     void setUp() {
         reportService = new ReportService(transactionRepository, financialAccountRepository);
         userId = UUID.randomUUID();
+    }
+
+    @Test
+    void shouldReturnExpenseCategoriesAndExactTotalIncludingCents() {
+        LocalDate start = LocalDate.of(2026, 8, 1);
+        LocalDate end = LocalDate.of(2026, 8, 31);
+        CategoryExpenseProjection category = mock(CategoryExpenseProjection.class);
+        UUID categoryId = UUID.randomUUID();
+        when(category.getCategoryId()).thenReturn(categoryId);
+        when(category.getCategoryName()).thenReturn("Alimentação");
+        when(category.getTotalExpense()).thenReturn(new BigDecimal("125.67"));
+        when(transactionRepository.findExpensesByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE))
+                .thenReturn(List.of(category));
+        var response = reportService.getExpensesByCategory(userId, start, end);
+        assertThat(response.startDate()).isEqualTo(start);
+        assertThat(response.endDate()).isEqualTo(end);
+        assertThat(response.totalExpense()).isEqualByComparingTo("125.67");
+        assertThat(response.categories()).hasSize(1);
+        assertThat(response.categories().get(0).categoryId()).isEqualTo(categoryId);
+        assertThat(response.categories().get(0).categoryName()).isEqualTo("Alimentação");
+    }
+
+    @Test
+    void shouldReturnEmptyExpenseCategoriesForPeriodWithoutExpenses() {
+        LocalDate start = LocalDate.of(2026, 8, 1);
+        LocalDate end = LocalDate.of(2026, 8, 31);
+        when(transactionRepository.findExpensesByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE))
+                .thenReturn(List.of());
+        var response = reportService.getExpensesByCategory(userId, start, end);
+        assertThat(response.totalExpense()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(response.categories()).isEmpty();
+    }
+
+    @Test
+    void shouldRejectExpenseCategoriesWithInvalidDateRange() {
+        LocalDate start = LocalDate.of(2026, 8, 31);
+        LocalDate end = LocalDate.of(2026, 8, 1);
+        assertThatThrownBy(() -> reportService.getExpensesByCategory(userId, start, end))
+                .isInstanceOf(InvalidTransactionDateRangeException.class);
+        verify(transactionRepository, never()).findExpensesByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE);
     }
 
     @Test

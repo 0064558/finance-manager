@@ -4,6 +4,7 @@ import com.rodrigs.finance_manager_api.auth.AuthenticatedUser;
 import com.rodrigs.finance_manager_api.report.dto.CurrentBalanceResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.CashFlowResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
+import com.rodrigs.finance_manager_api.report.dto.CategoryExpensesResponseDTO;
 import com.rodrigs.finance_manager_api.report.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,6 +30,22 @@ public class ReportController {
 
     public ReportController(ReportService reportService) {
         this.reportService = reportService;
+    }
+
+    @Operation(summary = "Consulta despesas por categoria",
+            description = "Agrupa todas as despesas do usuário autenticado no período inclusivo, em ordem decrescente de valor.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Despesas por categoria retornadas com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Datas ausentes, inválidas ou intervalo invertido"),
+            @ApiResponse(responseCode = "401", description = "Token ausente ou inválido")
+    })
+    @GetMapping("/expenses-by-category")
+    public CategoryExpensesResponseDTO getExpensesByCategory(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @RequestParam("startDate") LocalDate startDate,
+            @RequestParam("endDate") LocalDate endDate
+    ) {
+        return reportService.getExpensesByCategory(authenticatedUser.id(), startDate, endDate);
     }
 
     @Operation(

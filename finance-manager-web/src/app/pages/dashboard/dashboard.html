@@ -151,6 +151,14 @@
       </section>
     </div>
 
+    <app-category-expenses
+      [data]="categoryExpenses()"
+      [monthLabel]="monthLabel()"
+      [loading]="expensesLoading()"
+      [error]="expensesError()"
+      (retry)="loadCategoryExpenses()"
+    />
+
     <app-recent-transactions
       [transactions]="recentTransactions()"
       [accounts]="currentBalance()?.accounts ?? []"
