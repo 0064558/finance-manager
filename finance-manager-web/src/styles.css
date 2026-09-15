@@ -1,3 +1,5 @@
+@import './app/shared/motion.css';
+
 /* Base styles shared by all pages. Component-specific styles stay with the component. */
 * {
   box-sizing: border-box;

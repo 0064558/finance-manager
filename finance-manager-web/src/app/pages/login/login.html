@@ -117,7 +117,7 @@
               [attr.aria-invalid]="loginForm.controls.password.touched && loginForm.controls.password.invalid"
             />
             <button
-              class="password-toggle"
+              class="password-toggle fm-button"
               type="button"
               [attr.aria-label]="isPasswordVisible() ? 'Ocultar senha' : 'Mostrar senha'"
               [attr.aria-pressed]="isPasswordVisible()"
@@ -144,7 +144,7 @@
         </div>
 
         <button
-          class="submit-button"
+          class="submit-button fm-button"
           type="submit"
           [disabled]="isSubmitting()"
           [attr.aria-busy]="isSubmitting()"

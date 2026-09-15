@@ -10,6 +10,7 @@ import {
   FinancialAccount,
 } from '../../core/financial-account.models';
 import { Report } from '../../core/report';
+import { Notifications } from '../../core/notifications';
 import { CurrencyPipe } from '@angular/common';
 import {
   LucideAlertCircle,
@@ -51,6 +52,7 @@ interface AccountViewModel extends FinancialAccount {
 // incluindo informações como nome, tipo, saldo inicial e saldo atual.
 export class Accounts implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly notifications = inject(Notifications);
   // Injeção de dependências para interagir com a API de contas financeiras e gerar relatórios.
   private readonly accountApi = inject(FinancialAccountApi);
   private readonly report = inject(Report);
@@ -227,6 +229,7 @@ export class Accounts implements OnInit {
       .subscribe({
         next: () => {
           this.accountPendingDeletion.set(null);
+          this.notifications.success('Conta excluída com sucesso.');
           this.loadAccounts();
         },
         error: (error: HttpErrorResponse) => {
@@ -272,6 +275,7 @@ export class Accounts implements OnInit {
         next: () => {
           this.isFormOpen.set(false);
           this.selectedAccount.set(null);
+          this.notifications.success(selectedAccount ? 'Conta atualizada com sucesso.' : 'Conta criada com sucesso.');
           this.loadAccounts();
         },
         error: (error: HttpErrorResponse) => {

@@ -6,7 +6,7 @@
       <p>Organize suas movimentações para entender melhor de onde seu dinheiro vem e para onde ele vai.</p>
     </div>
 
-    <button class="primary-button" type="button" (click)="openCreateForm()">
+    <button class="primary-button fm-button" type="button" (click)="openCreateForm()">
       <svg lucidePlus aria-hidden="true"></svg>
       Nova categoria
     </button>
@@ -27,7 +27,7 @@
       <h2>Não foi possível carregar as categorias</h2>
       <p>{{ errorMessage() }}</p>
     </div>
-    <button class="retry-button" type="button" (click)="loadCategories()">
+    <button class="retry-button fm-button" type="button" (click)="loadCategories()">
       Tentar novamente
     </button>
   </section>
@@ -79,12 +79,12 @@
           <span class="category-type">Receita</span>
 
           <div class="category-actions">
-            <button class="category-action" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
+            <button class="category-action fm-button" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
               (click)="openEditForm(category)">
               <svg lucidePencil aria-hidden="true"></svg>
             </button>
 
-            <button class="category-action category-action--danger" type="button"
+            <button class="category-action category-action--danger fm-button" type="button"
               [attr.aria-label]="'Excluir categoria ' + category.name" (click)="openDeleteConfirmation(category)">
               <svg lucideTrash2 aria-hidden="true"></svg>
             </button>
@@ -114,12 +114,12 @@
           <span class="category-type">Despesa</span>
 
           <div class="category-actions">
-            <button class="category-action" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
+            <button class="category-action fm-button" type="button" [attr.aria-label]="'Editar categoria ' + category.name"
               (click)="openEditForm(category)">
               <svg lucidePencil aria-hidden="true"></svg>
             </button>
 
-            <button class="category-action category-action--danger" type="button"
+            <button class="category-action category-action--danger fm-button" type="button"
               [attr.aria-label]="'Excluir categoria ' + category.name" (click)="openDeleteConfirmation(category)">
               <svg lucideTrash2 aria-hidden="true"></svg>
             </button>
@@ -136,8 +136,8 @@
 </section>
 
 @if (isFormOpen()) {
-<div class="modal-backdrop" (click)="closeCategoryForm()">
-  <section class="category-dialog" role="dialog" aria-modal="true" aria-labelledby="category-form-title"
+<div class="modal-backdrop fm-modal-backdrop" (click)="closeCategoryForm()">
+  <section class="category-dialog fm-modal" role="dialog" aria-modal="true" aria-labelledby="category-form-title"
     (click)="$event.stopPropagation()">
     <header class="dialog-header">
       <div>
@@ -155,7 +155,7 @@
         </p>
       </div>
 
-      <button class="dialog-close" type="button" aria-label="Fechar formulário" [disabled]="isSubmitting()"
+      <button class="dialog-close fm-button" type="button" aria-label="Fechar formulário" [disabled]="isSubmitting()"
         (click)="closeCategoryForm()">
         <svg lucideX aria-hidden="true"></svg>
       </button>
@@ -207,11 +207,11 @@
       }
 
       <div class="dialog-actions">
-        <button class="secondary-button" type="button" [disabled]="isSubmitting()" (click)="closeCategoryForm()">
+        <button class="secondary-button fm-button" type="button" [disabled]="isSubmitting()" (click)="closeCategoryForm()">
           Cancelar
         </button>
 
-        <button class="primary-button" type="submit" [disabled]="isSubmitting()">
+        <button class="primary-button fm-button" type="submit" [disabled]="isSubmitting()">
           @if (isSubmitting()) {
           Salvando...
           } @else {
@@ -225,8 +225,8 @@
 }
 
 @if (categoryPendingDeletion(); as category) {
-<div class="modal-backdrop" (click)="closeDeleteConfirmation()">
-  <section class="category-dialog delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title"
+<div class="modal-backdrop fm-modal-backdrop" (click)="closeDeleteConfirmation()">
+  <section class="category-dialog delete-dialog fm-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title"
     aria-describedby="delete-dialog-description" (click)="$event.stopPropagation()">
     <span class="delete-icon" aria-hidden="true">
       <svg lucideTrash2></svg>
@@ -243,12 +243,12 @@
     }
 
     <div class="dialog-actions">
-      <button class="secondary-button" type="button" [disabled]="isDeleting()"
+      <button class="secondary-button fm-button" type="button" [disabled]="isDeleting()"
         (click)="closeDeleteConfirmation()">
         Cancelar
       </button>
 
-      <button class="danger-button" type="button" [disabled]="isDeleting()" (click)="confirmDelete()">
+      <button class="danger-button fm-button" type="button" [disabled]="isDeleting()" (click)="confirmDelete()">
         {{ isDeleting() ? 'Excluindo...' : 'Excluir categoria' }}
       </button>
     </div>

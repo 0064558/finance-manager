@@ -1,0 +1,38 @@
+<div
+  class="notification-region"
+  role="status"
+  aria-live="polite"
+  aria-atomic="false"
+  aria-relevant="additions"
+  aria-label="Notificações"
+>
+  @for (item of notifications.items(); track item.id) {
+    <article
+      #notification
+      class="notification"
+      [class.notification--error]="item.kind === 'error'"
+      (mouseenter)="notifications.pause(item.id)"
+      (mouseleave)="resume(item.id, notification)"
+      (focusin)="notifications.pause(item.id)"
+      (focusout)="resume(item.id, notification)"
+    >
+      <span class="notification__icon" aria-hidden="true">
+        @if (item.kind === 'success') {
+          <svg lucideCircleCheck></svg>
+        } @else {
+          <svg lucideCircleAlert></svg>
+        }
+      </span>
+      <p>{{ item.message }}</p>
+      <button
+        class="notification__close fm-button"
+        type="button"
+        (click)="notifications.dismiss(item.id)"
+        [attr.aria-label]="'Fechar notificação: ' + item.message"
+        title="Fechar notificação"
+      >
+        <svg lucideX aria-hidden="true"></svg>
+      </button>
+    </article>
+  }
+</div>

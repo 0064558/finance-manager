@@ -4,6 +4,7 @@ import { finalize, forkJoin } from 'rxjs';
 import { CategoryApi } from '../../core/categories';
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import { TransactionApi } from '../../core/transaction';
+import { Notifications } from '../../core/notifications';
 
 import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
@@ -97,6 +98,7 @@ function formatLocalDate(date: Date): string {
 export class Transactions implements OnInit {
 
   private readonly transactionApi = inject(TransactionApi);
+  private readonly notifications = inject(Notifications);
   private readonly accountApi = inject(FinancialAccountApi);
   private readonly categoryApi = inject(CategoryApi);
 
@@ -427,6 +429,7 @@ export class Transactions implements OnInit {
         next: () => {
           this.selectedTransaction.set(null);
           this.isTransactionFormOpen.set(false);
+          this.notifications.success(selectedTransaction ? 'Transação atualizada com sucesso.' : 'Transação criada com sucesso.');
           this.clearFilters();
         },
         error: (error: HttpErrorResponse) => {
@@ -536,6 +539,7 @@ export class Transactions implements OnInit {
             this.currentPage.set(this.currentPage() - 1);
           }
           this.transactionPendingDeletion.set(null);
+          this.notifications.success('Transação excluída com sucesso.');
           this.loadTransactions();
         },
         error: (error: HttpErrorResponse) => {

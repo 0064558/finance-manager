@@ -8,7 +8,7 @@
       </p>
     </div>
 
-    <button class="primary-button" type="button" (click)="openCreateForm()">
+    <button class="primary-button fm-button" type="button" (click)="openCreateForm()">
       <svg lucidePlus aria-hidden="true"></svg>
       Nova conta
     </button>
@@ -56,7 +56,7 @@
       <h2>Não foi possível carregar as contas</h2>
       <p>{{ errorMessage() }}</p>
     </div>
-    <button class="secondary-button" type="button" (click)="loadAccounts()">
+    <button class="secondary-button fm-button" type="button" (click)="loadAccounts()">
       <svg lucideRefreshCw aria-hidden="true"></svg>
       Tentar novamente
     </button>
@@ -92,12 +92,12 @@
         </div>
 
         <div class="account-actions">
-          <button class="account-action" type="button" [attr.aria-label]="'Editar conta ' + account.name"
+          <button class="account-action fm-button" type="button" [attr.aria-label]="'Editar conta ' + account.name"
             (click)="openEditForm(account)">
             <svg lucidePencil aria-hidden="true"></svg>
           </button>
 
-          <button class="account-action account-action--danger" type="button"
+          <button class="account-action account-action--danger fm-button" type="button"
             [attr.aria-label]="'Excluir conta ' + account.name" (click)="openDeleteConfirmation(account)">
             <svg lucideTrash2 aria-hidden="true"></svg>
           </button>
@@ -124,8 +124,8 @@
 </section>
 
 @if (isFormOpen()) {
-<div class="modal-backdrop" (click)="closeAccountForm()">
-  <section class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title"
+<div class="modal-backdrop fm-modal-backdrop" (click)="closeAccountForm()">
+  <section class="account-dialog fm-modal" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title"
     (click)="$event.stopPropagation()">
     <div class="dialog-header">
       <div>
@@ -133,7 +133,7 @@
         <h2 id="account-dialog-title">{{ isEditing() ? 'Editar conta' : 'Nova conta' }}</h2>
         <p>Informe os dados iniciais para acompanhar seu saldo.</p>
       </div>
-      <button class="dialog-close" type="button" aria-label="Fechar formulário" (click)="closeAccountForm()">
+      <button class="dialog-close fm-button" type="button" aria-label="Fechar formulário" (click)="closeAccountForm()">
         <svg lucideX aria-hidden="true"></svg>
       </button>
     </div>
@@ -173,10 +173,10 @@
       }
 
       <div class="dialog-actions">
-        <button class="secondary-button" type="button" (click)="closeAccountForm()" [disabled]="isSubmitting()">
+        <button class="secondary-button fm-button" type="button" (click)="closeAccountForm()" [disabled]="isSubmitting()">
           Cancelar
         </button>
-        <button class="primary-button" type="submit" [disabled]="isSubmitting()">
+        <button class="primary-button fm-button" type="submit" [disabled]="isSubmitting()">
           @if (isSubmitting()) {
           Salvando...
           } @else {
@@ -190,8 +190,8 @@
 }
 
 @if (accountPendingDeletion(); as account) {
-<div class="modal-backdrop" (click)="closeDeleteConfirmation()">
-  <section class="delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title"
+<div class="modal-backdrop fm-modal-backdrop" (click)="closeDeleteConfirmation()">
+  <section class="delete-dialog fm-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title"
     aria-describedby="delete-dialog-description" (click)="$event.stopPropagation()">
     <span class="delete-icon" aria-hidden="true">
       <svg lucideTrash2></svg>
@@ -208,12 +208,12 @@
     }
 
     <div class="dialog-actions">
-      <button class="secondary-button" type="button" [disabled]="isDeleting()"
+      <button class="secondary-button fm-button" type="button" [disabled]="isDeleting()"
         (click)="closeDeleteConfirmation()">
         Cancelar
       </button>
 
-      <button class="danger-button" type="button" [disabled]="isDeleting()" (click)="confirmDelete()">
+      <button class="danger-button fm-button" type="button" [disabled]="isDeleting()" (click)="confirmDelete()">
         {{ isDeleting() ? 'Excluindo...' : 'Excluir conta' }}
       </button>
     </div>

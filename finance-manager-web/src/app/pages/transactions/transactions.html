@@ -7,7 +7,7 @@
         Acompanhe suas receitas e despesas, encontre movimentações e mantenha tudo organizado.
       </p>
     </div>
-    <button class="primary-button" type="button" (click)="openCreateForm()">
+    <button class="primary-button fm-button" type="button" (click)="openCreateForm()">
       <svg lucidePlus aria-hidden="true"></svg> Nova transação
     </button>
   </header>
@@ -91,14 +91,16 @@
     }
     <div class="filter-actions">
       <button
-        class="secondary-button"
+        class="secondary-button fm-button"
         type="button"
         (click)="clearFilters()"
         [disabled]="isLoading()"
       >
         Limpar filtros
       </button>
-      <button class="primary-button" type="submit" [disabled]="isLoading()">Aplicar filtros</button>
+      <button class="primary-button fm-button" type="submit" [disabled]="isLoading()">
+        Aplicar filtros
+      </button>
     </div>
   </form>
 
@@ -118,7 +120,7 @@
         <span class="state-icon" aria-hidden="true">!</span>
         <h2>Não foi possível carregar as transações</h2>
         <p>{{ errorMessage() }}</p>
-        <button class="secondary-button" type="button" (click)="loadTransactions()">
+        <button class="secondary-button fm-button" type="button" (click)="loadTransactions()">
           Tentar novamente
         </button>
       </div>
@@ -127,7 +129,7 @@
         <span class="state-icon" aria-hidden="true"><svg lucideArrowLeftRight></svg></span>
         <h2>Nenhuma transação encontrada</h2>
         <p>Revise os filtros ou registre uma nova movimentação para começar.</p>
-        <button class="secondary-button" type="button" (click)="openCreateForm()">
+        <button class="secondary-button fm-button" type="button" (click)="openCreateForm()">
           Nova transação
         </button>
       </div>
@@ -207,7 +209,7 @@
                   <div class="transaction-row-actions">
                     <button
                       type="button"
-                      class="transaction-row-action transaction-row-action--edit"
+                      class="transaction-row-action transaction-row-action--edit fm-button"
                       (click)="openEditForm(transaction)"
                       [attr.aria-label]="
                         'Editar transação ' + (transaction.description || transaction.categoryName)
@@ -217,7 +219,7 @@
                     </button>
                     <button
                       type="button"
-                      class="transaction-row-action transaction-row-action--delete"
+                      class="transaction-row-action transaction-row-action--delete fm-button"
                       (click)="openDeleteConfirmation(transaction)"
                       [attr.aria-label]="
                         'Excluir transação ' + (transaction.description || transaction.categoryName)
@@ -276,7 +278,7 @@
             </dl>
             <div class="transaction-row-actions">
               <button
-                class="transaction-row-action transaction-row-action--edit"
+                class="transaction-row-action transaction-row-action--edit fm-button"
                 type="button"
                 (click)="openEditForm(transaction)"
                 [attr.aria-label]="
@@ -286,7 +288,7 @@
                 <svg lucidePencil aria-hidden="true"></svg>
               </button>
               <button
-                class="transaction-row-action transaction-row-action--delete"
+                class="transaction-row-action transaction-row-action--delete fm-button"
                 type="button"
                 (click)="openDeleteConfirmation(transaction)"
                 [attr.aria-label]="
@@ -302,7 +304,7 @@
 
       <nav class="pagination" aria-label="Navegação de páginas">
         <button
-          class="secondary-button"
+          class="secondary-button fm-button"
           type="button"
           (click)="goToPreviousPage()"
           [disabled]="isLoading() || currentPage() === 0"
@@ -311,7 +313,7 @@
         </button>
         <span aria-live="polite">Página {{ currentPage() + 1 }} de {{ totalPages() }} </span>
         <button
-          class="secondary-button"
+          class="secondary-button fm-button"
           type="button"
           (click)="goToNextPage()"
           [disabled]="isLoading() || currentPage() >= totalPages() - 1"
@@ -323,9 +325,9 @@
   </section>
 
   @if (isTransactionFormOpen()) {
-    <div class="transaction-modal-backdrop">
+    <div class="transaction-modal-backdrop fm-modal-backdrop">
       <div
-        class="transaction-modal"
+        class="transaction-modal fm-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="transaction-dialog-title"
@@ -346,7 +348,7 @@
 
           <button
             type="button"
-            class="transaction-modal__close"
+            class="transaction-modal__close fm-button"
             (click)="closeTransactionForm()"
             aria-label="Fechar formulário"
             [disabled]="isTransactionSubmitting()"
@@ -543,13 +545,14 @@
 
           <div class="transaction-form__actions">
             <button
+              class="fm-button"
               type="button"
               (click)="closeTransactionForm()"
               [disabled]="isTransactionSubmitting()"
             >
               Cancelar
             </button>
-            <button type="submit" [disabled]="isTransactionSubmitting()">
+            <button class="fm-button" type="submit" [disabled]="isTransactionSubmitting()">
               {{
                 isTransactionSubmitting()
                   ? 'Salvando...'
@@ -565,9 +568,9 @@
   }
 
   @if (transactionPendingDeletion(); as transaction) {
-    <div class="transaction-modal-backdrop" (click)="closeDeleteConfirmation()">
+    <div class="transaction-modal-backdrop fm-modal-backdrop" (click)="closeDeleteConfirmation()">
       <section
-        class="delete-modal"
+        class="delete-modal fm-modal"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="delete-dialog-title"
@@ -597,7 +600,7 @@
         <div class="delete-modal__actions">
           <button
             type="button"
-            class="delete-modal__cancel"
+            class="delete-modal__cancel fm-button"
             (click)="closeDeleteConfirmation()"
             [disabled]="isDeleting()"
           >
@@ -605,7 +608,7 @@
           </button>
           <button
             type="button"
-            class="delete-modal__confirm"
+            class="delete-modal__confirm fm-button"
             (click)="confirmDelete()"
             [disabled]="isDeleting()"
           >

@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { finalize } from 'rxjs';
 import { CategoryApi } from '../../core/categories';
+import { Notifications } from '../../core/notifications';
 import { Category, CreateCategoryRequest } from '../../core/category.models';
 import {
   FormBuilder,
@@ -37,6 +38,7 @@ import {
   templateUrl: './categories.html',
 })
 export class Categories implements OnInit {
+  private readonly notifications = inject(Notifications);
 
   // Injeção do serviço CategoryApi para interagir com a API de categorias.
   private readonly categoriesApi = inject(CategoryApi);
@@ -184,6 +186,7 @@ export class Categories implements OnInit {
         next: () => {
           // Fecha a confirmação de exclusão e recarrega a lista de categorias após a exclusão bem-sucedida.
           this.categoryPendingDeletion.set(null);
+          this.notifications.success('Categoria excluída com sucesso.');
           this.loadCategories();
         },
         // Trata erros de exclusão, como categoria associada a transações existentes ou outros erros genéricos.
@@ -251,6 +254,7 @@ export class Categories implements OnInit {
           // Fechar o formulário e recarregar a lista de categorias após a criação bem-sucedida.
           this.isFormOpen.set(false);
           this.selectedCategory.set(null);
+          this.notifications.success(selectedCategory ? 'Categoria atualizada com sucesso.' : 'Categoria criada com sucesso.');
           this.loadCategories(); // Recarrega a lista de categorias após a criação bem-sucedida.
         },
         error: (error: HttpErrorResponse) => {
