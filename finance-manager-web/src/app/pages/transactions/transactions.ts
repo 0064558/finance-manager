@@ -17,6 +17,15 @@ import {
   Validators,
 } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import {
+  LucideArrowLeftRight,
+  LucideChevronLeft,
+  LucideChevronRight,
+  LucidePencil,
+  LucidePlus,
+  LucideSlidersHorizontal,
+  LucideTrash2,
+} from '@lucide/angular';
 
 // Representa uma transação financeira, incluindo informações como conta, categoria, tipo, valor, data de ocorrência e descrição.
 interface TransactionViewModel extends TransactionResponse {
@@ -76,7 +85,11 @@ function formatLocalDate(date: Date): string {
 }
 
 @Component({
-  imports: [CurrencyPipe, DatePipe, ReactiveFormsModule],
+  imports: [
+    CurrencyPipe, DatePipe, ReactiveFormsModule,
+    LucideArrowLeftRight, LucideChevronLeft, LucideChevronRight,
+    LucidePencil, LucidePlus, LucideSlidersHorizontal, LucideTrash2,
+  ],
   selector: 'app-transactions',
   styleUrl: './transactions.css',
   templateUrl: './transactions.html',
@@ -497,19 +510,27 @@ export class Transactions implements OnInit {
     this.deleteError.set(null);
   }
 
+  // Confirma a exclusão de uma transação pendente de exclusão, chamando a API para excluir a transação e atualizando a lista de trans
   protected confirmDelete(): void {
     const transactionToDelete = this.transactionPendingDeletion();
 
+    // Se não houver uma transação pendente de exclusão ou se a exclusão já estiver em andamento, a função retorna sem fazer nada.
     if (!transactionToDelete || this.isDeleting()) {
       return;
     }
 
+    // Define o sinal isDeleting como true para indicar que a exclusão está em andamento, e limpa qualquer mensagem de erro anterior relacionada à exclusão.
     this.isDeleting.set(true);
     this.deleteError.set(null);
 
+    // Chama o método delete da API de transações para excluir a transação, e usa o operador finalize para definir isDeleting como false quando a solicitação for concluída (independentemente de ter sido bem-sucedida ou não).
     this.transactionApi.delete(transactionToDelete.id)
       .pipe(finalize(() => this.isDeleting.set(false)))
+      // Assina o Observable retornado pelo método delete para lidar com a resposta da solicitação de exclusão da transação.
       .subscribe({
+        // Se a exclusão for bem-sucedida, a função verifica se a página atual é maior que 0 e se há apenas uma transação na lista. 
+        // Se essas condições forem atendidas, a página atual é decrementada em 1 para exibir a página anterior. 
+        // Em seguida, a transação pendente de exclusão é limpa e as transações são recarregadas.
         next: () => {
           if (this.currentPage() > 0 && this.transactions().length === 1) {
             this.currentPage.set(this.currentPage() - 1);
@@ -523,8 +544,4 @@ export class Transactions implements OnInit {
         }
       });
   }
-
 }
-
-
-

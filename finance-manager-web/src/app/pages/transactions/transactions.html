@@ -1,262 +1,641 @@
 <div class="transactions-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow"><span aria-hidden="true"></span> MOVIMENTAÇÕES FINANCEIRAS</p>
+      <h1 id="transactions-title">Transações</h1>
+      <p class="page-description">
+        Acompanhe suas receitas e despesas, encontre movimentações e mantenha tudo organizado.
+      </p>
+    </div>
+    <button class="primary-button" type="button" (click)="openCreateForm()">
+      <svg lucidePlus aria-hidden="true"></svg> Nova transação
+    </button>
+  </header>
 
-    <header>
-        <h1>Transações</h1>
-        <p>Lista de transações financeiras</p>
+  <form
+    class="filter-panel"
+    [formGroup]="filterForm"
+    (ngSubmit)="applyFilters()"
+    aria-labelledby="filters-title"
+  >
+    <div class="filter-panel__heading">
+      <span class="panel-icon" aria-hidden="true"><svg lucideSlidersHorizontal></svg></span>
+      <div>
+        <h2 id="filters-title">Encontre uma movimentação</h2>
+        <p>Escolha os critérios e clique em aplicar filtros.</p>
+      </div>
+    </div>
+    <div class="filter-grid">
+      <div class="filter-field">
+        <label for="start-date">Data inicial</label>
+        <input
+          id="start-date"
+          type="date"
+          formControlName="startDate"
+          aria-describedby="filter-date-error"
+        />
+      </div>
 
-        <button type="button" (click)="openCreateForm()">Nova Transação</button>
-    </header>
+      <div class="filter-field">
+        <label for="end-date">Data final</label>
+        <input
+          id="end-date"
+          type="date"
+          formControlName="endDate"
+          aria-describedby="filter-date-error"
+        />
+      </div>
 
-    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-        <label for="start-date">Data Inicial</label> <!-- label representa o rótulo de um campo de entrada -->
-        <input id="start-date" type="date" formControlName="startDate"> <!-- input representa o campo de entrada -->
-
-        <label for="end-date">Data Final</label>
-        <input id="end-date" type="date" formControlName="endDate">
-
-        @if (filterForm.hasError('invalidDateRange') && (filterForm.controls.startDate.touched ||
-        filterForm.controls.endDate.touched)) {
-        <p class="error">A data inicial não pode ser posterior à data final.</p>
-        }
-
+      <div class="filter-field">
         <label for="type">Tipo</label>
         <select id="type" formControlName="type" (change)="resetCategory()">
-            <option value="">Todos</option>
-            <option value="INCOME">Receita</option>
-            <option value="EXPENSE">Despesa</option>
+          <option value="">Todos</option>
+          <option value="INCOME">Receita</option>
+          <option value="EXPENSE">Despesa</option>
         </select>
+      </div>
 
+      <div class="filter-field">
         <label for="account">Conta</label>
         <select id="account" formControlName="accountId">
-            <option value="">Todas as contas</option>
+          <option value="">Todas as contas</option>
 
-            @for (account of accounts(); track account.id) {
+          @for (account of accounts(); track account.id) {
             <option [value]="account.id">
-                {{ account.name }}
+              {{ account.name }}
             </option>
-            }
+          }
         </select>
+      </div>
 
+      <div class="filter-field">
         <label for="category">Categoria</label>
         <select id="category" formControlName="categoryId">
-            <option value="">Todas as categorias</option>
-            @for (category of availableFilterCategories(); track category.id) {
+          <option value="">Todas as categorias</option>
+          @for (category of availableFilterCategories(); track category.id) {
             <option [value]="category.id">
-                {{ category.name }}
+              {{ category.name }}
             </option>
-            }
+          }
         </select>
-
-        <button type="submit">Aplicar Filtros</button>
-        <button type="button" (click)="clearFilters()">Limpar Filtros</button>
-    </form>
-
-    <section>
-        @if (isLoading()) {
-        <p>Carregando...</p>
-        } @else if(errorMessage()) {
-        <p class="error">{{ errorMessage() }}</p>
-        <button type="button" (click)="loadTransactions()">Recarregar</button>
-        } @else if (transactions().length === 0) {
-        <p>Nenhuma transação encontrada.</p>
-        } @else {
-        <p>Mostrando {{ totalElements() }} transações em {{ totalPages() }} páginas</p>
-
-
-        <table> <!-- representa o conjunto de dados relacionados -->
-            <thead> <!-- agrupa o cabeçalho da tabela -->
-                <tr> <!-- tr representa uma linha -->
-                    <th scope="col">Conta</th> <!-- th representa uma célula de cabeçalho -->
-                    <th scope="col">Categoria</th>
-                    <th scope="col">Tipo</th>
-                    <th scope="col">Valor</th>
-                    <th scope="col">Data</th>
-                    <th scope="col">Descrição</th>
-                    <th scope="col">Ações</th>
-                </tr>
-            </thead>
-            <tbody> <!-- agrupa os dados -->
-                @for (transaction of transactions(); track transaction.id) {
-                <tr>
-                    <td>{{ transaction.accountName }}</td> <!-- td representa uma célula de dados -->
-                    <td>{{ transaction.categoryName }}</td>
-                    <td>@if (transaction.type === 'INCOME') {
-                        <span class="income">Receita</span>
-                        } @else {
-                        <span class="expense">Despesa</span>
-                        }
-                    </td>
-                    <td>@if (transaction.type === 'INCOME') {
-                        <span class="income">+ {{ transaction.amount | currency:'BRL' : 'symbol' }}</span>
-                        } @else {
-                        <span class="expense">- {{ transaction.amount | currency:'BRL' : 'symbol' }}</span>
-                        }
-                    </td>
-                    <td><time [attr.datetime]="transaction.occurredOn">{{ transaction.occurredOn | date:'dd/MM/yyyy'
-                            : 'UTC' }}</time></td>
-                    <td>{{ transaction.description || 'Sem descrição' }}</td>
-                    <td>
-                        <button type="button" (click)="openEditForm(transaction)"
-                            [attr.aria-label]="'Editar transação ' + (transaction.description || transaction.categoryName)">
-                            Editar
-                        </button>
-                    </td>
-                </tr>
-                }
-            </tbody>
-        </table>
-
-        <nav aria-label="Navegação de páginas">
-            <button type="button" (click)="goToPreviousPage()" [disabled]="currentPage() === 0">Anterior</button>
-            <span aria-live="polite">Página {{ currentPage() + 1 }} de {{ totalPages() }} </span>
-            <button type="button" (click)="goToNextPage()"
-                [disabled]="currentPage() >= totalPages() - 1">Próxima</button>
-        </nav>
-
-
-        }
-    </section>
-
-
-
-    @if (isTransactionFormOpen()) {
-    <div class="transaction-modal-backdrop">
-        <div class="transaction-modal" role="dialog" aria-modal="true"
-            aria-labelledby="transaction-dialog-title">
-            <header class="transaction-modal__header">
-                <div>
-                    <h2 id="transaction-dialog-title">
-                        {{ selectedTransaction() ? 'Editar transação' : 'Nova transação' }}
-                    </h2>
-                    <p>
-                        {{ selectedTransaction()
-                            ? 'Atualize os dados da movimentação financeira.'
-                            : 'Preencha os dados da movimentação financeira.' }}
-                    </p>
-                </div>
-
-                <button type="button" class="transaction-modal__close" (click)="closeTransactionForm()"
-                    aria-label="Fechar formulário" [disabled]="isTransactionSubmitting()">
-                    Fechar
-                </button>
-            </header>
-
-            <form class="transaction-form" [formGroup]="transactionForm" (ngSubmit)="submitTransaction()"
-                [attr.aria-busy]="isTransactionSubmitting()">
-                <div class="transaction-form__field">
-                    <label for="transaction-account">Conta</label>
-                    <select id="transaction-account" formControlName="accountId" required
-                        [attr.aria-invalid]="transactionForm.controls.accountId.touched && transactionForm.controls.accountId.invalid"
-                        aria-describedby="transaction-account-error">
-                        <option value="">Selecione uma conta</option>
-                        @for (account of accounts(); track account.id) {
-                        <option [value]="account.id">{{ account.name }}</option>
-                        }
-                    </select>
-
-                    @if (transactionForm.controls.accountId.touched &&
-                    transactionForm.controls.accountId.hasError('required')) {
-                    <p id="transaction-account-error" class="transaction-form__error">Selecione uma conta.</p>
-                    }
-                </div>
-
-                <div class="transaction-form__field">
-                    <label for="transaction-type">Tipo</label>
-                    <select id="transaction-type" formControlName="type" required
-                        (change)="onTransactionTypeChange()"
-                        [attr.aria-invalid]="transactionForm.controls.type.touched && transactionForm.controls.type.invalid"
-                        aria-describedby="transaction-type-error">
-                        <option value="">Selecione o tipo</option>
-                        <option value="INCOME">Receita</option>
-                        <option value="EXPENSE">Despesa</option>
-                    </select>
-
-                    @if (transactionForm.controls.type.touched &&
-                    transactionForm.controls.type.hasError('required')) {
-                    <p id="transaction-type-error" class="transaction-form__error">Selecione o tipo da transação.</p>
-                    }
-                </div>
-
-                <div class="transaction-form__field">
-                    <label for="transaction-category">Categoria</label>
-                    <select id="transaction-category" formControlName="categoryId" required
-                        [attr.aria-invalid]="transactionForm.controls.categoryId.touched && transactionForm.controls.categoryId.invalid"
-                        aria-describedby="transaction-category-error">
-                        <option value="">Selecione uma categoria</option>
-                        @for (category of availableTransactionCategories(); track category.id) {
-                        <option [value]="category.id">{{ category.name }}</option>
-                        }
-                    </select>
-
-                    @if (transactionForm.controls.categoryId.touched &&
-                    transactionForm.controls.categoryId.hasError('required')) {
-                    <p id="transaction-category-error" class="transaction-form__error">Selecione uma categoria.</p>
-                    }
-                </div>
-
-                <div class="transaction-form__field">
-                    <label for="transaction-amount">Valor</label>
-                    <input id="transaction-amount" type="number" min="0.01" step="0.01" inputmode="decimal"
-                        formControlName="amount"
-                        [attr.aria-invalid]="transactionForm.controls.amount.touched && transactionForm.controls.amount.invalid"
-                        aria-describedby="transaction-amount-error">
-
-                    @if (transactionForm.controls.amount.touched &&
-                    transactionForm.controls.amount.hasError('required')) {
-                    <p id="transaction-amount-error" class="transaction-form__error">Informe o valor.</p>
-                    } @else if (transactionForm.controls.amount.touched &&
-                    transactionForm.controls.amount.hasError('min')) {
-                    <p id="transaction-amount-error" class="transaction-form__error">O valor deve ser de pelo menos R$ 0,01.</p>
-                    } @else if (transactionForm.controls.amount.touched &&
-                    transactionForm.controls.amount.hasError('pattern')) {
-                    <p id="transaction-amount-error" class="transaction-form__error">Use no máximo 17 dígitos inteiros e duas casas decimais.</p>
-                    }
-                </div>
-
-                <div class="transaction-form__field">
-                    <label for="transaction-date">Data</label>
-                    <input id="transaction-date" type="date" formControlName="occurredOn" required
-                        [attr.aria-invalid]="transactionForm.controls.occurredOn.touched && transactionForm.controls.occurredOn.invalid"
-                        aria-describedby="transaction-date-error">
-
-                    @if (transactionForm.controls.occurredOn.touched &&
-                    transactionForm.controls.occurredOn.hasError('required')) {
-                    <p id="transaction-date-error" class="transaction-form__error">Informe a data da transação.</p>
-                    } @else if (transactionForm.controls.occurredOn.touched &&
-                    transactionForm.controls.occurredOn.hasError('futureDate')) {
-                    <p id="transaction-date-error" class="transaction-form__error">A data não pode estar no futuro.</p>
-                    }
-                </div>
-
-                <div class="transaction-form__field transaction-form__field--full">
-                    <label for="transaction-description">Descrição <span>(opcional)</span></label>
-                    <textarea id="transaction-description" formControlName="description" maxlength="255" rows="3"
-                        [attr.aria-invalid]="transactionForm.controls.description.touched && transactionForm.controls.description.invalid"
-                        aria-describedby="transaction-description-help transaction-description-error"></textarea>
-                    <small id="transaction-description-help">Até 255 caracteres.</small>
-
-                    @if (transactionForm.controls.description.touched &&
-                    transactionForm.controls.description.hasError('maxlength')) {
-                    <p id="transaction-description-error" class="transaction-form__error">A descrição deve ter no máximo 255 caracteres.</p>
-                    }
-                </div>
-
-                @if (transactionFormError()) {
-                <p class="transaction-form__server-error" role="alert">{{ transactionFormError() }}</p>
-                }
-
-                <div class="transaction-form__actions">
-                    <button type="button" (click)="closeTransactionForm()"
-                        [disabled]="isTransactionSubmitting()">Cancelar</button>
-                    <button type="submit" [disabled]="isTransactionSubmitting()">
-                        {{ isTransactionSubmitting()
-                            ? 'Salvando...'
-                            : (selectedTransaction() ? 'Salvar alterações' : 'Salvar transação') }}
-                    </button>
-                </div>
-            </form>
-        </div>
+      </div>
     </div>
-    }
 
+    @if (
+      filterForm.hasError('invalidDateRange') &&
+      (filterForm.controls.startDate.touched || filterForm.controls.endDate.touched)
+    ) {
+      <p id="filter-date-error" class="filter-error" role="alert">
+        A data inicial não pode ser posterior à data final.
+      </p>
+    }
+    <div class="filter-actions">
+      <button
+        class="secondary-button"
+        type="button"
+        (click)="clearFilters()"
+        [disabled]="isLoading()"
+      >
+        Limpar filtros
+      </button>
+      <button class="primary-button" type="submit" [disabled]="isLoading()">Aplicar filtros</button>
+    </div>
+  </form>
+
+  <section
+    class="results-panel"
+    aria-label="Resultados das transações"
+    [attr.aria-busy]="isLoading()"
+  >
+    @if (isLoading()) {
+      <div class="state-card" role="status">
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <h2>Carregando movimentações</h2>
+        <p>Estamos buscando suas transações.</p>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="state-card state-card--error" role="alert">
+        <span class="state-icon" aria-hidden="true">!</span>
+        <h2>Não foi possível carregar as transações</h2>
+        <p>{{ errorMessage() }}</p>
+        <button class="secondary-button" type="button" (click)="loadTransactions()">
+          Tentar novamente
+        </button>
+      </div>
+    } @else if (transactions().length === 0) {
+      <div class="state-card">
+        <span class="state-icon" aria-hidden="true"><svg lucideArrowLeftRight></svg></span>
+        <h2>Nenhuma transação encontrada</h2>
+        <p>Revise os filtros ou registre uma nova movimentação para começar.</p>
+        <button class="secondary-button" type="button" (click)="openCreateForm()">
+          Nova transação
+        </button>
+      </div>
+    } @else {
+      <header class="results-heading">
+        <div>
+          <h2 id="transactions-list-title">
+            Suas movimentações <span class="count-badge">{{ totalElements() }}</span>
+          </h2>
+          <p>
+            {{ transactions().length }}
+            {{ transactions().length === 1 ? 'transação nesta página' : 'transações nesta página' }}
+          </p>
+        </div>
+        <div class="type-legend" aria-label="Legenda dos tipos">
+          <span><i class="legend-dot legend-dot--income" aria-hidden="true"></i> Receita</span>
+          <span><i class="legend-dot legend-dot--expense" aria-hidden="true"></i> Despesa</span>
+        </div>
+      </header>
+
+      <div
+        class="table-scroll"
+        role="region"
+        aria-labelledby="transactions-list-title"
+        tabindex="0"
+      >
+        <table class="transactions-table">
+          <!-- representa o conjunto de dados relacionados -->
+          <thead>
+            <!-- agrupa o cabeçalho da tabela -->
+            <tr>
+              <!-- tr representa uma linha -->
+              <th scope="col">Conta</th>
+              <!-- th representa uma célula de cabeçalho -->
+              <th scope="col">Categoria</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Valor</th>
+              <th scope="col">Data</th>
+              <th scope="col">Descrição</th>
+              <th scope="col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- agrupa os dados -->
+            @for (transaction of transactions(); track transaction.id) {
+              <tr>
+                <td>{{ transaction.accountName }}</td>
+                <!-- td representa uma célula de dados -->
+                <td>{{ transaction.categoryName }}</td>
+                <td class="transaction-type">
+                  @if (transaction.type === 'INCOME') {
+                    <span class="income">Receita</span>
+                  } @else {
+                    <span class="expense">Despesa</span>
+                  }
+                </td>
+                <td class="transaction-amount">
+                  @if (transaction.type === 'INCOME') {
+                    <span class="income"
+                      >+ {{ transaction.amount | currency: 'BRL' : 'symbol' }}</span
+                    >
+                  } @else {
+                    <span class="expense"
+                      >- {{ transaction.amount | currency: 'BRL' : 'symbol' }}</span
+                    >
+                  }
+                </td>
+                <td>
+                  <time [attr.datetime]="transaction.occurredOn">{{
+                    transaction.occurredOn | date: 'dd/MM/yyyy' : 'UTC'
+                  }}</time>
+                </td>
+                <td class="transaction-description">
+                  {{ transaction.description || 'Sem descrição' }}
+                </td>
+                <td>
+                  <div class="transaction-row-actions">
+                    <button
+                      type="button"
+                      class="transaction-row-action transaction-row-action--edit"
+                      (click)="openEditForm(transaction)"
+                      [attr.aria-label]="
+                        'Editar transação ' + (transaction.description || transaction.categoryName)
+                      "
+                    >
+                      <svg lucidePencil aria-hidden="true"></svg> Editar
+                    </button>
+                    <button
+                      type="button"
+                      class="transaction-row-action transaction-row-action--delete"
+                      (click)="openDeleteConfirmation(transaction)"
+                      [attr.aria-label]="
+                        'Excluir transação ' + (transaction.description || transaction.categoryName)
+                      "
+                    >
+                      <svg lucideTrash2 aria-hidden="true"></svg> Excluir
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- No smartphone, cartões substituem a tabela sem alterar os dados ou o CRUD. -->
+      <ul class="transaction-cards" aria-label="Lista de movimentações">
+        @for (transaction of transactions(); track transaction.id) {
+          <li
+            class="transaction-card"
+            [class.transaction-card--expense]="transaction.type === 'EXPENSE'"
+          >
+            <div class="transaction-card__heading">
+              <div>
+                <span class="transaction-card__type">{{
+                  transaction.type === 'INCOME' ? 'Receita' : 'Despesa'
+                }}</span>
+                <h3>{{ transaction.description || 'Sem descrição' }}</h3>
+              </div>
+              <span
+                class="transaction-card__amount"
+                [class.income]="transaction.type === 'INCOME'"
+                [class.expense]="transaction.type === 'EXPENSE'"
+              >
+                {{ transaction.type === 'INCOME' ? '+' : '−' }}
+                {{ transaction.amount | currency: 'BRL' : 'symbol' }}
+              </span>
+            </div>
+            <dl class="transaction-details">
+              <div>
+                <dt>Conta</dt>
+                <dd>{{ transaction.accountName }}</dd>
+              </div>
+              <div>
+                <dt>Categoria</dt>
+                <dd>{{ transaction.categoryName }}</dd>
+              </div>
+              <div>
+                <dt>Data</dt>
+                <dd>
+                  <time [attr.datetime]="transaction.occurredOn">{{
+                    transaction.occurredOn | date: 'dd/MM/yyyy' : 'UTC'
+                  }}</time>
+                </dd>
+              </div>
+            </dl>
+            <div class="transaction-row-actions">
+              <button
+                class="transaction-row-action transaction-row-action--edit"
+                type="button"
+                (click)="openEditForm(transaction)"
+                [attr.aria-label]="
+                  'Editar transação ' + (transaction.description || transaction.categoryName)
+                "
+              >
+                <svg lucidePencil aria-hidden="true"></svg> Editar
+              </button>
+              <button
+                class="transaction-row-action transaction-row-action--delete"
+                type="button"
+                (click)="openDeleteConfirmation(transaction)"
+                [attr.aria-label]="
+                  'Excluir transação ' + (transaction.description || transaction.categoryName)
+                "
+              >
+                <svg lucideTrash2 aria-hidden="true"></svg> Excluir
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+
+      <nav class="pagination" aria-label="Navegação de páginas">
+        <button
+          class="secondary-button"
+          type="button"
+          (click)="goToPreviousPage()"
+          [disabled]="isLoading() || currentPage() === 0"
+        >
+          <svg lucideChevronLeft aria-hidden="true"></svg> Anterior
+        </button>
+        <span aria-live="polite">Página {{ currentPage() + 1 }} de {{ totalPages() }} </span>
+        <button
+          class="secondary-button"
+          type="button"
+          (click)="goToNextPage()"
+          [disabled]="isLoading() || currentPage() >= totalPages() - 1"
+        >
+          Próxima <svg lucideChevronRight aria-hidden="true"></svg>
+        </button>
+      </nav>
+    }
+  </section>
+
+  @if (isTransactionFormOpen()) {
+    <div class="transaction-modal-backdrop">
+      <div
+        class="transaction-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="transaction-dialog-title"
+      >
+        <header class="transaction-modal__header">
+          <div>
+            <h2 id="transaction-dialog-title">
+              {{ selectedTransaction() ? 'Editar transação' : 'Nova transação' }}
+            </h2>
+            <p>
+              {{
+                selectedTransaction()
+                  ? 'Atualize os dados da movimentação financeira.'
+                  : 'Preencha os dados da movimentação financeira.'
+              }}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="transaction-modal__close"
+            (click)="closeTransactionForm()"
+            aria-label="Fechar formulário"
+            [disabled]="isTransactionSubmitting()"
+          >
+            Fechar
+          </button>
+        </header>
+
+        <form
+          class="transaction-form"
+          [formGroup]="transactionForm"
+          (ngSubmit)="submitTransaction()"
+          [attr.aria-busy]="isTransactionSubmitting()"
+        >
+          <div class="transaction-form__field">
+            <label for="transaction-account">Conta</label>
+            <select
+              id="transaction-account"
+              formControlName="accountId"
+              required
+              [attr.aria-invalid]="
+                transactionForm.controls.accountId.touched &&
+                transactionForm.controls.accountId.invalid
+              "
+              aria-describedby="transaction-account-error"
+            >
+              <option value="">Selecione uma conta</option>
+              @for (account of accounts(); track account.id) {
+                <option [value]="account.id">{{ account.name }}</option>
+              }
+            </select>
+
+            @if (
+              transactionForm.controls.accountId.touched &&
+              transactionForm.controls.accountId.hasError('required')
+            ) {
+              <p id="transaction-account-error" class="transaction-form__error">
+                Selecione uma conta.
+              </p>
+            }
+          </div>
+
+          <div class="transaction-form__field">
+            <label for="transaction-type">Tipo</label>
+            <select
+              id="transaction-type"
+              formControlName="type"
+              required
+              (change)="onTransactionTypeChange()"
+              [attr.aria-invalid]="
+                transactionForm.controls.type.touched && transactionForm.controls.type.invalid
+              "
+              aria-describedby="transaction-type-error"
+            >
+              <option value="">Selecione o tipo</option>
+              <option value="INCOME">Receita</option>
+              <option value="EXPENSE">Despesa</option>
+            </select>
+
+            @if (
+              transactionForm.controls.type.touched &&
+              transactionForm.controls.type.hasError('required')
+            ) {
+              <p id="transaction-type-error" class="transaction-form__error">
+                Selecione o tipo da transação.
+              </p>
+            }
+          </div>
+
+          <div class="transaction-form__field">
+            <label for="transaction-category">Categoria</label>
+            <select
+              id="transaction-category"
+              formControlName="categoryId"
+              required
+              [attr.aria-invalid]="
+                transactionForm.controls.categoryId.touched &&
+                transactionForm.controls.categoryId.invalid
+              "
+              aria-describedby="transaction-category-error"
+            >
+              <option value="">Selecione uma categoria</option>
+              @for (category of availableTransactionCategories(); track category.id) {
+                <option [value]="category.id">{{ category.name }}</option>
+              }
+            </select>
+
+            @if (
+              transactionForm.controls.categoryId.touched &&
+              transactionForm.controls.categoryId.hasError('required')
+            ) {
+              <p id="transaction-category-error" class="transaction-form__error">
+                Selecione uma categoria.
+              </p>
+            }
+          </div>
+
+          <div class="transaction-form__field">
+            <label for="transaction-amount">Valor</label>
+            <input
+              id="transaction-amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              formControlName="amount"
+              [attr.aria-invalid]="
+                transactionForm.controls.amount.touched && transactionForm.controls.amount.invalid
+              "
+              aria-describedby="transaction-amount-error"
+            />
+
+            @if (
+              transactionForm.controls.amount.touched &&
+              transactionForm.controls.amount.hasError('required')
+            ) {
+              <p id="transaction-amount-error" class="transaction-form__error">Informe o valor.</p>
+            } @else if (
+              transactionForm.controls.amount.touched &&
+              transactionForm.controls.amount.hasError('min')
+            ) {
+              <p id="transaction-amount-error" class="transaction-form__error">
+                O valor deve ser de pelo menos R$ 0,01.
+              </p>
+            } @else if (
+              transactionForm.controls.amount.touched &&
+              transactionForm.controls.amount.hasError('pattern')
+            ) {
+              <p id="transaction-amount-error" class="transaction-form__error">
+                Use no máximo 17 dígitos inteiros e duas casas decimais.
+              </p>
+            }
+          </div>
+
+          <div class="transaction-form__field">
+            <label for="transaction-date">Data</label>
+            <input
+              id="transaction-date"
+              type="date"
+              formControlName="occurredOn"
+              required
+              [attr.aria-invalid]="
+                transactionForm.controls.occurredOn.touched &&
+                transactionForm.controls.occurredOn.invalid
+              "
+              aria-describedby="transaction-date-error"
+            />
+
+            @if (
+              transactionForm.controls.occurredOn.touched &&
+              transactionForm.controls.occurredOn.hasError('required')
+            ) {
+              <p id="transaction-date-error" class="transaction-form__error">
+                Informe a data da transação.
+              </p>
+            } @else if (
+              transactionForm.controls.occurredOn.touched &&
+              transactionForm.controls.occurredOn.hasError('futureDate')
+            ) {
+              <p id="transaction-date-error" class="transaction-form__error">
+                A data não pode estar no futuro.
+              </p>
+            }
+          </div>
+
+          <div class="transaction-form__field transaction-form__field--full">
+            <label for="transaction-description">Descrição <span>(opcional)</span></label>
+            <textarea
+              id="transaction-description"
+              formControlName="description"
+              maxlength="255"
+              rows="3"
+              [attr.aria-invalid]="
+                transactionForm.controls.description.touched &&
+                transactionForm.controls.description.invalid
+              "
+              aria-describedby="transaction-description-help transaction-description-error"
+            ></textarea>
+            <small id="transaction-description-help">Até 255 caracteres.</small>
+
+            @if (
+              transactionForm.controls.description.touched &&
+              transactionForm.controls.description.hasError('maxlength')
+            ) {
+              <p id="transaction-description-error" class="transaction-form__error">
+                A descrição deve ter no máximo 255 caracteres.
+              </p>
+            }
+          </div>
+
+          @if (transactionFormError()) {
+            <p class="transaction-form__server-error" role="alert">{{ transactionFormError() }}</p>
+          }
+
+          <div class="transaction-form__actions">
+            <button
+              type="button"
+              (click)="closeTransactionForm()"
+              [disabled]="isTransactionSubmitting()"
+            >
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="isTransactionSubmitting()">
+              {{
+                isTransactionSubmitting()
+                  ? 'Salvando...'
+                  : selectedTransaction()
+                    ? 'Salvar alterações'
+                    : 'Salvar transação'
+              }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (transactionPendingDeletion(); as transaction) {
+    <div class="transaction-modal-backdrop">
+      <section
+        class="delete-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <div class="delete-modal__icon" aria-hidden="true">!</div>
+
+        <div class="delete-modal__content">
+          <h2 id="delete-dialog-title">Excluir transação?</h2>
+          <p id="delete-dialog-description">
+            Esta ação removerá permanentemente
+            <strong>{{ transaction.description || transaction.categoryName }}</strong
+            >.
+          </p>
+
+          <dl class="transaction-details transaction-details--delete">
+            <div>
+              <dt>Conta</dt>
+              <dd>{{ transaction.accountName }}</dd>
+            </div>
+            <div>
+              <dt>Categoria</dt>
+              <dd>{{ transaction.categoryName }}</dd>
+            </div>
+            <div>
+              <dt>Valor</dt>
+              <dd
+                [class.income]="transaction.type === 'INCOME'"
+                [class.expense]="transaction.type === 'EXPENSE'"
+              >
+                {{ transaction.type === 'INCOME' ? '+' : '-' }}
+                {{ transaction.amount | currency: 'BRL' : 'symbol' }}
+              </dd>
+            </div>
+            <div>
+              <dt>Data</dt>
+              <dd>
+                <time [attr.datetime]="transaction.occurredOn">
+                  {{ transaction.occurredOn | date: 'dd/MM/yyyy' : 'UTC' }}
+                </time>
+              </dd>
+            </div>
+          </dl>
+
+          @if (deleteError()) {
+            <p class="delete-modal__error" role="alert">{{ deleteError() }}</p>
+          }
+
+          <div class="delete-modal__actions">
+            <button
+              type="button"
+              class="delete-modal__cancel"
+              (click)="closeDeleteConfirmation()"
+              [disabled]="isDeleting()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="delete-modal__confirm"
+              (click)="confirmDelete()"
+              [disabled]="isDeleting()"
+            >
+              {{ isDeleting() ? 'Excluindo...' : 'Excluir transação' }}
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  }
 </div>
