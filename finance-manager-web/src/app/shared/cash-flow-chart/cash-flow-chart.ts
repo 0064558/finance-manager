@@ -1,10 +1,11 @@
+import { AnimatedNumber } from '../animated-number/animated-number';
 import { Component, computed, input, output, signal } from '@angular/core';
 import { LucideChartColumnIncreasing, LucideChartNoAxesCombined } from '@lucide/angular';
 import { CashFlowPoint } from '../../core/report.models';
 
 @Component({
   selector: 'app-cash-flow-chart',
-  imports: [LucideChartColumnIncreasing, LucideChartNoAxesCombined],
+  imports: [AnimatedNumber, LucideChartColumnIncreasing, LucideChartNoAxesCombined],
   templateUrl: './cash-flow-chart.html',
   styleUrl: './cash-flow-chart.css',
 })

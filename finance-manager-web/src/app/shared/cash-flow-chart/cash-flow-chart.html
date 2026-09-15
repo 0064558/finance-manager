@@ -27,11 +27,11 @@
   <div class="chart-totals" aria-label="Totais no período e legenda">
     <div>
       <span><i class="legend-mark income-mark"></i>Receitas</span
-      ><strong>{{ money(totals().income) }}</strong>
+      ><strong><app-animated-number [value]="totals().income" /></strong>
     </div>
     <div>
       <span><i class="legend-mark expense-mark"></i>Despesas</span
-      ><strong>{{ money(totals().expense) }}</strong>
+      ><strong><app-animated-number [value]="totals().expense" /></strong>
     </div>
     <span class="chart-period">{{ monthLabel() }}</span>
   </div>

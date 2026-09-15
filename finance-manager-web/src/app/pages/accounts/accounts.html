@@ -21,7 +21,7 @@
       <div>
         <span>Saldo total disponível</span>
         <strong [class.value-negative]="totalBalance() < 0">
-          {{ totalBalance() | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          <app-animated-number [value]="totalBalance()" />
         </strong>
       </div>
     </div>
@@ -29,7 +29,7 @@
     <div class="overview-divider" aria-hidden="true"></div>
 
     <div class="overview-item overview-item--count">
-      <strong>{{ accounts().length }}</strong>
+      <strong><app-animated-number [value]="accounts().length" format="integer" /></strong>
       <div>
         <span>{{ accounts().length === 1 ? 'Conta cadastrada' : 'Contas cadastradas' }}</span>
         <small>Incluída no saldo total</small>
@@ -108,7 +108,7 @@
       <div class="balance-block">
         <span class="balance-label">Saldo atual</span>
         <strong [class.value-negative]="account.currentBalance < 0">
-          {{ account.currentBalance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          <app-animated-number [value]="account.currentBalance" />
         </strong>
       </div>
 

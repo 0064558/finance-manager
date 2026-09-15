@@ -1,4 +1,4 @@
-import { CurrencyPipe } from '@angular/common';
+import { AnimatedNumber } from '../../shared/animated-number/animated-number';
 import { RouterLink } from '@angular/router';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
@@ -23,7 +23,7 @@ import { CashFlowChart } from '../../shared/cash-flow-chart/cash-flow-chart';
 @Component({
   selector: 'app-dashboard',
   imports: [
-    CurrencyPipe,
+    AnimatedNumber,
     RouterLink,
     LucideCalendarDays,
     LucideChevronLeft,

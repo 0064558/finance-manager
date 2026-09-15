@@ -1,3 +1,4 @@
+import { AnimatedNumber } from '../../shared/animated-number/animated-number';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin, finalize } from 'rxjs';
@@ -31,6 +32,7 @@ interface AccountViewModel extends FinancialAccount {
 @Component({
   selector: 'app-accounts',
   imports: [
+    AnimatedNumber,
     CurrencyPipe,
     ReactiveFormsModule,
     // Ícones do Lucide para representar diferentes tipos de contas e ações no componente.

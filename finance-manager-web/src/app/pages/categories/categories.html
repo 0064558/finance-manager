@@ -44,7 +44,7 @@
     <div class="overview-item overview-item--income">
       <span class="overview-symbol" aria-hidden="true">+</span>
       <div>
-        <strong>{{ incomeCategories().length }}</strong>
+        <strong><app-animated-number [value]="incomeCategories().length" format="integer" /></strong>
         <span>{{ incomeCategories().length === 1 ? 'categoria de receita' : 'categorias de receita' }}</span>
       </div>
     </div>
@@ -54,7 +54,7 @@
     <div class="overview-item overview-item--expense">
       <span class="overview-symbol" aria-hidden="true">−</span>
       <div>
-        <strong>{{ expenseCategories().length }}</strong>
+        <strong><app-animated-number [value]="expenseCategories().length" format="integer" /></strong>
         <span>{{ expenseCategories().length === 1 ? 'categoria de despesa' : 'categorias de despesa' }}</span>
       </div>
     </div>

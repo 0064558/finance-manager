@@ -1,3 +1,4 @@
+import { AnimatedNumber } from '../../shared/animated-number/animated-number';
 import {
   Component,
   computed,
@@ -26,6 +27,7 @@ import {
 
 @Component({
   imports: [
+    AnimatedNumber,
     ReactiveFormsModule,
     LucidePencil,
     LucidePlus,

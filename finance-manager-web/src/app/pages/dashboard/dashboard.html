@@ -61,9 +61,7 @@
             <svg lucideWalletCards></svg>
           </span>
         </div>
-        <strong>{{
-          currentBalance()?.totalBalance ?? 0 | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR'
-        }}</strong>
+        <strong><app-animated-number [value]="currentBalance()?.totalBalance ?? 0" /></strong>
         <p>Disponível em todas as contas</p>
       </article>
 
@@ -74,9 +72,7 @@
             <svg lucideTrendingUp></svg>
           </span>
         </div>
-        <strong>{{
-          summary()?.totalIncome ?? 0 | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR'
-        }}</strong>
+        <strong><app-animated-number [value]="summary()?.totalIncome ?? 0" /></strong>
         <p>{{ monthLabel() }}</p>
       </article>
 
@@ -87,9 +83,7 @@
             <svg lucideTrendingDown></svg>
           </span>
         </div>
-        <strong>{{
-          summary()?.totalExpense ?? 0 | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR'
-        }}</strong>
+        <strong><app-animated-number [value]="summary()?.totalExpense ?? 0" /></strong>
         <p>{{ monthLabel() }}</p>
       </article>
 
@@ -101,7 +95,7 @@
           </span>
         </div>
         <strong [class.value-negative]="(summary()?.netBalance ?? 0) < 0">
-          {{ summary()?.netBalance ?? 0 | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          <app-animated-number [value]="summary()?.netBalance ?? 0" />
         </strong>
         <p>Receitas menos despesas</p>
       </article>
@@ -127,7 +121,7 @@
             <h2 id="accounts-title">Minhas contas</h2>
             <p>Saldo atual por conta</p>
           </div>
-          <span class="account-count">{{ currentBalance()?.accounts?.length ?? 0 }}</span>
+          <span class="account-count"><app-animated-number [value]="currentBalance()?.accounts?.length ?? 0" format="integer" /></span>
         </div>
 
         @if ((currentBalance()?.accounts?.length ?? 0) > 0) {
@@ -142,7 +136,7 @@
                   ><small>Saldo disponível</small></span
                 >
                 <strong [class.value-negative]="account.balance < 0">
-                  {{ account.balance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+                  <app-animated-number [value]="account.balance" />
                 </strong>
               </div>
             }
