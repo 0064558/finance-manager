@@ -1,3 +1,4 @@
+import { PrivateCurrency } from '../../shared/private-currency/private-currency';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { finalize, forkJoin } from 'rxjs';
 
@@ -9,7 +10,7 @@ import { Notifications } from '../../core/notifications';
 import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
 import { CreateTransactionRequest, TransactionFilters, TransactionResponse, TransactionType } from '../../core/transaction.models';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import {
   AbstractControl,
   FormBuilder,
@@ -87,7 +88,7 @@ function formatLocalDate(date: Date): string {
 
 @Component({
   imports: [
-    CurrencyPipe, DatePipe, ReactiveFormsModule,
+    PrivateCurrency, DatePipe, ReactiveFormsModule,
     LucideArrowLeftRight, LucideChevronLeft, LucideChevronRight,
     LucidePencil, LucidePlus, LucideSlidersHorizontal, LucideTrash2,
   ],

@@ -79,16 +79,31 @@
         </div>
       </div>
 
-      <div class="topbar-profile" aria-label="Usuário autenticado">
-        <span class="profile-avatar" aria-hidden="true">
-          @if (userInitials()) {
-          {{ userInitials() }}
+      <div class="topbar-actions">
+        <button class="privacy-button" type="button"
+          [class.is-active]="valuePrivacy.hidden()"
+          [attr.aria-pressed]="valuePrivacy.hidden()"
+          [attr.aria-label]="valuePrivacy.hidden() ? 'Mostrar valores' : 'Ocultar valores'"
+          [title]="valuePrivacy.hidden() ? 'Mostrar valores' : 'Ocultar valores'"
+          (click)="valuePrivacy.toggle()">
+          @if (valuePrivacy.hidden()) {
+            <svg lucideEyeOff aria-hidden="true"></svg>
           } @else {
-          <svg lucideUserRound></svg>
+            <svg lucideEye aria-hidden="true"></svg>
           }
-        </span>
-        <div class="profile-copy">
-          <strong>{{ currentUser()?.name || 'Carregando...' }}</strong>
+        </button>
+        <span class="sr-only" role="status">{{ valuePrivacy.hidden() ? 'Valores ocultos' : 'Valores visíveis' }}</span>
+        <div class="topbar-profile" aria-label="Usuário autenticado">
+          <span class="profile-avatar" aria-hidden="true">
+            @if (userInitials()) {
+            {{ userInitials() }}
+            } @else {
+            <svg lucideUserRound></svg>
+            }
+          </span>
+          <div class="profile-copy">
+            <strong>{{ currentUser()?.name || 'Carregando...' }}</strong>
+          </div>
         </div>
       </div>
     </header>

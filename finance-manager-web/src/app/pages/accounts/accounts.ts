@@ -1,3 +1,4 @@
+import { PrivateCurrency } from '../../shared/private-currency/private-currency';
 import { AnimatedNumber } from '../../shared/animated-number/animated-number';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -12,7 +13,7 @@ import {
 } from '../../core/financial-account.models';
 import { Report } from '../../core/report';
 import { Notifications } from '../../core/notifications';
-import { CurrencyPipe } from '@angular/common';
+
 import {
   LucideAlertCircle,
   LucideBanknote,
@@ -33,7 +34,7 @@ interface AccountViewModel extends FinancialAccount {
   selector: 'app-accounts',
   imports: [
     AnimatedNumber,
-    CurrencyPipe,
+    PrivateCurrency,
     ReactiveFormsModule,
     // Ícones do Lucide para representar diferentes tipos de contas e ações no componente.
     LucideAlertCircle,

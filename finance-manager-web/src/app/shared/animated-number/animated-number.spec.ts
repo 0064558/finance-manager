@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { AnimatedNumber } from './animated-number';
+import { ValuePrivacy, hiddenAmount } from '../../core/value-privacy';
 
 describe('AnimatedNumber', () => {
   let fixture: ComponentFixture<AnimatedNumber>;
@@ -32,6 +33,7 @@ describe('AnimatedNumber', () => {
   afterEach(() => {
     fixture.destroy();
     vi.unstubAllGlobals();
+    localStorage.removeItem('finance-manager.values-hidden');
   });
 
   it('counts from zero and finishes at the exact amount with cents', () => {
@@ -76,5 +78,37 @@ describe('AnimatedNumber', () => {
     fixture.destroy();
     expect(frames.size).toBe(0);
     expect(media.removeEventListener).toHaveBeenCalled();
+  });
+
+  it('cancels counting and conceals visual and accessible values, then animates the latest value', () => {
+    const privacy = TestBed.inject(ValuePrivacy);
+    fixture.componentRef.setInput('value', 100);
+    fixture.detectChanges();
+    step(0);
+    step(450);
+    privacy.toggle();
+    fixture.detectChanges();
+    expect(frames.size).toBe(0);
+    expect(visual()).toBe(hiddenAmount);
+    expect(fixture.nativeElement.querySelector('.sr-only').textContent).toBe(hiddenAmount);
+    fixture.componentRef.setInput('value', 250.01);
+    fixture.detectChanges();
+    expect(visual()).toBe(hiddenAmount);
+    expect(frames.size).toBe(0);
+    privacy.toggle();
+    fixture.detectChanges();
+    step(500);
+    step(1400);
+    expect(visual()).toBe(money(250.01));
+  });
+
+  it('keeps integer counts visible when monetary values are hidden', () => {
+    TestBed.inject(ValuePrivacy).toggle();
+    fixture.componentRef.setInput('value', 15);
+    fixture.componentRef.setInput('format', 'integer');
+    fixture.detectChanges();
+    step(0);
+    step(900);
+    expect(visual()).toBe('15');
   });
 });

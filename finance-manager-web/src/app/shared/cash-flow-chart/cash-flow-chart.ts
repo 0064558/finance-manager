@@ -1,5 +1,6 @@
 import { AnimatedNumber } from '../animated-number/animated-number';
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { ValuePrivacy, hiddenAmount } from '../../core/value-privacy';
 import { LucideChartColumnIncreasing, LucideChartNoAxesCombined } from '@lucide/angular';
 import { CashFlowPoint } from '../../core/report.models';
 
@@ -10,6 +11,7 @@ import { CashFlowPoint } from '../../core/report.models';
   styleUrl: './cash-flow-chart.css',
 })
 export class CashFlowChart {
+  private readonly privacy = inject(ValuePrivacy);
   readonly points = input<readonly CashFlowPoint[]>([]);
   readonly monthLabel = input.required<string>();
   readonly previousMonthLabel = input.required<string>();
@@ -47,7 +49,7 @@ export class CashFlowChart {
   protected readonly ticks = computed(() =>
     Array.from({ length: 5 }, (_, index) => ({
       position: index * 25,
-      label: this.axisFormatter.format((4 - index) * this.scale().step),
+      label: this.privacy.hidden() ? hiddenAmount : this.axisFormatter.format((4 - index) * this.scale().step),
     })),
   );
 
@@ -98,7 +100,7 @@ export class CashFlowChart {
   });
 
   protected money(value: number): string {
-    return this.currencyFormatter.format(value);
+    return this.privacy.hidden() ? hiddenAmount : this.currencyFormatter.format(value);
   }
 
   protected dateLabel(date: string): string {

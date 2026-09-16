@@ -260,11 +260,31 @@
 }
 
 .topbar-leading,
+.topbar-actions,
 .topbar-profile {
   display: flex;
   align-items: center;
   gap: 0.8rem;
 }
+
+.privacy-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  color: #617083;
+  background: #fff;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+.privacy-button svg { width: 1.2rem; height: 1.2rem; }
+.privacy-button:hover,
+.privacy-button.is-active { color: var(--primary); background: #edf7f1; border-color: #bedbcf; }
+.privacy-button:focus-visible { outline: 3px solid #22966e55; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .privacy-button { transition: none; } }
 
 .menu-button {
   display: none;

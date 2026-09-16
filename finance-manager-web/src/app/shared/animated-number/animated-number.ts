@@ -1,6 +1,7 @@
 import {
   Component, DestroyRef, ElementRef, NgZone, computed, effect, inject, input, viewChild,
 } from '@angular/core';
+import { ValuePrivacy, hiddenAmount } from '../../core/value-privacy';
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2,
@@ -17,12 +18,14 @@ export class AnimatedNumber {
   readonly format = input<'currency' | 'integer'>('currency');
   private readonly visual = viewChild<ElementRef<HTMLElement>>('visual');
   private readonly zone = inject(NgZone);
+  private readonly privacy = inject(ValuePrivacy);
+  private readonly masked = computed(() => this.format() === 'currency' && this.privacy.hidden());
   private readonly destroyRef = inject(DestroyRef);
   private displayedValue = 0;
   private frame: number | null = null;
   private readonly reducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
-  protected readonly formattedValue = computed(() => this.formatNumber(this.safeValue()));
+  protected readonly formattedValue = computed(() => this.masked() ? hiddenAmount : this.formatNumber(this.safeValue()));
 
   constructor() {
     const onMotionChange = () => {
@@ -43,6 +46,12 @@ export class AnimatedNumber {
       const element = this.visual()?.nativeElement;
       if (!element) return;
       onCleanup(() => this.cancelFrame());
+      if (this.masked()) {
+        this.cancelFrame();
+        this.displayedValue = 0;
+        element.textContent = hiddenAmount;
+        return;
+      }
       if (this.reducedMotion?.matches || typeof requestAnimationFrame !== 'function') {
         this.render(target);
         return;
@@ -81,7 +90,7 @@ export class AnimatedNumber {
   private render(value: number): void {
     this.displayedValue = value;
     const element = this.visual()?.nativeElement;
-    if (element) element.textContent = this.formatNumber(value);
+    if (element) element.textContent = this.masked() ? hiddenAmount : this.formatNumber(value);
   }
 
   private cancelFrame(): void {

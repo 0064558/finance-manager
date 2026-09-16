@@ -10,6 +10,8 @@ import {
   LucideLayoutDashboard,
   LucideLogOut,
   LucideMenu,
+  LucideEye,
+  LucideEyeOff,
   LucideSettings,
   LucideTags,
   LucideUserRound,
@@ -18,6 +20,7 @@ import {
 } from '@lucide/angular';
 import { Auth } from '../../core/auth';
 import { AuthUser } from '../../core/auth.models';
+import { ValuePrivacy } from '../../core/value-privacy';
 
 @Component({
   selector: 'app-shell',
@@ -31,6 +34,8 @@ import { AuthUser } from '../../core/auth.models';
     LucideLayoutDashboard,
     LucideLogOut,
     LucideMenu,
+    LucideEye,
+    LucideEyeOff,
     LucideSettings,
     LucideTags,
     LucideUserRound,
@@ -45,6 +50,7 @@ import { AuthUser } from '../../core/auth.models';
 // o menu móvel (aberto ou fechado) e as informações do usuário autenticado. O componente também lida com eventos de teclado e redimensionamento
 // da janela para melhorar a experiência do usuário em diferentes dispositivos.
 export class AppShell implements OnInit {
+  protected readonly valuePrivacy = inject(ValuePrivacy);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
   private readonly currentUrl = toSignal(

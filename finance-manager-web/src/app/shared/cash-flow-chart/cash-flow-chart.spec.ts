@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CashFlowChart } from './cash-flow-chart';
 import { CashFlowPoint } from '../../core/report.models';
+import { ValuePrivacy } from '../../core/value-privacy';
 
 describe('CashFlowChart', () => {
   let fixture: ComponentFixture<CashFlowChart>;
@@ -16,6 +17,25 @@ describe('CashFlowChart', () => {
     fixture = TestBed.createComponent(CashFlowChart);
     fixture.componentRef.setInput('monthLabel', 'agosto de 2026');
     fixture.componentRef.setInput('previousMonthLabel', 'julho de 2026');
+  });
+
+  afterEach(() => localStorage.removeItem('finance-manager.values-hidden'));
+
+  it('hides scale, tooltip, totals and accessible table values while keeping the chart usable', () => {
+    fixture.componentRef.setInput('points', [point('2026-08-01', 150, 25)]);
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.plot').dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
+    TestBed.inject(ValuePrivacy).toggle();
+    fixture.detectChanges();
+    for (const selector of ['.chart-tooltip', '.chart-totals', '.y-axis', 'tbody']) {
+      const text = fixture.nativeElement.querySelector(selector).textContent;
+      expect(text).toContain('••••••');
+      expect(text).not.toContain('150');
+      expect(text).not.toContain('25,00');
+    }
+    TestBed.inject(ValuePrivacy).toggle();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.chart-tooltip').textContent).toContain('150,00');
   });
 
   it('preserves the ratio of small amounts and keeps zero at the baseline', () => {

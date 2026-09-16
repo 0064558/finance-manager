@@ -189,11 +189,11 @@
                 <td class="transaction-amount">
                   @if (transaction.type === 'INCOME') {
                     <span class="income"
-                      >+ {{ transaction.amount | currency: 'BRL' : 'symbol' }}</span
+                      >+ {{ transaction.amount | privateCurrency: 'BRL' : 'symbol' }}</span
                     >
                   } @else {
                     <span class="expense"
-                      >- {{ transaction.amount | currency: 'BRL' : 'symbol' }}</span
+                      >- {{ transaction.amount | privateCurrency: 'BRL' : 'symbol' }}</span
                     >
                   }
                 </td>
@@ -255,7 +255,7 @@
                 [class.expense]="transaction.type === 'EXPENSE'"
               >
                 {{ transaction.type === 'INCOME' ? '+' : '−' }}
-                {{ transaction.amount | currency: 'BRL' : 'symbol' }}
+                {{ transaction.amount | privateCurrency: 'BRL' : 'symbol' }}
               </span>
             </div>
             <dl class="transaction-details">
@@ -585,7 +585,7 @@
         <p id="delete-dialog-description">
           Essa ação não poderá ser desfeita. Você está excluindo uma
           {{ transaction.type === 'INCOME' ? 'receita' : 'despesa' }} de
-          <strong>{{ transaction.amount | currency: 'BRL' : 'symbol' }}</strong
+          <strong>{{ transaction.amount | privateCurrency: 'BRL' : 'symbol' }}</strong
           >, registrada em
           <time [attr.datetime]="transaction.occurredOn">{{
             transaction.occurredOn | date: 'dd/MM/yyyy' : 'UTC'

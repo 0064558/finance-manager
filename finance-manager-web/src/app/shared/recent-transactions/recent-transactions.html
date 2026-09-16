@@ -60,7 +60,7 @@
             [class.transaction-amount--expense]="transaction.type === 'EXPENSE'"
           >
             {{ transaction.type === 'INCOME' ? '+' : '−'
-            }}{{ transaction.amount | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+            }}{{ transaction.amount | privateCurrency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
           </strong>
         </article>
       }
