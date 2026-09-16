@@ -1,10 +1,14 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
+import { Component } from '@angular/core';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { Auth } from '../../core/auth';
 import { ValuePrivacy } from '../../core/value-privacy';
 import { AppShell } from './app-shell';
+
+@Component({ template: '<p>Conteúdo da página</p>' })
+class NavigationPage {}
 
 describe('AppShell privacy control', () => {
   beforeEach(() => vi.stubGlobal('matchMedia', () => ({ matches: false })));
@@ -33,5 +37,58 @@ describe('AppShell privacy control', () => {
     fixture.detectChanges();
     expect(TestBed.inject(ValuePrivacy).hidden()).toBe(false);
     expect(button.getAttribute('aria-label')).toBe('Ocultar valores');
+  });
+});
+
+describe('AppShell mobile navigation', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    TestBed.configureTestingModule({
+      imports: [AppShell],
+      providers: [
+        provideRouter(['dashboard', 'accounts', 'transactions', 'categories'].map(path => ({ path, component: NavigationPage }))),
+        { provide: Auth, useValue: { getCurrentUser: () => of({ name: 'Maria' }) } },
+      ],
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('navigates through all shortcuts and marks only the current page', async () => {
+    const fixture = TestBed.createComponent(AppShell);
+    const router = TestBed.inject(Router);
+    fixture.detectChanges();
+    await router.navigateByUrl('/dashboard');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const links: HTMLAnchorElement[] = [...fixture.nativeElement.querySelectorAll('.mobile-bottom-nav a')];
+    for (const link of links) {
+      link.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(router.url).toBe(link.getAttribute('href'));
+      expect(link.getAttribute('aria-current')).toBe('page');
+      expect(fixture.nativeElement.querySelectorAll('.mobile-bottom-nav [aria-current="page"]').length).toBe(1);
+      expect(fixture.nativeElement.textContent).toContain('Conteúdo da página');
+    }
+  });
+
+  it('keeps the right shortcut active on creation links and external route changes', async () => {
+    const fixture = TestBed.createComponent(AppShell);
+    const router = TestBed.inject(Router);
+    fixture.detectChanges();
+    await router.navigateByUrl('/accounts?action=create');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-bottom-nav [aria-current="page"]').textContent).toContain('Contas');
+    await router.navigateByUrl('/transactions');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-bottom-nav [aria-current="page"]').textContent).toContain('Transações');
+    fixture.nativeElement.querySelector('.menu-button').click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-bottom-nav').hasAttribute('inert')).toBe(true);
+    fixture.nativeElement.querySelector('.sidebar-close').click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-bottom-nav').hasAttribute('inert')).toBe(false);
   });
 });

@@ -110,4 +110,27 @@
 
     <router-outlet />
   </main>
+
+  <nav class="mobile-bottom-nav" aria-label="Navegação rápida" [attr.inert]="mobileMenuOpen() ? '' : null">
+    <a routerLink="/dashboard" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+      (click)="closeMobileNavigation()">
+      <span class="mobile-nav-icon"><svg lucideLayoutDashboard aria-hidden="true"></svg></span>
+      <span>Dashboard</span>
+    </a>
+    <a routerLink="/accounts" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+      (click)="closeMobileNavigation()">
+      <span class="mobile-nav-icon"><svg lucideWalletCards aria-hidden="true"></svg></span>
+      <span>Contas</span>
+    </a>
+    <a routerLink="/transactions" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+      (click)="closeMobileNavigation()">
+      <span class="mobile-nav-icon"><svg lucideArrowLeftRight aria-hidden="true"></svg></span>
+      <span>Transações</span>
+    </a>
+    <a routerLink="/categories" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+      (click)="closeMobileNavigation()">
+      <span class="mobile-nav-icon"><svg lucideTags aria-hidden="true"></svg></span>
+      <span>Categorias</span>
+    </a>
+  </nav>
 </div>

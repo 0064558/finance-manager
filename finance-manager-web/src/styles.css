@@ -11,9 +11,13 @@ html {
 }
 
 body {
-  min-width: 320px;
+  min-width: min(320px, 100%);
   min-height: 100%;
   margin: 0;
+}
+
+@media (max-width: 760px) {
+  html { scroll-padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)); }
 }
 
 button,
