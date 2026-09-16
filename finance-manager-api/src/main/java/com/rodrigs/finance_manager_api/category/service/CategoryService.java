@@ -9,7 +9,6 @@ import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.CategoryAlreadyExistsException;
 import com.rodrigs.finance_manager_api.shared.exception.CategoryHasTransactionsException;
 import com.rodrigs.finance_manager_api.shared.exception.CategoryNotFoundException;
-import com.rodrigs.finance_manager_api.shared.exception.FinancialAccountNotFoundException;
 import com.rodrigs.finance_manager_api.transaction.repository.TransactionRepository;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service

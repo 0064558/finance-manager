@@ -80,6 +80,14 @@
       </div>
 
       <div class="topbar-actions">
+        <button class="theme-button" type="button" [class.is-active]="theme.dark()"
+          [attr.aria-pressed]="theme.dark()"
+          [attr.aria-label]="theme.dark() ? 'Ativar tema claro' : 'Ativar tema escuro'"
+          [title]="theme.dark() ? 'Ativar tema claro' : 'Ativar tema escuro'" (click)="theme.toggle()">
+          @if (theme.dark()) { <svg lucideSun aria-hidden="true"></svg> }
+          @else { <svg lucideMoon aria-hidden="true"></svg> }
+        </button>
+        <span class="sr-only" role="status">{{ theme.dark() ? 'Tema escuro ativado' : 'Tema claro ativado' }}</span>
         <button class="privacy-button" type="button"
           [class.is-active]="valuePrivacy.hidden()"
           [attr.aria-pressed]="valuePrivacy.hidden()"

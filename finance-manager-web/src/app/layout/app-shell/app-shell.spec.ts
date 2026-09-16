@@ -6,6 +6,7 @@ import { vi } from 'vitest';
 import { Auth } from '../../core/auth';
 import { ValuePrivacy } from '../../core/value-privacy';
 import { AppShell } from './app-shell';
+import { Theme } from '../../core/theme';
 
 @Component({ template: '<p>Conteúdo da página</p>' })
 class NavigationPage {}
@@ -14,6 +15,8 @@ describe('AppShell privacy control', () => {
   beforeEach(() => vi.stubGlobal('matchMedia', () => ({ matches: false })));
   afterEach(() => {
     localStorage.removeItem('finance-manager.values-hidden');
+    localStorage.removeItem('finance-manager.theme');
+    delete document.documentElement.dataset['theme'];
     vi.unstubAllGlobals();
   });
 
@@ -37,6 +40,24 @@ describe('AppShell privacy control', () => {
     fixture.detectChanges();
     expect(TestBed.inject(ValuePrivacy).hidden()).toBe(false);
     expect(button.getAttribute('aria-label')).toBe('Ocultar valores');
+  });
+
+  it('toggles the theme with matching accessible labels and saved preference', () => {
+    TestBed.configureTestingModule({ imports: [AppShell], providers: [provideRouter([]), { provide: Auth, useValue: { getCurrentUser: () => of({ name: 'Maria' }) } }] });
+    const fixture = TestBed.createComponent(AppShell);
+    fixture.detectChanges();
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.theme-button');
+    expect(button.getAttribute('aria-label')).toBe('Ativar tema escuro');
+    button.click();
+    fixture.detectChanges();
+    expect(TestBed.inject(Theme).dark()).toBe(true);
+    expect(button.getAttribute('aria-label')).toBe('Ativar tema claro');
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(localStorage.getItem('finance-manager.theme')).toBe('dark');
+    button.click();
+    fixture.detectChanges();
+    expect(TestBed.inject(Theme).dark()).toBe(false);
+    expect(button.getAttribute('aria-label')).toBe('Ativar tema escuro');
   });
 });
 
