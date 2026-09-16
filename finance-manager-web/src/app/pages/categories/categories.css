@@ -272,7 +272,7 @@
 .category-list {
   display: grid;
   margin: 0;
-  padding: 0.35rem 1.25rem;
+  padding: 0.35rem 0;
   list-style: none;
 }
 
@@ -281,7 +281,7 @@
   align-items: center;
   gap: 0.7rem;
   min-width: 0;
-  padding: 0.85rem 0;
+  padding: 0.85rem 1.25rem;
   border-bottom: 1px solid #eff3f0;
 }
 
