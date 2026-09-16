@@ -3,15 +3,15 @@ import { provideRouter } from '@angular/router';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { CategoryExpenses } from './category-expenses';
-import { CategoryExpense } from '../../core/report.models';
+import { CategoryTotal } from '../../core/report.models';
 
 describe('CategoryExpenses', () => {
   let fixture: ComponentFixture<CategoryExpenses>;
-  const category = (id: string, name: string, amount: number): CategoryExpense => ({ categoryId: id, categoryName: name, totalExpense: amount });
-  const setCategories = (categories: CategoryExpense[]) => {
+  const category = (id: string, name: string, amount: number): CategoryTotal => ({ categoryId: id, categoryName: name, amount: amount });
+  const setCategories = (categories: CategoryTotal[]) => {
     fixture.componentRef.setInput('data', {
       startDate: '2026-08-01', endDate: '2026-08-31',
-      totalExpense: categories.reduce((sum, item) => sum + item.totalExpense, 0), categories,
+      type: 'EXPENSE', totalAmount: categories.reduce((sum, item) => sum + item.amount, 0), categories,
     });
     fixture.detectChanges();
   };
@@ -50,6 +50,60 @@ describe('CategoryExpenses', () => {
     setCategories([category('food', 'Alimentação', 10), category('home', 'Moradia', 90)]);
     expect(fixture.nativeElement.querySelectorAll('.ring-segment')[1].getAttribute('stroke')).toBe(firstColor);
   });
+  it('switches to income with matching labels, totals and percentages', () => {
+    setCategories([category('food', 'Alimentação', 50)]);
+    const buttons = fixture.nativeElement.querySelectorAll('.category-view-switcher button');
+    expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
+    let selected = '';
+    fixture.componentInstance.typeChange.subscribe(type => {
+      selected = type;
+      fixture.componentRef.setInput('type', type);
+      fixture.componentRef.setInput('data', {
+        type, totalAmount: 5000.05,
+        categories: [category('salary', 'Salário', 4000.04), category('extra', 'Trabalhos extras', 1000.01)],
+      });
+    });
+    buttons[1].click();
+    fixture.detectChanges();
+    expect(selected).toBe('INCOME');
+    expect(buttons[1].getAttribute('aria-pressed')).toBe('true');
+    expect(buttons[0].getAttribute('aria-pressed')).toBe('false');
+    expect(fixture.nativeElement.querySelector('h2').textContent).toBe('Receitas por categoria');
+    expect(fixture.nativeElement.querySelector('.ring-center').textContent).toContain('5.000,05');
+    expect(fixture.nativeElement.querySelector('.expense-category-row').textContent).toContain('Salário');
+    expect(fixture.nativeElement.querySelector('.share-track span').style.width).toBe('80%');
+    expect(fixture.nativeElement.querySelector('.distribution-insight').textContent).toContain('das receitas');
+  });
+
+  it('shows a single income source as 100% and distinguishes income loading, empty and error states', () => {
+    fixture.componentRef.setInput('type', 'INCOME');
+    setCategories([category('salary', 'Salário', 6000)]);
+    expect(fixture.nativeElement.querySelector('.ring-segment').getAttribute('stroke-dasharray')).toBe('100 0');
+    setCategories([]);
+    expect(fixture.nativeElement.textContent).toContain('Um mês sem receitas');
+    fixture.componentRef.setInput('loading', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="status"]').textContent).toContain('Carregando receitas');
+    fixture.componentRef.setInput('loading', false);
+    fixture.componentRef.setInput('error', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('carregar as receitas');
+  });
+
+  it('uses warm colors for expenses and green colors for income', () => {
+    const categories = Array.from({ length: 8 }, (_, i) => category(`source-${i}`, `Categoria ${i}`, 10));
+    setCategories(categories);
+    const colors = () => [...fixture.nativeElement.querySelectorAll('.ring-segment')].map((segment: any) => {
+      const hex = segment.getAttribute('stroke');
+      return { red: parseInt(hex.slice(1, 3), 16), green: parseInt(hex.slice(3, 5), 16) };
+    });
+    expect(colors().every(color => color.red > color.green)).toBe(true);
+    fixture.componentRef.setInput('type', 'INCOME');
+    fixture.detectChanges();
+    expect(colors().every(color => color.green > color.red)).toBe(true);
+    expect(fixture.nativeElement.querySelector('.expenses-panel--income')).not.toBeNull();
+  });
+
   it('distinguishes no expenses, loading and an error with a retry action', () => {
     setCategories([]);
     expect(fixture.nativeElement.textContent).toContain('Um mês sem despesas');

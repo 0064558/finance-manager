@@ -57,7 +57,32 @@ a:hover { text-decoration: underline; text-underline-offset: 4px; }
 @media (prefers-reduced-motion: no-preference) {
   .expenses-panel { animation: fm-rise-in 650ms 160ms var(--fm-ease) backwards; }
   .ring-svg { animation: ring-enter 800ms var(--fm-ease) both; }
+  .ring-segment { animation: fm-fade-in 450ms ease-out; }
   .share-track span { transform-origin: left; animation: fm-bar-grow-horizontal 750ms var(--fm-ease) both; }
   @keyframes ring-enter { from { opacity: 0; transform: rotate(-110deg) scale(0.94); } to { opacity: 1; transform: rotate(-90deg) scale(1); } }
   @keyframes fm-bar-grow-horizontal { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 }
+
+.heading-actions { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; justify-content: flex-end; }
+.category-view-switcher { position: relative; display: flex; gap: 0.2rem; padding: 0.25rem; border: 1px solid #e4ede7; border-radius: 0.7rem; background: #f4f8f5; }
+.category-view-switcher button { min-height: 2.2rem; padding: 0.4rem 0.8rem; border: 1px solid transparent; border-radius: 0.5rem; color: #6b7f72; background: transparent; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease; }
+.category-view-switcher button:hover { color: var(--report-accent); }
+.category-view-switcher .is-selected { color: #17684e; background: #fff; border-color: #dde9e1; box-shadow: 0 2px 5px #163e3010; }
+@media (max-width: 760px) {
+  .expenses-heading { flex-wrap: wrap; }
+  .heading-actions { width: 100%; justify-content: space-between; }
+}
+@media (max-width: 360px) {
+  .heading-actions { align-items: stretch; }
+  .category-view-switcher { width: 100%; }
+  .category-view-switcher button { flex: 1; }
+}
+
+/* Income and expenses use the same color meaning as the dashboard summary. */
+.expenses-panel { --report-accent: #b56a4e; --report-soft: #fcf1e9; --report-line: #efdfd3; --report-ink: #895b41; }
+.expenses-panel--income { --report-accent: #19856a; --report-soft: #edf7f1; --report-line: #deeee3; --report-ink: #355b45; }
+.heading-icon, .state-icon { color: var(--report-accent); background: var(--report-soft); border-color: var(--report-line); }
+.ring-center strong { color: var(--report-accent); }
+.distribution-insight { background: var(--report-soft); }
+.distribution-insight strong, .distribution-insight b { color: var(--report-ink); }
+.category-view-switcher .is-selected { color: var(--report-accent); background: var(--report-soft); border-color: var(--report-line); }

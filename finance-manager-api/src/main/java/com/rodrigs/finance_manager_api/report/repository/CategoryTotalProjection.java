@@ -3,8 +3,8 @@ package com.rodrigs.finance_manager_api.report.repository;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public interface CategoryExpenseProjection {
+public interface CategoryTotalProjection {
     UUID getCategoryId();
     String getCategoryName();
-    BigDecimal getTotalExpense();
+    BigDecimal getAmount();
 }

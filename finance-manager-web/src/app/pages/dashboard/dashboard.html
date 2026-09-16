@@ -152,11 +152,13 @@
     </div>
 
     <app-category-expenses
-      [data]="categoryExpenses()"
+      [data]="categoryBreakdown()"
+      [type]="selectedCategoryType()"
+      (typeChange)="selectCategoryType($event)"
       [monthLabel]="monthLabel()"
-      [loading]="expensesLoading()"
-      [error]="expensesError()"
-      (retry)="loadCategoryExpenses()"
+      [loading]="categoryLoading()"
+      [error]="categoryError()"
+      (retry)="loadCategoryBreakdown(true)"
     />
 
     <app-recent-transactions

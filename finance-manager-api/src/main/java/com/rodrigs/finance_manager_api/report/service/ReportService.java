@@ -8,6 +8,8 @@ import com.rodrigs.finance_manager_api.report.dto.CashFlowResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.CategoryExpenseResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.CategoryExpensesResponseDTO;
+import com.rodrigs.finance_manager_api.report.dto.CategoryBreakdownResponseDTO;
+import com.rodrigs.finance_manager_api.report.dto.CategoryTotalResponseDTO;
 import com.rodrigs.finance_manager_api.report.repository.AccountBalanceProjection;
 import com.rodrigs.finance_manager_api.report.repository.CashFlowProjection;
 import com.rodrigs.finance_manager_api.report.repository.ReportTotalsProjection;
@@ -125,18 +127,29 @@ public class ReportService {
         return new CashFlowResponseDTO(startDate, endDate, points);
     }
 
+    // Retorna o total de despesas por categoria no período especificado
     @Transactional(readOnly = true)
     public CategoryExpensesResponseDTO getExpensesByCategory(UUID authenticatedUserId, LocalDate startDate, LocalDate endDate) {
-        validateDateRange(startDate, endDate);
-        List<CategoryExpenseResponseDTO> categories = transactionRepository.findExpensesByCategoryAndPeriod(
-                authenticatedUserId, startDate, endDate, TransactionType.EXPENSE
-        ).stream().map(category -> new CategoryExpenseResponseDTO(
-                category.getCategoryId(), category.getCategoryName(), category.getTotalExpense()
+        var breakdown = getCategoryBreakdown(authenticatedUserId, startDate, endDate, TransactionType.EXPENSE);
+        List<CategoryExpenseResponseDTO> categories = breakdown.categories().stream().map(category -> new CategoryExpenseResponseDTO(
+                category.categoryId(), category.categoryName(), category.amount()
         )).toList();
-        BigDecimal totalExpense = categories.stream()
-                .map(CategoryExpenseResponseDTO::totalExpense)
+        return new CategoryExpensesResponseDTO(startDate, endDate, breakdown.totalAmount(), categories);
+    }
+
+    // Retorna o total de transações por categoria no período especificado, filtrando pelo tipo de transação (INCOME ou EXPENSE)
+    @Transactional(readOnly = true)
+    public CategoryBreakdownResponseDTO getCategoryBreakdown(UUID authenticatedUserId, LocalDate startDate, LocalDate endDate, TransactionType type) {
+        validateDateRange(startDate, endDate);
+        List<CategoryTotalResponseDTO> categories = transactionRepository.findTotalsByCategoryAndPeriod(
+                authenticatedUserId, startDate, endDate, type
+        ).stream().map(category -> new CategoryTotalResponseDTO(
+                category.getCategoryId(), category.getCategoryName(), category.getAmount()
+        )).toList();
+        BigDecimal totalAmount = categories.stream()
+                .map(CategoryTotalResponseDTO::amount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new CategoryExpensesResponseDTO(startDate, endDate, totalExpense, categories);
+        return new CategoryBreakdownResponseDTO(startDate, endDate, type, totalAmount, categories);
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

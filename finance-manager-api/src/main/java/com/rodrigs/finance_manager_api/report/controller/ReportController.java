@@ -5,6 +5,8 @@ import com.rodrigs.finance_manager_api.report.dto.CurrentBalanceResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.CashFlowResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.CategoryExpensesResponseDTO;
+import com.rodrigs.finance_manager_api.report.dto.CategoryBreakdownResponseDTO;
+import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.report.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,6 +32,23 @@ public class ReportController {
 
     public ReportController(ReportService reportService) {
         this.reportService = reportService;
+    }
+
+    @Operation(summary = "Consulta receitas ou despesas por categoria",
+            description = "Agrupa todas as transações do tipo informado no período inclusivo para o usuário autenticado.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Distribuição por categoria retornada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Tipo ou datas ausentes, inválidos ou intervalo invertido"),
+            @ApiResponse(responseCode = "401", description = "Token ausente ou inválido")
+    })
+    @GetMapping("/category-breakdown")
+    public CategoryBreakdownResponseDTO getCategoryBreakdown(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @RequestParam("startDate") LocalDate startDate,
+            @RequestParam("endDate") LocalDate endDate,
+            @RequestParam("type") TransactionType type
+    ) {
+        return reportService.getCategoryBreakdown(authenticatedUser.id(), startDate, endDate, type);
     }
 
     @Operation(summary = "Consulta despesas por categoria",

@@ -15,9 +15,9 @@ import {
 } from '@lucide/angular';
 import { finalize, forkJoin, Subscription } from 'rxjs';
 import { Report } from '../../core/report';
-import { CashFlowResponse, CategoryExpensesResponse, CurrentBalance, ReportSummary } from '../../core/report.models';
+import { CashFlowResponse, CategoryBreakdownResponse, CurrentBalance, ReportSummary } from '../../core/report.models';
 import { TransactionApi } from '../../core/transaction';
-import { PageResponse, TransactionResponse } from '../../core/transaction.models';
+import { PageResponse, TransactionResponse, TransactionType } from '../../core/transaction.models';
 import { RecentTransactions } from '../../shared/recent-transactions/recent-transactions';
 import { CashFlowChart } from '../../shared/cash-flow-chart/cash-flow-chart';
 import { CategoryExpenses } from '../../shared/category-expenses/category-expenses';
@@ -47,11 +47,13 @@ export class Dashboard implements OnInit {
   private readonly report = inject(Report);
   private readonly transactionApi = inject(TransactionApi);
   private readonly destroyRef = inject(DestroyRef);
-  private expenseSubscription?: Subscription;
+  private categorySubscription?: Subscription;
+  private readonly categoryCache = new Map<TransactionType, CategoryBreakdownResponse>();
+  protected readonly selectedCategoryType = signal<TransactionType>('EXPENSE');
 
-  protected readonly categoryExpenses = signal<CategoryExpensesResponse | null>(null);
-  protected readonly expensesLoading = signal(true);
-  protected readonly expensesError = signal(false);
+  protected readonly categoryBreakdown = signal<CategoryBreakdownResponse | null>(null);
+  protected readonly categoryLoading = signal(true);
+  protected readonly categoryError = signal(false);
 
   private readonly monthFormatter = new Intl.DateTimeFormat('pt-BR', {
     month: 'long',
@@ -83,23 +85,37 @@ export class Dashboard implements OnInit {
   });
 
   ngOnInit(): void {
-    this.destroyRef.onDestroy(() => this.expenseSubscription?.unsubscribe());
+    this.destroyRef.onDestroy(() => this.categorySubscription?.unsubscribe());
     this.loadDashboard();
   }
 
-  protected loadCategoryExpenses(): void {
-    this.expenseSubscription?.unsubscribe();
-    this.categoryExpenses.set(null);
-    this.expensesLoading.set(true);
-    this.expensesError.set(false);
+  protected selectCategoryType(type: TransactionType): void {
+    if (type === this.selectedCategoryType()) return;
+    this.selectedCategoryType.set(type);
+    this.loadCategoryBreakdown();
+  }
+
+  protected loadCategoryBreakdown(force = false): void {
+    this.categorySubscription?.unsubscribe();
+    const type = this.selectedCategoryType();
+    if (force) this.categoryCache.delete(type);
+    const cached = this.categoryCache.get(type);
+    this.categoryError.set(false);
+    this.categoryBreakdown.set(cached ?? null);
+    this.categoryLoading.set(!cached);
+    if (cached) return;
     const month = this.selectedMonth();
-    this.expenseSubscription = this.report.getExpensesByCategory(
+    this.categorySubscription = this.report.getCategoryBreakdown(
       this.formatDate(month),
       this.formatDate(new Date(month.getFullYear(), month.getMonth() + 1, 0)),
-    ).pipe(finalize(() => this.expensesLoading.set(false)))
+      type,
+    ).pipe(finalize(() => this.categoryLoading.set(false)))
       .subscribe({
-        next: (data) => this.categoryExpenses.set(data),
-        error: () => this.expensesError.set(true),
+        next: (data) => {
+          this.categoryCache.set(type, data);
+          this.categoryBreakdown.set(data);
+        },
+        error: () => this.categoryError.set(true),
       });
   }
 
@@ -126,7 +142,8 @@ export class Dashboard implements OnInit {
   }
 
   private loadDashboard(): void {
-    this.loadCategoryExpenses();
+    this.categoryCache.clear();
+    this.loadCategoryBreakdown();
     const selectedMonth = this.selectedMonth();
     const startDate = this.formatDate(selectedMonth);
     const endDate = this.formatDate(

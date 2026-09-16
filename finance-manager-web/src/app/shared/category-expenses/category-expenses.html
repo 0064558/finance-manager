@@ -1,15 +1,22 @@
-<section class="expenses-panel" aria-labelledby="category-expenses-title" [attr.aria-busy]="loading()">
+<section class="expenses-panel" [class.expenses-panel--income]="type() === 'INCOME'" aria-labelledby="category-expenses-title" [attr.aria-busy]="loading()">
   <header class="expenses-heading">
     <div class="heading-copy">
       <span class="heading-icon" aria-hidden="true"><svg lucideChartPie></svg></span>
-      <div><h2 id="category-expenses-title">Gastos por categoria</h2><p>Entenda para onde seu dinheiro vai.</p></div>
+      <div><h2 id="category-expenses-title">{{ copy().title }}</h2><p>{{ copy().description }}</p></div>
     </div>
-    <span class="month-badge">{{ monthLabel() }}</span>
+    <div class="heading-actions">
+      <span class="month-badge">{{ monthLabel() }}</span>
+      <div class="category-view-switcher" role="group" aria-label="Tipo de movimentação por categoria">
+        <button type="button" [class.is-selected]="type() === 'EXPENSE'" [attr.aria-pressed]="type() === 'EXPENSE'" aria-controls="category-distribution" (click)="selectType('EXPENSE')">Despesas</button>
+        <button type="button" [class.is-selected]="type() === 'INCOME'" [attr.aria-pressed]="type() === 'INCOME'" aria-controls="category-distribution" (click)="selectType('INCOME')">Receitas</button>
+      </div>
+    </div>
   </header>
 
+  <div id="category-distribution">
   @if (loading()) {
     <div class="expenses-body expenses-loading" role="status">
-      <span class="sr-only">Carregando gastos por categoria...</span>
+      <span class="sr-only">Carregando {{ copy().noun }} por categoria...</span>
       <div class="ring-placeholder fm-skeleton" aria-hidden="true"></div>
       <div class="list-placeholder" aria-hidden="true">
         @for (row of [1, 2, 3]; track row) { <span class="fm-skeleton"></span> }
@@ -18,7 +25,7 @@
   } @else if (error()) {
     <div class="expenses-state" role="alert">
       <span class="state-icon" aria-hidden="true"><svg lucideChartPie></svg></span>
-      <strong>Não foi possível carregar os gastos</strong>
+      <strong>Não foi possível carregar {{ copy().article }}</strong>
       <p>Tente novamente para ver a distribuição por categoria.</p>
       <button class="retry-button fm-button" type="button" (click)="retry.emit()"><svg lucideRefreshCw aria-hidden="true"></svg>Tentar novamente</button>
     </div>
@@ -34,9 +41,9 @@
                 [attr.stroke-dashoffset]="-category.offset" />
             }
           </svg>
-          <div class="ring-center"><span>Total de despesas</span><strong><app-animated-number [value]="total()" /></strong><small>{{ categories().length }} {{ categories().length === 1 ? 'categoria' : 'categorias' }}</small></div>
+          <div class="ring-center"><span>Total de {{ copy().noun }}</span><strong><app-animated-number [value]="total()" /></strong><small>{{ categories().length }} {{ categories().length === 1 ? 'categoria' : 'categorias' }}</small></div>
         </div>
-        <p class="distribution-insight"><strong>{{ categories()[0].categoryName }}</strong> representa <b>{{ categories()[0].share | number: '1.0-1' : 'pt-BR' }}%</b> dos gastos neste mês.</p>
+        <p class="distribution-insight"><strong>{{ categories()[0].categoryName }}</strong> representa <b>{{ categories()[0].share | number: '1.0-1' : 'pt-BR' }}%</b> {{ type() === 'INCOME' ? 'das receitas' : 'dos gastos' }} neste mês.</p>
       </div>
 
       <div class="category-breakdown">
@@ -44,7 +51,7 @@
         <ul id="expense-category-list" class="expense-category-list">
           @for (category of visibleCategories(); track category.categoryId) {
             <li class="expense-category-row" [style.--category-color]="category.color">
-              <div class="row-heading"><span class="category-label"><i aria-hidden="true"></i>{{ category.categoryName }}</span><span class="category-amount"><app-animated-number [value]="category.totalExpense" /><small>{{ category.share | number: '1.0-1' : 'pt-BR' }}%</small></span></div>
+              <div class="row-heading"><span class="category-label"><i aria-hidden="true"></i>{{ category.categoryName }}</span><span class="category-amount"><app-animated-number [value]="category.amount" /><small>{{ category.share | number: '1.0-1' : 'pt-BR' }}%</small></span></div>
               <div class="share-track" aria-hidden="true"><span [style.width.%]="category.share"></span></div>
             </li>
           }
@@ -57,13 +64,14 @@
         }
       </div>
     </div>
-    <footer class="expenses-footer"><span>Todas as despesas do mês, em todas as contas.</span><a routerLink="/transactions">Ver transações <svg lucideArrowUpRight aria-hidden="true"></svg></a></footer>
+    <footer class="expenses-footer"><span>Todas as {{ copy().noun }} do mês, em todas as contas.</span><a routerLink="/transactions">Ver transações <svg lucideArrowUpRight aria-hidden="true"></svg></a></footer>
   } @else {
     <div class="expenses-state">
       <span class="state-icon" aria-hidden="true"><svg lucideChartPie></svg></span>
-      <strong>Um mês sem despesas por aqui</strong>
-      <p>Quando você registrar uma despesa em {{ monthLabel() }}, a distribuição aparecerá aqui.</p>
+      <strong>Um mês sem {{ copy().noun }} por aqui</strong>
+      <p>Quando você registrar {{ copy().singular }} em {{ monthLabel() }}, a distribuição aparecerá aqui.</p>
       <a routerLink="/transactions">Gerenciar transações <svg lucideArrowUpRight aria-hidden="true"></svg></a>
     </div>
   }
+  </div>
 </section>

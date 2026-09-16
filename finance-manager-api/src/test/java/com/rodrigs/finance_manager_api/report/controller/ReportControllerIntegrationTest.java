@@ -218,6 +218,74 @@ class ReportControllerIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.categories.length()").value(0));
     }
 
+    @Test
+    void shouldGroupIncomeAcrossAccountsAndExcludeExpensesOtherUsersAndOtherDates() throws Exception {
+        String token = registerAndLogin(uniqueEmail());
+        String otherToken = registerAndLogin(uniqueEmail());
+        String firstAccount = createAccount(token, "Conta principal", "0.00");
+        String secondAccount = createAccount(token, "Conta extra", "0.00");
+        String salary = createCategory(token, "Salário", "INCOME");
+        String extra = createCategory(token, "Trabalhos extras", "INCOME");
+        String food = createCategory(token, "Alimentação", "EXPENSE");
+        String otherAccount = createAccount(otherToken, "Outra conta", "0.00");
+        String otherCategory = createCategory(otherToken, "Outra receita", "INCOME");
+        LocalDate end = LocalDate.now().minusDays(1);
+        LocalDate start = end.minusDays(2);
+        createTransaction(token, firstAccount, salary, "INCOME", "4000.04", start);
+        for (int i = 0; i < 6; i++) {
+            createTransaction(token, i % 2 == 0 ? firstAccount : secondAccount, extra, "INCOME", "10.01", end);
+        }
+        createTransaction(token, firstAccount, salary, "INCOME", "900.00", start.minusDays(1));
+        createTransaction(token, secondAccount, extra, "INCOME", "800.00", end.plusDays(1));
+        createTransaction(token, firstAccount, food, "EXPENSE", "100.00", start);
+        createTransaction(otherToken, otherAccount, otherCategory, "INCOME", "700.00", start);
+        mockMvc.perform(get("/api/v1/reports/category-breakdown")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", start.toString()).param("endDate", end.toString()).param("type", "INCOME"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.type").value("INCOME"))
+                .andExpect(jsonPath("$.totalAmount").value(4060.10))
+                .andExpect(jsonPath("$.categories.length()").value(2))
+                .andExpect(jsonPath("$.categories[0].categoryId").value(salary))
+                .andExpect(jsonPath("$.categories[0].amount").value(4000.04))
+                .andExpect(jsonPath("$.categories[1].categoryId").value(extra))
+                .andExpect(jsonPath("$.categories[1].amount").value(60.06));
+        mockMvc.perform(get("/api/v1/reports/category-breakdown")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", start.toString()).param("endDate", end.toString()).param("type", "EXPENSE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAmount").value(100.00))
+                .andExpect(jsonPath("$.categories[0].categoryId").value(food));
+    }
+
+    @Test
+    void shouldValidateCategoryBreakdownParametersAuthenticationAndEmptyIncomePeriod() throws Exception {
+        String token = registerAndLogin(uniqueEmail());
+        mockMvc.perform(get("/api/v1/reports/category-breakdown")
+                        .param("startDate", "2026-08-01").param("endDate", "2026-08-31").param("type", "INCOME"))
+                .andExpect(status().isUnauthorized());
+        for (String type : new String[] { "INCOME", "EXPENSE" }) {
+            mockMvc.perform(get("/api/v1/reports/category-breakdown")
+                            .header("Authorization", "Bearer " + token)
+                            .param("startDate", "2026-08-01").param("endDate", "2026-08-31").param("type", type))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalAmount").value(0.00))
+                    .andExpect(jsonPath("$.categories.length()").value(0));
+        }
+        mockMvc.perform(get("/api/v1/reports/category-breakdown")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", "2026-08-01").param("endDate", "2026-08-31").param("type", "INVALID"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/reports/category-breakdown")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", "2026-08-01").param("endDate", "2026-08-31"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/reports/category-breakdown")
+                        .header("Authorization", "Bearer " + token)
+                        .param("startDate", "2026-08-31").param("endDate", "2026-08-01").param("type", "INCOME"))
+                .andExpect(status().isBadRequest());
+    }
+
     private String createAccount(String token, String name, String initialBalance) throws Exception {
         String response = mockMvc.perform(post("/api/v1/financial-accounts")
                         .header("Authorization", "Bearer " + token)

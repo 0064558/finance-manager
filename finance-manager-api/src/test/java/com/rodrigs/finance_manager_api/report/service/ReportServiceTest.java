@@ -6,7 +6,7 @@ import com.rodrigs.finance_manager_api.report.dto.CashFlowResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
 import com.rodrigs.finance_manager_api.report.repository.AccountBalanceProjection;
 import com.rodrigs.finance_manager_api.report.repository.CashFlowProjection;
-import com.rodrigs.finance_manager_api.report.repository.CategoryExpenseProjection;
+import com.rodrigs.finance_manager_api.report.repository.CategoryTotalProjection;
 import com.rodrigs.finance_manager_api.report.repository.ReportTotalsProjection;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.InvalidTransactionDateRangeException;
@@ -64,12 +64,12 @@ class ReportServiceTest {
     void shouldReturnExpenseCategoriesAndExactTotalIncludingCents() {
         LocalDate start = LocalDate.of(2026, 8, 1);
         LocalDate end = LocalDate.of(2026, 8, 31);
-        CategoryExpenseProjection category = mock(CategoryExpenseProjection.class);
+        CategoryTotalProjection category = mock(CategoryTotalProjection.class);
         UUID categoryId = UUID.randomUUID();
         when(category.getCategoryId()).thenReturn(categoryId);
         when(category.getCategoryName()).thenReturn("Alimentação");
-        when(category.getTotalExpense()).thenReturn(new BigDecimal("125.67"));
-        when(transactionRepository.findExpensesByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE))
+        when(category.getAmount()).thenReturn(new BigDecimal("125.67"));
+        when(transactionRepository.findTotalsByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE))
                 .thenReturn(List.of(category));
         var response = reportService.getExpensesByCategory(userId, start, end);
         assertThat(response.startDate()).isEqualTo(start);
@@ -84,7 +84,7 @@ class ReportServiceTest {
     void shouldReturnEmptyExpenseCategoriesForPeriodWithoutExpenses() {
         LocalDate start = LocalDate.of(2026, 8, 1);
         LocalDate end = LocalDate.of(2026, 8, 31);
-        when(transactionRepository.findExpensesByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE))
+        when(transactionRepository.findTotalsByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE))
                 .thenReturn(List.of());
         var response = reportService.getExpensesByCategory(userId, start, end);
         assertThat(response.totalExpense()).isEqualByComparingTo(BigDecimal.ZERO);
@@ -97,7 +97,42 @@ class ReportServiceTest {
         LocalDate end = LocalDate.of(2026, 8, 1);
         assertThatThrownBy(() -> reportService.getExpensesByCategory(userId, start, end))
                 .isInstanceOf(InvalidTransactionDateRangeException.class);
-        verify(transactionRepository, never()).findExpensesByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE);
+        verify(transactionRepository, never()).findTotalsByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE);
+    }
+
+    @Test
+    void shouldCalculateIncomeCategoriesUsingOnlyIncomeType() {
+        LocalDate start = LocalDate.of(2026, 8, 1);
+        LocalDate end = LocalDate.of(2026, 8, 31);
+        CategoryTotalProjection salary = mock(CategoryTotalProjection.class);
+        CategoryTotalProjection extra = mock(CategoryTotalProjection.class);
+        when(salary.getCategoryId()).thenReturn(UUID.randomUUID());
+        when(salary.getCategoryName()).thenReturn("Salário");
+        when(salary.getAmount()).thenReturn(new BigDecimal("4000.04"));
+        when(extra.getCategoryId()).thenReturn(UUID.randomUUID());
+        when(extra.getCategoryName()).thenReturn("Trabalhos extras");
+        when(extra.getAmount()).thenReturn(new BigDecimal("1000.01"));
+        when(transactionRepository.findTotalsByCategoryAndPeriod(userId, start, end, TransactionType.INCOME))
+                .thenReturn(List.of(salary, extra));
+        var response = reportService.getCategoryBreakdown(userId, start, end, TransactionType.INCOME);
+        assertThat(response.type()).isEqualTo(TransactionType.INCOME);
+        assertThat(response.totalAmount()).isEqualByComparingTo("5000.05");
+        assertThat(response.categories()).hasSize(2);
+        assertThat(response.categories().get(0).categoryName()).isEqualTo("Salário");
+        verify(transactionRepository, never()).findTotalsByCategoryAndPeriod(userId, start, end, TransactionType.EXPENSE);
+    }
+
+    @Test
+    void shouldReturnEmptyIncomeBreakdownAndRejectInvertedPeriod() {
+        LocalDate start = LocalDate.of(2026, 8, 1);
+        LocalDate end = LocalDate.of(2026, 8, 31);
+        when(transactionRepository.findTotalsByCategoryAndPeriod(userId, start, end, TransactionType.INCOME)).thenReturn(List.of());
+        var response = reportService.getCategoryBreakdown(userId, start, end, TransactionType.INCOME);
+        assertThat(response.categories()).isEmpty();
+        assertThat(response.totalAmount()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThatThrownBy(() -> reportService.getCategoryBreakdown(userId, end, start, TransactionType.INCOME))
+                .isInstanceOf(InvalidTransactionDateRangeException.class);
+        verify(transactionRepository, never()).findTotalsByCategoryAndPeriod(userId, end, start, TransactionType.INCOME);
     }
 
     @Test

@@ -15,6 +15,7 @@ export class Notifications {
   // A interface lê o sinal, mas apenas este serviço altera as notificações.
   readonly items = this.state.asReadonly();
 
+  // Limpa todas as notificações quando o serviço é destruído.
   constructor() {
     inject(DestroyRef).onDestroy(() => this.clear());
   }

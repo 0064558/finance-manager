@@ -1,3 +1,5 @@
+import type { TransactionType } from './transaction.models';
+
 // Este arquivo define interfaces TypeScript para representar os dados de relatórios financeiros, 
 // incluindo resumo de relatórios, saldo de contas e fluxo de caixa.
 
@@ -8,6 +10,20 @@ export interface ReportSummary {
     totalExpense: number;
     netBalance: number;
 };
+
+export interface CategoryTotal {
+    categoryId: string;
+    categoryName: string;
+    amount: number;
+}
+
+export interface CategoryBreakdownResponse {
+    startDate: string;
+    endDate: string;
+    type: TransactionType;
+    totalAmount: number;
+    categories: CategoryTotal[];
+}
 
 export interface CategoryExpense {
     categoryId: string;
