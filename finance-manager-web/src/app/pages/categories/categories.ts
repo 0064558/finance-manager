@@ -1,3 +1,4 @@
+import { EmptyState } from '../../shared/empty-state/empty-state';
 import { AnimatedNumber } from '../../shared/animated-number/animated-number';
 import {
   Component,
@@ -8,6 +9,7 @@ import {
 } from '@angular/core';
 import { finalize } from 'rxjs';
 import { CategoryApi } from '../../core/categories';
+import { ActivatedRoute } from '@angular/router';
 import { Notifications } from '../../core/notifications';
 import { Category, CreateCategoryRequest } from '../../core/category.models';
 import {
@@ -20,18 +22,17 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   LucidePencil,
   LucidePlus,
-  LucideTags,
   LucideTrash2,
   LucideX,
 } from '@lucide/angular';
 
 @Component({
   imports: [
+    EmptyState,
     AnimatedNumber,
     ReactiveFormsModule,
     LucidePencil,
     LucidePlus,
-    LucideTags,
     LucideTrash2,
     LucideX,
   ], // Isso é necessário pois estamos usando formulários reativos no Angular, e precisamos importar o módulo ReactiveFormsModule para habilitar essa funcionalidade no componente.
@@ -40,6 +41,7 @@ import {
   templateUrl: './categories.html',
 })
 export class Categories implements OnInit {
+  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly notifications = inject(Notifications);
 
   // Injeção do serviço CategoryApi para interagir com a API de categorias.
@@ -294,6 +296,7 @@ export class Categories implements OnInit {
   // Método do ciclo de vida do Angular que é chamado após a inicialização do componente.
   ngOnInit(): void {
     this.loadCategories();
+    if (this.route?.snapshot.queryParamMap.get('action') === 'create') this.openCreateForm();
   }
 
   // Método para carregar as categorias do usuário autenticado.

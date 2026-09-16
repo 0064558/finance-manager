@@ -1,3 +1,4 @@
+import { EmptyState } from '../empty-state/empty-state';
 import { PrivateCurrency } from '../private-currency/private-currency';
 
 import { Component, Input } from '@angular/core';
@@ -7,7 +8,7 @@ import { PageResponse, TransactionResponse } from '../../core/transaction.models
 
 @Component({
   selector: 'app-recent-transactions',
-  imports: [PrivateCurrency, LucideArrowDownLeft, LucideArrowUpRight, LucideReceiptText],
+  imports: [EmptyState, PrivateCurrency, LucideArrowDownLeft, LucideArrowUpRight, LucideReceiptText],
   templateUrl: './recent-transactions.html',
   styleUrl: './recent-transactions.css',
 })

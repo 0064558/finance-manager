@@ -1,3 +1,4 @@
+import { EmptyState } from '../../shared/empty-state/empty-state';
 import { PrivateCurrency } from '../../shared/private-currency/private-currency';
 import { AnimatedNumber } from '../../shared/animated-number/animated-number';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
@@ -12,6 +13,7 @@ import {
   FinancialAccount,
 } from '../../core/financial-account.models';
 import { Report } from '../../core/report';
+import { ActivatedRoute } from '@angular/router';
 import { Notifications } from '../../core/notifications';
 
 import {
@@ -33,6 +35,7 @@ interface AccountViewModel extends FinancialAccount {
 @Component({
   selector: 'app-accounts',
   imports: [
+    EmptyState,
     AnimatedNumber,
     PrivateCurrency,
     ReactiveFormsModule,
@@ -54,6 +57,7 @@ interface AccountViewModel extends FinancialAccount {
 // Accounts é um componente Angular que exibe uma lista de contas financeiras, 
 // incluindo informações como nome, tipo, saldo inicial e saldo atual.
 export class Accounts implements OnInit {
+  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly formBuilder = inject(FormBuilder);
   private readonly notifications = inject(Notifications);
   // Injeção de dependências para interagir com a API de contas financeiras e gerar relatórios.
@@ -85,6 +89,7 @@ export class Accounts implements OnInit {
   // O método ngOnInit é chamado quando o componente é inicializado, e aqui ele chama o método para carregar as contas financeiras.
   ngOnInit(): void {
     this.loadAccounts();
+    if (this.route?.snapshot.queryParamMap.get('action') === 'create') this.openCreateForm();
   }
 
   // Método protegido para carregar as contas financeiras e seus saldos atuais, 

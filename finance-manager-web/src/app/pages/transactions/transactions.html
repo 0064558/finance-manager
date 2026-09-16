@@ -125,14 +125,23 @@
         </button>
       </div>
     } @else if (transactions().length === 0) {
-      <div class="state-card">
-        <span class="state-icon" aria-hidden="true"><svg lucideArrowLeftRight></svg></span>
-        <h2>Nenhuma transação encontrada</h2>
-        <p>Revise os filtros ou registre uma nova movimentação para começar.</p>
-        <button class="secondary-button fm-button" type="button" (click)="openCreateForm()">
-          Nova transação
-        </button>
-      </div>
+      @if (hasAppliedFilters()) {
+        <app-empty-state icon="search" title="Nenhuma movimentação com estes filtros"
+          description="Tente outro período, conta ou categoria para encontrar o que procura."
+          actionLabel="Limpar filtros" [framed]="true" (action)="clearFilters()" />
+      } @else if (accounts().length === 0) {
+        <app-empty-state icon="wallet" title="Comece pela sua primeira conta"
+          description="Toda movimentação precisa de uma conta. Adicione a sua para começar a registrar entradas e saídas."
+          actionLabel="Criar primeira conta" actionRoute="/accounts" [actionParams]="{ action: 'create' }" [framed]="true" />
+      } @else if (categories().length === 0) {
+        <app-empty-state icon="categories" title="Vamos organizar suas movimentações?"
+          description="Crie uma categoria de receita ou despesa antes de registrar sua primeira transação."
+          actionLabel="Criar primeira categoria" actionRoute="/categories" [actionParams]="{ action: 'create' }" [framed]="true" />
+      } @else {
+        <app-empty-state title="Cada movimentação conta uma parte da sua história"
+          description="Registre uma receita ou despesa para começar a acompanhar como seu dinheiro se movimenta."
+          actionLabel="Adicionar transação" [framed]="true" (action)="openCreateForm()" />
+      }
     } @else {
       <header class="results-heading">
         <div>

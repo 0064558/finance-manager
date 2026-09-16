@@ -139,10 +139,10 @@
     </div>
     @if (!hasActivity()) {
       <div class="chart-empty">
-        <span class="empty-icon"><svg lucideChartNoAxesCombined aria-hidden="true"></svg></span>
-        <strong>Um mês ainda sem movimentações</strong>
-        <p>Nenhuma receita ou despesa em {{ monthLabel() }}.</p>
-        <button type="button" (click)="previousMonth.emit()">Ver {{ previousMonthLabel() }}</button>
+        <app-empty-state icon="chart" title="Seu mês ganha vida a cada registro"
+          [description]="'Ainda não há receitas ou despesas em ' + monthLabel() + '. Comece com uma movimentação.'"
+          actionLabel="Adicionar transação" actionRoute="/transactions" [actionParams]="{ action: 'create' }"
+          [secondaryLabel]="'Ver ' + previousMonthLabel()" [compact]="true" (secondaryAction)="previousMonth.emit()" />
       </div>
     }
   </div>

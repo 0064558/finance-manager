@@ -304,44 +304,8 @@ summary:focus-visible,
   text-align: center;
   background: radial-gradient(ellipse, #fffffff7 30%, #ffffff00 75%);
 }
-.empty-icon {
-  display: grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  margin-bottom: 1rem;
-  color: #19856a;
-  background: #edf7f1;
-  border: 1px solid #deeee3;
-  border-radius: 1rem;
-}
-.empty-icon svg {
-  width: 1.4rem;
-  height: 1.4rem;
-}
-.chart-empty strong {
-  color: #41574a;
-  font-size: 0.85rem;
-}
-.chart-empty p {
-  max-width: 17rem;
-  margin: 0.5rem 0 1rem;
-  color: #758579;
-  font-size: 0.73rem;
-  line-height: 1.6;
-}
-.chart-empty button {
-  min-height: 2.5rem;
-  padding: 0.55rem 0.8rem;
-  border: 1px solid #d1e4d8;
-  border-radius: 0.55rem;
-  background: #f5faf7;
-  color: #1a6c51;
-  font-size: 0.7rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
+.chart-body--empty { min-height: 24rem; }
+.chart-empty app-empty-state { width: 100%; }
 .chart-footer {
   position: relative;
   flex-wrap: wrap;

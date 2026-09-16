@@ -32,13 +32,9 @@
     </button>
   </section>
   } @else if (categories().length === 0) {
-  <section class="state-card state-card--empty">
-    <span class="state-symbol" aria-hidden="true"><svg lucideTags></svg></span>
-    <div>
-      <h2>Nenhuma categoria encontrada</h2>
-      <p>Crie sua primeira categoria para começar a organizar suas movimentações.</p>
-    </div>
-  </section>
+  <app-empty-state icon="categories" title="Um lugar para cada movimentação"
+    description="Crie categorias como Salário, Alimentação e Moradia. Assim, fica mais fácil entender suas receitas e despesas."
+    actionLabel="Criar primeira categoria" [framed]="true" (action)="openCreateForm()" />
   } @else {
   <section class="category-overview" aria-label="Resumo das categorias">
     <div class="overview-item overview-item--income">

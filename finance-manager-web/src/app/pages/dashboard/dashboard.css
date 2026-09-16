@@ -340,20 +340,10 @@
   margin-top: 0.2rem;
 }
 
-.empty-state,
 .state-card {
   color: #74847a;
   font-size: 0.82rem;
   text-align: center;
-}
-.empty-state {
-  display: grid;
-  min-height: 10rem;
-  place-items: center;
-  padding: 1rem;
-  border: 1px dashed #dce6df;
-  border-radius: 0.85rem;
-  background: #fafcfb;
 }
 .state-card {
   display: flex;
@@ -499,7 +489,6 @@
 }
 .dashboard-shortcuts a:hover { background: #fff; box-shadow: 0 4px 12px #163e3012; }
 .dashboard-shortcuts svg { width: 1rem; height: 1rem; flex-shrink: 0; }
-.empty-account-link { color: #166b55; font-weight: 650; text-underline-offset: 4px; }
 .dashboard-placeholder { min-height: 10rem; }
 .dashboard-placeholder--panel { min-height: 28rem; }
 .dashboard-placeholder--panel .fm-skeleton { height: 17rem; margin-top: 3rem; }

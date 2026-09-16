@@ -146,7 +146,9 @@
             independentemente do mês selecionado.
           </p>
         } @else {
-          <div class="empty-state"><span>Você ainda não cadastrou nenhuma conta.</span><a class="empty-account-link" routerLink="/accounts">Criar minha primeira conta <span aria-hidden="true">→</span></a></div>
+          <app-empty-state icon="wallet" title="Seus saldos, juntos em um só lugar"
+            description="Adicione sua primeira conta para começar a acompanhar o dinheiro disponível."
+            actionLabel="Criar primeira conta" actionRoute="/accounts" [actionParams]="{ action: 'create' }" [compact]="true" />
         }
       </section>
     </div>

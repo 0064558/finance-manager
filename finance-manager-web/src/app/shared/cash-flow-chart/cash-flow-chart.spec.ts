@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CashFlowChart } from './cash-flow-chart';
 import { CashFlowPoint } from '../../core/report.models';
 import { ValuePrivacy } from '../../core/value-privacy';
+import { provideRouter } from '@angular/router';
 
 describe('CashFlowChart', () => {
   let fixture: ComponentFixture<CashFlowChart>;
@@ -13,7 +14,7 @@ describe('CashFlowChart', () => {
   });
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [CashFlowChart] });
+    TestBed.configureTestingModule({ imports: [CashFlowChart], providers: [provideRouter([])] });
     fixture = TestBed.createComponent(CashFlowChart);
     fixture.componentRef.setInput('monthLabel', 'agosto de 2026');
     fixture.componentRef.setInput('previousMonthLabel', 'julho de 2026');
@@ -84,7 +85,7 @@ describe('CashFlowChart', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.chart-empty')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.plot').hasAttribute('tabindex')).toBe(false);
-    fixture.nativeElement.querySelector('.chart-empty button').click();
+    fixture.nativeElement.querySelector('.chart-empty .empty-secondary').click();
     expect(previous).toHaveBeenCalledOnce();
   });
 

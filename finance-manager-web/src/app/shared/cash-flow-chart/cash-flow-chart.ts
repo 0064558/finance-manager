@@ -1,3 +1,4 @@
+import { EmptyState } from '../empty-state/empty-state';
 import { AnimatedNumber } from '../animated-number/animated-number';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { ValuePrivacy, hiddenAmount } from '../../core/value-privacy';
@@ -6,7 +7,7 @@ import { CashFlowPoint } from '../../core/report.models';
 
 @Component({
   selector: 'app-cash-flow-chart',
-  imports: [AnimatedNumber, LucideChartColumnIncreasing, LucideChartNoAxesCombined],
+  imports: [EmptyState, AnimatedNumber, LucideChartColumnIncreasing, LucideChartNoAxesCombined],
   templateUrl: './cash-flow-chart.html',
   styleUrl: './cash-flow-chart.css',
 })

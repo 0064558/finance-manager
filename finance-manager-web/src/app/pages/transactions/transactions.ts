@@ -1,5 +1,7 @@
+import { EmptyState } from '../../shared/empty-state/empty-state';
 import { PrivateCurrency } from '../../shared/private-currency/private-currency';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 
 import { CategoryApi } from '../../core/categories';
@@ -20,7 +22,6 @@ import {
 } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
-  LucideArrowLeftRight,
   LucideChevronLeft,
   LucideChevronRight,
   LucidePencil,
@@ -88,8 +89,9 @@ function formatLocalDate(date: Date): string {
 
 @Component({
   imports: [
+    EmptyState,
     PrivateCurrency, DatePipe, ReactiveFormsModule,
-    LucideArrowLeftRight, LucideChevronLeft, LucideChevronRight,
+    LucideChevronLeft, LucideChevronRight,
     LucidePencil, LucidePlus, LucideSlidersHorizontal, LucideTrash2,
   ],
   selector: 'app-transactions',
@@ -97,6 +99,8 @@ function formatLocalDate(date: Date): string {
   templateUrl: './transactions.html',
 })
 export class Transactions implements OnInit {
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private pendingCreate = this.route?.snapshot.queryParamMap.get('action') === 'create';
 
   private readonly transactionApi = inject(TransactionApi);
   private readonly notifications = inject(Notifications);
@@ -119,6 +123,7 @@ export class Transactions implements OnInit {
 
   // Sinal para armazenar os filtros aplicados, permitindo que o componente rastreie e aplique filtros de transações com base nos valores do formulário de filtro.
   private readonly appliedFilters = signal<TransactionFilters>({});
+  protected readonly hasAppliedFilters = computed(() => Object.values(this.appliedFilters()).some(Boolean));
 
   // Sinais para controlar o estado do formulário de transação, incluindo se o formulário está aberto, se está sendo enviado e mensagens de erro relacionadas ao envio do formulário.
   protected readonly isTransactionFormOpen = signal(false);
@@ -241,6 +246,17 @@ export class Transactions implements OnInit {
           );
 
           this.transactions.set(transactionsWithNames);
+          if (this.pendingCreate) {
+            this.pendingCreate = false;
+            if (accounts.length > 0 && categories.length > 0) {
+              this.openCreateForm();
+              const type = this.route?.snapshot.queryParamMap.get('type');
+              if (type === 'INCOME' || type === 'EXPENSE') {
+                this.transactionForm.controls.type.setValue(type);
+                this.onTransactionTypeChange();
+              }
+            }
+          }
         },
         error: (error) => {
           console.error('Error loading data:', error);

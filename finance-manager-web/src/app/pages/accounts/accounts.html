@@ -62,13 +62,9 @@
     </button>
   </section>
   } @else if (accounts().length === 0) {
-  <section class="state-panel state-panel--empty">
-    <span class="state-icon" aria-hidden="true"><svg lucideWalletCards></svg></span>
-    <div>
-      <h2>Nenhuma conta cadastrada</h2>
-      <p>Quando você criar sua primeira conta, ela aparecerá aqui com o saldo atualizado.</p>
-    </div>
-  </section>
+  <app-empty-state icon="wallet" title="Suas finanças começam por aqui"
+    description="Adicione sua conta corrente, poupança ou dinheiro em mãos para acompanhar cada saldo em um só lugar."
+    actionLabel="Criar primeira conta" [framed]="true" (action)="openCreateForm()" />
   } @else {
   <div class="account-grid">
     @for (account of accounts(); track account.id) {

@@ -1,3 +1,4 @@
+import { EmptyState } from '../empty-state/empty-state';
 import { Component, computed, input, output, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -11,7 +12,7 @@ const expensePalette = ['#c46f71', '#d18b56', '#ad8050', '#b56b8f', '#b19064', '
 
 @Component({
   selector: 'app-category-expenses',
-  imports: [AnimatedNumber, DecimalPipe, RouterLink, LucideArrowUpRight, LucideChartPie, LucideRefreshCw],
+  imports: [EmptyState, AnimatedNumber, DecimalPipe, RouterLink, LucideArrowUpRight, LucideChartPie, LucideRefreshCw],
   templateUrl: './category-expenses.html',
   styleUrl: './category-expenses.css',
 })

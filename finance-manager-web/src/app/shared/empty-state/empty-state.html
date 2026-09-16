@@ -1,0 +1,23 @@
+<section class="empty-state" [class.is-compact]="compact()" [class.is-framed]="framed()">
+  <span class="empty-art" aria-hidden="true">
+    @switch (icon()) {
+      @case ('wallet') { <svg lucideWalletCards></svg> }
+      @case ('chart') { <svg lucideChartNoAxesCombined></svg> }
+      @case ('categories') { <svg lucideTags></svg> }
+      @case ('search') { <svg lucideSearch></svg> }
+      @default { <svg lucideReceiptText></svg> }
+    }
+  </span>
+  <h2>{{ title() }}</h2>
+  <p>{{ description() }}</p>
+  <div class="empty-actions">
+    @if (actionRoute(); as route) {
+      <a class="empty-action" [routerLink]="route" [queryParams]="actionParams()"><svg lucidePlus aria-hidden="true"></svg>{{ actionLabel() }}</a>
+    } @else {
+      <button class="empty-action" type="button" (click)="action.emit()">{{ actionLabel() }}</button>
+    }
+    @if (secondaryLabel()) {
+      <button class="empty-secondary" type="button" (click)="secondaryAction.emit()">{{ secondaryLabel() }}</button>
+    }
+  </div>
+</section>

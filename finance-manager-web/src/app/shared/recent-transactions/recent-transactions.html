@@ -66,6 +66,10 @@
       }
     </div>
   } @else {
-    <div class="transactions-empty-state">Nenhuma transação encontrada em {{ monthLabel }}.</div>
+    <app-empty-state [icon]="accounts.length ? 'transactions' : 'wallet'"
+      [title]="accounts.length ? 'Seu mês está pronto para começar' : 'Vamos dar o primeiro passo?'"
+      [description]="accounts.length ? 'Ainda não há movimentações em ' + monthLabel + '. Registre uma entrada ou saída para acompanhar seu mês.' : 'Crie uma conta e depois registre suas primeiras receitas e despesas.'"
+      [actionLabel]="accounts.length ? 'Adicionar transação' : 'Criar primeira conta'"
+      [actionRoute]="accounts.length ? '/transactions' : '/accounts'" [actionParams]="{ action: 'create' }" [compact]="true" />
   }
 </section>

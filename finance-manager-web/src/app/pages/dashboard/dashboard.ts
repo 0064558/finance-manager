@@ -1,3 +1,4 @@
+import { EmptyState } from '../../shared/empty-state/empty-state';
 import { AnimatedNumber } from '../../shared/animated-number/animated-number';
 import { RouterLink } from '@angular/router';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
@@ -25,6 +26,7 @@ import { CategoryExpenses } from '../../shared/category-expenses/category-expens
 @Component({
   selector: 'app-dashboard',
   imports: [
+    EmptyState,
     AnimatedNumber,
     RouterLink,
     LucideCalendarDays,

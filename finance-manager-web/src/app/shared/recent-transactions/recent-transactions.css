@@ -194,16 +194,6 @@
   color: #cf5261;
 }
 
-.transactions-empty-state {
-  display: grid;
-  min-height: 8rem;
-  place-items: center;
-  padding: 1rem;
-  color: #8290a0;
-  font-size: 0.82rem;
-  text-align: center;
-}
-
 @media (max-width: 700px) {
   .transactions-table-header {
     display: none;

@@ -66,12 +66,10 @@
     </div>
     <footer class="expenses-footer"><span>Todas as {{ copy().noun }} do mês, em todas as contas.</span><a routerLink="/transactions">Ver transações <svg lucideArrowUpRight aria-hidden="true"></svg></a></footer>
   } @else {
-    <div class="expenses-state">
-      <span class="state-icon" aria-hidden="true"><svg lucideChartPie></svg></span>
-      <strong>Um mês sem {{ copy().noun }} por aqui</strong>
-      <p>Quando você registrar {{ copy().singular }} em {{ monthLabel() }}, a distribuição aparecerá aqui.</p>
-      <a routerLink="/transactions">Gerenciar transações <svg lucideArrowUpRight aria-hidden="true"></svg></a>
-    </div>
+    <app-empty-state icon="categories" [title]="'Um mês sem ' + copy().noun + ' por aqui'"
+      [description]="'Registre ' + copy().singular + ' para descobrir ' + (type() === 'INCOME' ? 'de onde seu dinheiro vem.' : 'para onde seu dinheiro vai.')"
+      [actionLabel]="type() === 'INCOME' ? 'Adicionar receita' : 'Adicionar despesa'" actionRoute="/transactions"
+      [actionParams]="{ action: 'create', type: type() }" [compact]="true" />
   }
   </div>
 </section>
