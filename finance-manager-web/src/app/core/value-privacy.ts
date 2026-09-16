@@ -12,9 +12,13 @@ export class ValuePrivacy {
 
   // Alterna a visibilidade dos valores e persiste a preferência do usuário no armazenamento local.
   toggle(): void {
-    this.state.update(hidden => !hidden);
+    this.setHidden(!this.state());
+  }
+
+  setHidden(hidden: boolean): void {
+    this.state.set(hidden);
     try {
-      if (this.browser) localStorage.setItem(storageKey, String(this.state()));
+      if (this.browser) localStorage.setItem(storageKey, String(hidden));
     } catch {
       // Ignora falhas de armazenamento local, como quando o armazenamento está cheio ou desativado.
     }

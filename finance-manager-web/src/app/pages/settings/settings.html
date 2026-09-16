@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">PREFERÊNCIAS</p>
       <h1 id="settings-title">Configurações</h1>
-      <p>Personalize a aparência do seu espaço financeiro.</p>
+      <p>Personalize a aparência e a privacidade do seu espaço financeiro.</p>
     </div>
   </header>
 
@@ -35,7 +35,7 @@
         <span class="setting-status">{{ theme.dark() ? 'Ativado' : 'Desativado' }}</span>
       </div>
 
-      <button class="theme-switch" type="button" role="switch" [class.theme-switch--on]="theme.dark()"
+      <button class="setting-switch theme-switch" type="button" role="switch" [class.setting-switch--on]="theme.dark()"
         [attr.aria-checked]="theme.dark()" [attr.aria-label]="theme.dark() ? 'Desativar modo escuro' : 'Ativar modo escuro'"
         (click)="setDarkMode(!theme.dark())">
         <span class="switch-thumb" aria-hidden="true"></span>
@@ -45,6 +45,48 @@
     <footer class="preference-note">
       <svg lucideCheck aria-hidden="true"></svg>
       <span>Sua preferência fica salva automaticamente neste dispositivo.</span>
+    </footer>
+  </section>
+
+  <section class="settings-panel" aria-labelledby="privacy-title">
+    <header class="panel-heading">
+      <span class="heading-icon" aria-hidden="true">
+        @if (valuePrivacy.hidden()) { <svg lucideEyeOff></svg> }
+        @else { <svg lucideEye></svg> }
+      </span>
+      <div>
+        <h2 id="privacy-title">Privacidade</h2>
+        <p>Controle como seus valores financeiros aparecem nas telas.</p>
+      </div>
+    </header>
+
+    <div class="setting-row">
+      <div class="privacy-preview" [class.privacy-preview--hidden]="valuePrivacy.hidden()" aria-hidden="true">
+        @if (valuePrivacy.hidden()) { <svg lucideEyeOff></svg> }
+        @else { <svg lucideEye></svg> }
+        <div>
+          <span>Saldo disponível</span>
+          <strong>{{ valuePrivacy.hidden() ? '••••••' : 'R$ 8.450,00' }}</strong>
+        </div>
+      </div>
+
+      <div class="setting-copy">
+        <h3>Ocultar valores financeiros</h3>
+        <p>Proteja seus saldos e movimentações de olhares próximos.</p>
+        <span class="setting-status">{{ valuePrivacy.hidden() ? 'Valores ocultos' : 'Valores visíveis' }}</span>
+      </div>
+
+      <button class="setting-switch privacy-switch" type="button" role="switch"
+        [class.setting-switch--on]="valuePrivacy.hidden()" [attr.aria-checked]="valuePrivacy.hidden()"
+        [attr.aria-label]="valuePrivacy.hidden() ? 'Mostrar valores financeiros' : 'Ocultar valores financeiros'"
+        (click)="setValuesHidden(!valuePrivacy.hidden())">
+        <span class="switch-thumb" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <footer class="preference-note">
+      <svg lucideCheck aria-hidden="true"></svg>
+      <span>Esta opção também pode ser alterada pelo botão de olho no cabeçalho.</span>
     </footer>
   </section>
 </section>

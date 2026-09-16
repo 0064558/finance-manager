@@ -206,8 +206,16 @@ html[data-theme='dark'] .app-shell .settings-page .panel-heading { background: v
 html[data-theme='dark'] .app-shell .settings-page .heading-icon { color: var(--fm-green); background: var(--fm-green-soft); }
 html[data-theme='dark'] .app-shell .settings-page .setting-status { color: var(--fm-green); }
 html[data-theme='dark'] .app-shell .settings-page .preference-note { background: #17261e; border-color: var(--fm-line); }
-html[data-theme='dark'] .app-shell .settings-page .theme-switch { background: #3b4d43; border-color: #53675b; }
-html[data-theme='dark'] .app-shell .settings-page .theme-switch--on { background: #2d8262; border-color: #65b993; }
+html[data-theme='dark'] .app-shell .settings-page .setting-switch { background: #3b4d43; border-color: #53675b; }
+html[data-theme='dark'] .app-shell .settings-page .setting-switch--on { background: #2d8262; border-color: #65b993; }
+html[data-theme='dark'] .app-shell .settings-page .privacy-preview {
+  color: var(--fm-green);
+  background: #17261e;
+  border-color: var(--fm-line);
+}
+html[data-theme='dark'] .app-shell .settings-page .privacy-preview span { color: var(--fm-muted); }
+html[data-theme='dark'] .app-shell .settings-page .privacy-preview strong { color: var(--fm-text); }
+html[data-theme='dark'] .app-shell .settings-page .privacy-preview--hidden { color: #91a49a; background: var(--fm-raised); }
 html[data-theme='dark'] :is(.app-shell, .login-panel, .register-panel) :is(.form-error, .transaction-form__feedback, .alert) { color: var(--fm-danger); background: var(--fm-danger-soft); border-color: #71414c; }
 html[data-theme='dark'] :is(.app-shell, .login-panel, .register-panel) :is(.field-error, .transaction-form__error, .form-field small) { color: var(--fm-danger); }
 html[data-theme='dark'] :is(.app-shell, .login-panel, .register-panel) [aria-invalid='true'] { border-color: var(--fm-danger); }
