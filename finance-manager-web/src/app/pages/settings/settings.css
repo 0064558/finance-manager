@@ -1,0 +1,261 @@
+:host {
+  display: block;
+}
+
+.settings-page {
+  width: min(100%, 76rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 3.5rem) 3rem;
+}
+
+.page-heading {
+  margin-bottom: 1.5rem;
+}
+
+.page-heading :is(h1, p),
+.panel-heading :is(h2, p),
+.setting-copy :is(h3, p) {
+  margin: 0;
+}
+
+.eyebrow {
+  color: #218663;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.page-heading h1 {
+  margin-top: 0.45rem;
+  color: #263c30;
+  font-size: clamp(1.9rem, 3vw, 2.5rem);
+  letter-spacing: -0.055em;
+}
+
+.page-heading > div > p:last-child {
+  max-width: 38rem;
+  margin-top: 0.55rem;
+  color: #728078;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.settings-panel {
+  overflow: hidden;
+  border: 1px solid #dfe8e3;
+  border-radius: 1.2rem;
+  background: #fff;
+  box-shadow: 0 12px 34px #173f3408;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.3rem 1.4rem;
+  border-bottom: 1px solid #e7eee9;
+  background: linear-gradient(120deg, #f4faf7, #fff);
+}
+
+.heading-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.75rem;
+  color: #187657;
+  background: #e1f3e9;
+}
+
+.heading-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.panel-heading h2 {
+  color: #2a4034;
+  font-size: 1.05rem;
+  letter-spacing: -0.03em;
+}
+
+.panel-heading p {
+  margin-top: 0.25rem;
+  color: #7a8880;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.15rem;
+  padding: 1.5rem 1.4rem;
+}
+
+.theme-preview {
+  position: relative;
+  height: 4.6rem;
+  overflow: hidden;
+  border: 1px solid #dce7e0;
+  border-radius: 0.8rem;
+  background: #f5f8f6;
+  box-shadow: inset 0 0 0 0.3rem #fff;
+  transition: background-color 220ms ease, border-color 220ms ease;
+}
+
+.theme-preview--dark {
+  border-color: #375244;
+  background: #14231b;
+  box-shadow: inset 0 0 0 0.3rem #1d3026;
+}
+
+.preview-bar {
+  height: 0.8rem;
+  margin: 0.65rem 0.75rem 0;
+  border-radius: 999px;
+  background: #d9e6df;
+}
+
+.theme-preview--dark .preview-bar {
+  background: #365344;
+}
+
+.preview-content {
+  display: flex;
+  gap: 0.3rem;
+  margin: 0.55rem 0.75rem;
+}
+
+.preview-content span {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.32rem;
+  background: #cfeadd;
+}
+
+.theme-preview--dark .preview-content span {
+  background: #28513e;
+}
+
+.theme-preview > svg {
+  position: absolute;
+  right: 0.72rem;
+  bottom: 0.62rem;
+  width: 1rem;
+  height: 1rem;
+  color: #277e60;
+}
+
+.theme-preview--dark > svg {
+  color: #8de1bb;
+}
+
+.setting-copy h3 {
+  color: #2e4438;
+  font-size: 0.95rem;
+}
+
+.setting-copy p {
+  margin-top: 0.3rem;
+  color: #77857d;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.setting-status {
+  display: inline-block;
+  margin-top: 0.55rem;
+  color: #218663;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.theme-switch {
+  position: relative;
+  width: 3.35rem;
+  height: 1.9rem;
+  padding: 0.2rem;
+  border: 1px solid #cad8d0;
+  border-radius: 999px;
+  background: #dfe7e2;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.switch-thumb {
+  display: block;
+  width: 1.38rem;
+  height: 1.38rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 7px #183d2e2e;
+  transition: transform 180ms ease;
+}
+
+.theme-switch--on {
+  border-color: #237c5d;
+  background: #238261;
+}
+
+.theme-switch--on .switch-thumb {
+  transform: translateX(1.38rem);
+}
+
+.theme-switch:hover {
+  border-color: #6d9c85;
+}
+
+.theme-switch:focus-visible {
+  outline: 3px solid #23906d40;
+  outline-offset: 3px;
+}
+
+.preference-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1.4rem;
+  border-top: 1px solid #e7eee9;
+  color: #64746b;
+  background: #f8fbf9;
+  font-size: 0.72rem;
+}
+
+.preference-note svg {
+  width: 1rem;
+  height: 1rem;
+  color: #218663;
+}
+
+@media (max-width: 600px) {
+  .settings-page {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .setting-row {
+    grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+    gap: 0.8rem;
+    padding-inline: 1rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .setting-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .theme-preview {
+    grid-column: 1 / -1;
+    width: min(100%, 9rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-preview,
+  .theme-switch,
+  .switch-thumb {
+    transition: none;
+  }
+}

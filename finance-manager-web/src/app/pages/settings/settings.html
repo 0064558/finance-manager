@@ -1,0 +1,50 @@
+<section class="settings-page" aria-labelledby="settings-title">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">PREFERÊNCIAS</p>
+      <h1 id="settings-title">Configurações</h1>
+      <p>Personalize a aparência do seu espaço financeiro.</p>
+    </div>
+  </header>
+
+  <section class="settings-panel" aria-labelledby="appearance-title">
+    <header class="panel-heading">
+      <span class="heading-icon" aria-hidden="true"><svg lucideSettings></svg></span>
+      <div>
+        <h2 id="appearance-title">Aparência</h2>
+        <p>Escolha como o Finance Manager deve aparecer neste dispositivo.</p>
+      </div>
+    </header>
+
+    <div class="setting-row">
+      <div class="theme-preview" [class.theme-preview--dark]="theme.dark()" aria-hidden="true">
+        <div class="preview-bar"></div>
+        <div class="preview-content">
+          <span></span><span></span><span></span>
+        </div>
+        @if (theme.dark()) {
+          <svg lucideMoon></svg>
+        } @else {
+          <svg lucideSun></svg>
+        }
+      </div>
+
+      <div class="setting-copy">
+        <h3>Modo escuro</h3>
+        <p>Use tons mais suaves para reduzir a luminosidade da tela.</p>
+        <span class="setting-status">{{ theme.dark() ? 'Ativado' : 'Desativado' }}</span>
+      </div>
+
+      <button class="theme-switch" type="button" role="switch" [class.theme-switch--on]="theme.dark()"
+        [attr.aria-checked]="theme.dark()" [attr.aria-label]="theme.dark() ? 'Desativar modo escuro' : 'Ativar modo escuro'"
+        (click)="setDarkMode(!theme.dark())">
+        <span class="switch-thumb" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <footer class="preference-note">
+      <svg lucideCheck aria-hidden="true"></svg>
+      <span>Sua preferência fica salva automaticamente neste dispositivo.</span>
+    </footer>
+  </section>
+</section>

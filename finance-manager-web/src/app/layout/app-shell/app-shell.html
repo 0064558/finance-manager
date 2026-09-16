@@ -52,10 +52,11 @@
 
     <div class="sidebar-section-label sidebar-section-label--secondary sidebar-copy">GERAL</div>
     <nav class="sidebar-nav sidebar-nav--secondary">
-      <span class="sidebar-link sidebar-link--disabled" aria-disabled="true" title="Configurações — em breve">
+      <a class="sidebar-link sidebar-link--settings" routerLink="/settings" routerLinkActive="sidebar-link--active"
+        ariaCurrentWhenActive="page" title="Configurações" (click)="openSettings()">
         <svg lucideSettings class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Configurações</span>
-      </span>
+      </a>
       <button class="sidebar-link sidebar-link--logout" type="button" title="Sair" (click)="logout()">
         <svg lucideLogOut class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Sair</span>
@@ -80,14 +81,6 @@
       </div>
 
       <div class="topbar-actions">
-        <button class="theme-button" type="button" [class.is-active]="theme.dark()"
-          [attr.aria-pressed]="theme.dark()"
-          [attr.aria-label]="theme.dark() ? 'Ativar tema claro' : 'Ativar tema escuro'"
-          [title]="theme.dark() ? 'Ativar tema claro' : 'Ativar tema escuro'" (click)="theme.toggle()">
-          @if (theme.dark()) { <svg lucideSun aria-hidden="true"></svg> }
-          @else { <svg lucideMoon aria-hidden="true"></svg> }
-        </button>
-        <span class="sr-only" role="status">{{ theme.dark() ? 'Tema escuro ativado' : 'Tema claro ativado' }}</span>
         <button class="privacy-button" type="button"
           [class.is-active]="valuePrivacy.hidden()"
           [attr.aria-pressed]="valuePrivacy.hidden()"

@@ -12,8 +12,6 @@ import {
   LucideMenu,
   LucideEye,
   LucideEyeOff,
-  LucideSun,
-  LucideMoon,
   LucideSettings,
   LucideTags,
   LucideUserRound,
@@ -23,7 +21,6 @@ import {
 import { Auth } from '../../core/auth';
 import { AuthUser } from '../../core/auth.models';
 import { ValuePrivacy } from '../../core/value-privacy';
-import { Theme } from '../../core/theme';
 
 @Component({
   selector: 'app-shell',
@@ -39,8 +36,6 @@ import { Theme } from '../../core/theme';
     LucideMenu,
     LucideEye,
     LucideEyeOff,
-    LucideSun,
-    LucideMoon,
     LucideSettings,
     LucideTags,
     LucideUserRound,
@@ -55,7 +50,6 @@ import { Theme } from '../../core/theme';
 // o menu móvel (aberto ou fechado) e as informações do usuário autenticado. O componente também lida com eventos de teclado e redimensionamento
 // da janela para melhorar a experiência do usuário em diferentes dispositivos.
 export class AppShell implements OnInit {
-  protected readonly theme = inject(Theme);
   protected readonly valuePrivacy = inject(ValuePrivacy);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
@@ -72,6 +66,7 @@ export class AppShell implements OnInit {
       case '/accounts': return { label: 'SUAS CONTAS', caption: 'Cada saldo no seu lugar' };
       case '/transactions': return { label: 'TRANSAÇÕES', caption: 'Clareza em cada movimentação' };
       case '/categories': return { label: 'CATEGORIAS', caption: 'Mais organização para suas finanças' };
+      case '/settings': return { label: 'CONFIGURAÇÕES', caption: 'Preferências do seu espaço' };
       default: return { label: 'VISÃO GERAL', caption: 'Acompanhe sua saúde financeira' };
     }
   });
@@ -111,6 +106,11 @@ export class AppShell implements OnInit {
 
   protected closeMobileNavigation(): void {
     this.mobileMenuOpen.set(false);
+  }
+
+  protected openSettings(): void {
+    this.closeMobileNavigation();
+    void this.router.navigateByUrl('/settings');
   }
 
   protected isNavigationExpanded(): boolean {

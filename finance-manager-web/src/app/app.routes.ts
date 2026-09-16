@@ -48,6 +48,10 @@ export const routes: Routes = [
         // A página de transações financeiras é carregada de forma preguiçosa (lazy loading).
         loadComponent: () => import('./pages/transactions/transactions').then((page) => page.Transactions),
       },
+      {
+        path: 'settings',
+        loadComponent: () => import('./pages/settings/settings').then((page) => page.Settings),
+      },
     ],
   },
 ];

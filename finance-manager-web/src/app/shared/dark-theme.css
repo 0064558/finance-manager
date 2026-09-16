@@ -43,11 +43,11 @@ html[data-theme='dark'] .app-shell .mobile-bottom-nav a.is-active .mobile-nav-ic
 html[data-theme='dark'] .app-shell :is(.sidebar-link--logout, .sidebar-link--logout:hover) { color: var(--fm-danger); }
 html[data-theme='dark'] .app-shell .sidebar-link--logout:hover { background: var(--fm-danger-soft); }
 html[data-theme='dark'] .app-shell :is(.profile-avatar, .count-badge, .category-count, .transactions-count) { color: var(--fm-green); background: var(--fm-green-soft); box-shadow: none; }
-html[data-theme='dark'] .app-shell :is(.privacy-button, .theme-button, .menu-button, .sidebar-toggle) { color: var(--fm-muted); background: var(--fm-raised); border-color: var(--fm-line); }
-html[data-theme='dark'] .app-shell :is(.privacy-button:hover, .privacy-button.is-active, .theme-button:hover, .theme-button.is-active, .menu-button:hover, .sidebar-toggle:hover, .sidebar-close:hover) { color: var(--fm-green); background: var(--fm-green-soft); border-color: #42664f; }
+html[data-theme='dark'] .app-shell :is(.privacy-button, .menu-button, .sidebar-toggle) { color: var(--fm-muted); background: var(--fm-raised); border-color: var(--fm-line); }
+html[data-theme='dark'] .app-shell :is(.privacy-button:hover, .privacy-button.is-active, .menu-button:hover, .sidebar-toggle:hover, .sidebar-close:hover) { color: var(--fm-green); background: var(--fm-green-soft); border-color: #42664f; }
 
 /* Cards, empty states, tables and dialogs. */
-html[data-theme='dark'] :is(.app-shell, .login-panel, .register-panel) :is(.stat-card, .panel, .state-card, .state-panel, .account-card, .category-panel, .transactions-panel, .expenses-panel, .results-panel, .cash-flow-panel, .filter-panel, .accounts-overview, .category-overview, .transaction-card, .transaction-modal, .delete-modal, .account-dialog, .category-dialog, .delete-dialog, .login-card, .register-card) {
+html[data-theme='dark'] :is(.app-shell, .login-panel, .register-panel) :is(.stat-card, .panel, .state-card, .state-panel, .account-card, .category-panel, .transactions-panel, .expenses-panel, .results-panel, .cash-flow-panel, .filter-panel, .accounts-overview, .category-overview, .transaction-card, .transaction-modal, .delete-modal, .account-dialog, .category-dialog, .delete-dialog, .login-card, .register-card, .settings-panel) {
   background: var(--fm-surface);
   border-color: var(--fm-line);
   box-shadow: var(--fm-shadow);
@@ -199,6 +199,15 @@ html[data-theme='dark'] .app-shell :is(.account-avatar, .account-row:nth-child(3
 html[data-theme='dark'] .app-shell :is(.account-name, .transaction-details strong, .transaction-card__main strong) { color: var(--fm-text); }
 html[data-theme='dark'] .app-shell :is(.accounts-note, .transaction-card__meta, .transaction-details p, .account-copy small) { color: var(--fm-muted); }
 html[data-theme='dark'] .app-shell .accounts-note { background: var(--fm-raised); }
+html[data-theme='dark'] .app-shell .settings-page .page-heading > div > p:last-child,
+html[data-theme='dark'] .app-shell .settings-page :is(.panel-heading p, .setting-copy p, .preference-note) { color: var(--fm-muted); }
+html[data-theme='dark'] .app-shell .settings-page :is(.page-heading h1, .panel-heading h2, .setting-copy h3) { color: var(--fm-text); }
+html[data-theme='dark'] .app-shell .settings-page .panel-heading { background: var(--fm-raised); border-color: var(--fm-line); }
+html[data-theme='dark'] .app-shell .settings-page .heading-icon { color: var(--fm-green); background: var(--fm-green-soft); }
+html[data-theme='dark'] .app-shell .settings-page .setting-status { color: var(--fm-green); }
+html[data-theme='dark'] .app-shell .settings-page .preference-note { background: #17261e; border-color: var(--fm-line); }
+html[data-theme='dark'] .app-shell .settings-page .theme-switch { background: #3b4d43; border-color: #53675b; }
+html[data-theme='dark'] .app-shell .settings-page .theme-switch--on { background: #2d8262; border-color: #65b993; }
 html[data-theme='dark'] :is(.app-shell, .login-panel, .register-panel) :is(.form-error, .transaction-form__feedback, .alert) { color: var(--fm-danger); background: var(--fm-danger-soft); border-color: #71414c; }
 html[data-theme='dark'] :is(.app-shell, .login-panel, .register-panel) :is(.field-error, .transaction-form__error, .form-field small) { color: var(--fm-danger); }
 html[data-theme='dark'] :is(.app-shell, .login-panel, .register-panel) [aria-invalid='true'] { border-color: var(--fm-danger); }

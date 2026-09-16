@@ -6,7 +6,6 @@ import { vi } from 'vitest';
 import { Auth } from '../../core/auth';
 import { ValuePrivacy } from '../../core/value-privacy';
 import { AppShell } from './app-shell';
-import { Theme } from '../../core/theme';
 
 @Component({ template: '<p>Conteúdo da página</p>' })
 class NavigationPage {}
@@ -42,23 +41,30 @@ describe('AppShell privacy control', () => {
     expect(button.getAttribute('aria-label')).toBe('Ocultar valores');
   });
 
-  it('toggles the theme with matching accessible labels and saved preference', () => {
-    TestBed.configureTestingModule({ imports: [AppShell], providers: [provideRouter([]), { provide: Auth, useValue: { getCurrentUser: () => of({ name: 'Maria' }) } }] });
+  it('opens settings from the sidebar', async () => {
+    TestBed.configureTestingModule({
+      imports: [AppShell],
+      providers: [
+        provideRouter([
+          { path: 'dashboard', component: NavigationPage },
+          { path: 'settings', component: NavigationPage },
+        ]),
+        { provide: Auth, useValue: { getCurrentUser: () => of({ name: 'Maria' }) } },
+      ],
+    });
     const fixture = TestBed.createComponent(AppShell);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/dashboard');
     fixture.detectChanges();
-    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.theme-button');
-    expect(button.getAttribute('aria-label')).toBe('Ativar tema escuro');
-    button.click();
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.sidebar-link--settings');
+    expect(link.getAttribute('href')).toBe('/settings');
+    link.click();
+    await fixture.whenStable();
     fixture.detectChanges();
-    expect(TestBed.inject(Theme).dark()).toBe(true);
-    expect(button.getAttribute('aria-label')).toBe('Ativar tema claro');
-    expect(button.getAttribute('aria-pressed')).toBe('true');
-    expect(localStorage.getItem('finance-manager.theme')).toBe('dark');
-    button.click();
-    fixture.detectChanges();
-    expect(TestBed.inject(Theme).dark()).toBe(false);
-    expect(button.getAttribute('aria-label')).toBe('Ativar tema escuro');
+    expect(router.url).toBe('/settings');
+    expect(link.getAttribute('aria-current')).toBe('page');
   });
+
 });
 
 describe('AppShell mobile navigation', () => {

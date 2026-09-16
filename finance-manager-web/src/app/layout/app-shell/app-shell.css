@@ -200,6 +200,11 @@
   opacity: 0.68;
 }
 
+.sidebar-link--settings {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .sidebar-link--logout {
   color: #a05764;
   cursor: pointer;
@@ -268,7 +273,7 @@
   gap: 0.8rem;
 }
 
-.privacy-button, .theme-button {
+.privacy-button {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
@@ -281,11 +286,11 @@
   cursor: pointer;
   transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
-.privacy-button svg, .theme-button svg { width: 1.2rem; height: 1.2rem; }
-.privacy-button:hover, .theme-button:hover,
-.privacy-button.is-active, .theme-button.is-active { color: var(--primary); background: #edf7f1; border-color: #bedbcf; }
-.privacy-button:focus-visible, .theme-button:focus-visible { outline: 3px solid #22966e55; outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) { .privacy-button, .theme-button { transition: none; } }
+.privacy-button svg { width: 1.2rem; height: 1.2rem; }
+.privacy-button:hover,
+.privacy-button.is-active { color: var(--primary); background: #edf7f1; border-color: #bedbcf; }
+.privacy-button:focus-visible { outline: 3px solid #22966e55; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .privacy-button { transition: none; } }
 
 .menu-button {
   display: none;
