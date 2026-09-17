@@ -15,7 +15,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import tools.jackson.databind.ObjectMapper;
+
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -45,12 +50,13 @@ public class SecurityConfig {
 
     @Bean
     // SecurityFilterChain bean that configures the security settings
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         return http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF protection for stateless APIs
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Set session management to stateless
-                .authorizeHttpRequests(auth -> auth // Configure authorization rules
-                        // Permit all requests to the specified endpoints (authentication and API documentation)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Liga as configurações CORS definidas no bean corsConfigurationSource
+                .csrf(csrf -> csrf.disable()) // Desabilita CSRF (Cross-Site Request Forgery) para simplificar a configuração de segurança
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Seta a política de criação de sessão para STATELESS, indicando que o servidor não manterá estado de sessão entre requisições
+                .authorizeHttpRequests(auth -> auth // Configura as regras de autorização para diferentes endpoints
+                        // Permite todas as requisições para os endpoints de registro, login, documentação da API e monitoramento
                         .requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",
@@ -59,14 +65,15 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/actuator/**",
                                 "/error"
-                        ).permitAll() // Allow all requests to the specified endpoints
-                        // Require authentication for any other request
+                        ).permitAll() // Permite acesso sem autenticação para os endpoints especificados
+                        // Requer autenticação para todas as outras requisições
                         .anyRequest().authenticated()
                 )
-                .httpBasic(httpBasic -> httpBasic.disable()) // Disable HTTP Basic authentication and form login
-                .formLogin(formLogin -> formLogin.disable()) // Disable form login
+                .httpBasic(httpBasic -> httpBasic.disable()) // Desabilita autenticação HTTP básica
+                .formLogin(formLogin -> formLogin.disable()) // Desabilita autenticação via formulário de login
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) ->
+                                // Escreve detalhes do problema na resposta HTTP
                                 writeProblemDetail(
                                         response,
                                         HttpStatus.UNAUTHORIZED,
@@ -85,14 +92,15 @@ public class SecurityConfig {
                                         request
                                 ))
                 )
-                // Add the custom JWT authentication filter before the UsernamePasswordAuthenticationFilter
+                // Adiciona o filtro de autenticação JWT antes do filtro de autenticação padrão do Spring Security
                 .addFilterBefore(
                         new JwtAuthenticationFilter(jwtService, userRepository),
                         UsernamePasswordAuthenticationFilter.class
                 )
-                .build(); // Build the SecurityFilterChain and return it
+                .build(); // Constroi o SecurityFilterChain com as configurações definidas acima
     }
 
+    // Ajuda a escrever detalhes do problema na resposta HTTP
     private void writeProblemDetail(
             HttpServletResponse response,
             HttpStatus status,
@@ -106,5 +114,26 @@ public class SecurityConfig {
         response.setStatus(status.value());
         response.setContentType("application/problem+json");
         objectMapper.writeValue(response.getOutputStream(), problemDetail);
+    }
+
+
+    // Indica que este método produz um bean gerenciado pelo Spring. Um bean é um objeto que é instanciado, montado e gerenciado pelo contêiner Spring.
+    @Bean
+    // Configura a origem, métodos e cabeçalhos permitidos para requisições CORS
+    public CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
+        // Cria uma nova configuração CORS
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // Define as origens permitidas para requisições CORS com base nas propriedades fornecidas
+        configuration.setAllowedOrigins(corsProperties.allowedOrigins());
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Content-Type", "Authorization"));
+
+        // Cria uma fonte de configuração CORS baseada em URL e registra a configuração para os endpoints da API
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+
+        // Retorna a fonte de configuração CORS para ser usada pelo Spring Security
+        return source;
     }
 }
