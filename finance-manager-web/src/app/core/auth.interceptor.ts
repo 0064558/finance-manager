@@ -15,6 +15,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
   // Verifica se a requisição é para um endpoint público de autenticação (login ou registro)
   const isPublicAuthRequest = publicAuthEndpoints.some((endpoint) =>
+    // Verifica se a URL da requisição termina com o endpoint público
     request.url.endsWith(endpoint),
   );
 
@@ -24,11 +25,13 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   }
 
   // Adiciona o token de autenticação aos cabeçalhos da requisição
+  // Cria uma nova requisição clonando a original e adicionando o cabeçalho Authorization com o token
   const authenticatedRequest = request.clone({
     setHeaders: {
       Authorization: `Bearer ${token}`,
     },
   });
 
+  // Permite que a requisição autenticada prossiga para o próximo interceptor ou para o backend
   return next(authenticatedRequest);
 };
