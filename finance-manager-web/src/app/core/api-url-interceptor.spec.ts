@@ -37,4 +37,15 @@ describe('apiUrlInterceptor', () => {
 
     request.flush({}); // Simula uma resposta vazia do servidor
   });
+
+  // Teste que verifica se URLs externas não são modificadas pelo interceptor
+  it('externals URLs should not be modified', () => {
+    // Faz uma requisição para uma URL externa que não começa com '/api/'
+    httpClient.get('https://example.com').subscribe();
+
+    // Verifica se a requisição foi feita para a URL externa sem modificação
+    const request = httpTesting.expectOne('https://example.com');
+
+    request.flush({}); // Simula uma resposta vazia do servidor
+  });
 });
