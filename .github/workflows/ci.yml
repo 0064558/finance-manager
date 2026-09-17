@@ -1,5 +1,6 @@
 name: CI
 
+# Executa as validações quando há mudanças diretas ou propostas para a branch principal.
 on:
   push:
     branches: [main]
@@ -7,10 +8,12 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  # Valida a API, incluindo testes automatizados e o limite de cobertura do JaCoCo.
+  backend:
     runs-on: ubuntu-latest
 
     steps:
+      # Cada job usa uma máquina isolada e precisa baixar sua própria cópia do projeto.
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -18,9 +21,41 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
           cache: maven
 
       - name: Run tests and coverage verification
         working-directory: finance-manager-api
         run: mvn -B verify
+
+  # Valida o frontend separadamente para identificar falhas de testes e build com clareza.
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      # O checkout do backend não é compartilhado, pois os jobs executam em máquinas diferentes.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          # Reaproveita downloads do npm; as dependências ainda são instaladas pelo npm ci.
+          cache: npm
+          cache-dependency-path: finance-manager-web/package-lock.json
+
+      # Instala exatamente as versões registradas no package-lock.json.
+      - name: Install frontend dependencies
+        working-directory: finance-manager-web
+        run: npm ci
+
+      # Executa a suíte uma vez e encerra o processo, comportamento necessário no CI.
+      - name: Run frontend tests
+        working-directory: finance-manager-web
+        run: npm test -- --watch=false
+
+      # Gera os arquivos otimizados de produção e detecta erros de compilação.
+      - name: Build frontend
+        working-directory: finance-manager-web
+        run: npm run build
