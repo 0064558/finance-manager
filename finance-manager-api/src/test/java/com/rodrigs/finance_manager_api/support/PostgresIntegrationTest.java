@@ -13,7 +13,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
  */
 public abstract class PostgresIntegrationTest {
 
-    private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
+    private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine")
             .withDatabaseName("finance_manager_test")
             .withUsername("finance_manager_test")
             .withPassword("finance_manager_test");
