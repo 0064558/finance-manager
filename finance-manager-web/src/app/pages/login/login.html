@@ -1,5 +1,7 @@
 <main class="login-page">
   <section class="brand-panel" aria-labelledby="brand-title">
+    <app-gradient-wave />
+
     <div class="brand-content">
       <img class="brand-lockup" src="/dindim-lockup.png" alt="DinDim" decoding="async" />
 
@@ -10,37 +12,17 @@
         lugar.
       </p>
 
-      <div class="feature-list" aria-label="Recursos do DinDim">
-        <div class="feature-item">
-          <span class="feature-icon" aria-hidden="true">✓</span>
-          <span>Acompanhe seu saldo em tempo real</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon" aria-hidden="true">✓</span>
-          <span>Entenda para onde seu dinheiro está indo</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon" aria-hidden="true">✓</span>
-          <span>Tome decisões com mais tranquilidade</span>
-        </div>
-      </div>
+      <app-login-brand-preview />
     </div>
   </section>
 
   <section class="login-panel" aria-labelledby="login-title">
-    <div class="panel-orb panel-orb--top" aria-hidden="true"></div>
-    <div class="panel-orb panel-orb--bottom" aria-hidden="true"></div>
-
     <div
       class="login-card-stage"
       (pointermove)="moveCard($event)"
       (pointerleave)="resetCard($event)"
     >
       <div class="card-aura" aria-hidden="true"></div>
-      <div class="light-track" aria-hidden="true">
-        <span class="light-beam light-beam--top"></span>
-        <span class="light-beam light-beam--bottom"></span>
-      </div>
 
       <div class="login-card">
         <div class="login-header">

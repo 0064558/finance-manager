@@ -3,9 +3,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Auth } from '../../core/auth';
 import { finalize } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LoginBrandPreview } from './login-brand-preview';
+import { GradientWave } from './gradient-wave';
 
 @Component({
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, LoginBrandPreview, GradientWave],
   selector: 'app-login',
   styleUrl: './login.css',
   templateUrl: './login.html',
