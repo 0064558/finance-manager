@@ -33,21 +33,8 @@ export class Login {
 
   // Cria o formulário de login com validação para os campos de email e senha
   protected readonly loginForm = this.formBuilder.nonNullable.group({
-    email: [
-      '',
-      [
-        Validators.required,
-        Validators.email,
-        Validators.maxLength(254),
-      ],
-    ],
-    password: [
-      '',
-      [
-        Validators.required,
-        Validators.maxLength(72),
-      ],
-    ],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
+    password: ['', [Validators.required, Validators.maxLength(72)]],
   });
 
   // Método chamado quando o formulário é enviado
@@ -66,9 +53,7 @@ export class Login {
     this.auth
       .login(this.loginForm.getRawValue())
       // Finaliza o estado de envio quando a requisição é concluída, independentemente do resultado
-      .pipe(
-        finalize(() => this.isSubmitting.set(false)),
-      )
+      .pipe(finalize(() => this.isSubmitting.set(false)))
       // Assina o Observable retornado pelo método de login para lidar com a resposta ou erro
       .subscribe({
         // Se o login for bem-sucedido, exibe informações do usuário e do token no console
@@ -77,17 +62,12 @@ export class Login {
         },
         // Se ocorrer um erro durante o login, verifica o status e o código do erro para definir a mensagem de erro apropriada
         error: (error) => {
-          if (
-            error.status === 401 &&
-            error.error?.code === 'INVALID_CREDENTIALS'
-          ) {
+          if (error.status === 401 && error.error?.code === 'INVALID_CREDENTIALS') {
             this.errorMessage.set('Credenciais inválidas.');
             return;
           }
 
-          this.errorMessage.set(
-            'Não foi possível realizar o login. Tente novamente.',
-          );
+          this.errorMessage.set('Não foi possível realizar o login. Tente novamente.');
         },
       });
   }
@@ -95,5 +75,30 @@ export class Login {
   // Método para alternar a visibilidade da senha no formulário de login
   protected togglePasswordVisibility(): void {
     this.isPasswordVisible.update((visible) => !visible);
+  }
+
+  protected moveCard(event: PointerEvent): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    const card = event.currentTarget as HTMLElement;
+    const bounds = card.getBoundingClientRect();
+    const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+
+    card.style.setProperty('--card-rotate-x', `${y * -8}deg`);
+    card.style.setProperty('--card-rotate-y', `${x * 10}deg`);
+    card.style.setProperty('--card-glow-x', `${(x + 0.5) * 100}%`);
+    card.style.setProperty('--card-glow-y', `${(y + 0.5) * 100}%`);
+  }
+
+  protected resetCard(event: PointerEvent): void {
+    const card = event.currentTarget as HTMLElement;
+
+    card.style.setProperty('--card-rotate-x', '0deg');
+    card.style.setProperty('--card-rotate-y', '0deg');
+    card.style.setProperty('--card-glow-x', '50%');
+    card.style.setProperty('--card-glow-y', '50%');
   }
 }
