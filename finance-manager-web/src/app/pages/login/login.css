@@ -72,8 +72,8 @@ app-gradient-wave {
   width: clamp(11rem, 19vw, 14rem);
   height: auto;
   margin-bottom: clamp(2.5rem, 5vh, 4.5rem);
-  filter: brightness(0) invert(1);
-  opacity: 0.92;
+  filter: brightness(0) invert(1) drop-shadow(0 0.3rem 0.8rem rgba(1, 29, 24, 0.42));
+  opacity: 1;
 }
 
 .eyebrow {
