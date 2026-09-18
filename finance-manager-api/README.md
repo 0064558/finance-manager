@@ -1,12 +1,27 @@
 # Finance Manager API
 
-API para gerenciamento financeiro pessoal.
+API REST do Finance Manager para autenticação, contas financeiras, categorias,
+transações e relatórios de finanças pessoais. A API é um monólito modular em
+Spring Boot, publicado no Render e conectado ao PostgreSQL gerenciado no Neon.
+
+## Ambiente publicado
+
+- API: [finance-manager-fttd.onrender.com](https://finance-manager-fttd.onrender.com)
+- Health check: [GET /actuator/health](https://finance-manager-fttd.onrender.com/actuator/health)
+- Swagger UI: [finance-manager-fttd.onrender.com/swagger-ui.html](https://finance-manager-fttd.onrender.com/swagger-ui.html)
+- OpenAPI JSON: [finance-manager-fttd.onrender.com/api-docs/v1](https://finance-manager-fttd.onrender.com/api-docs/v1)
+
+O serviço gratuito do Render pode suspender a instância após inatividade. O
+primeiro acesso depois da suspensão pode levar alguns segundos.
 
 ## Requisitos
 
 - Java 21+
 - Maven 3.9+
 - Docker e Docker Compose
+
+Para consumir a API publicada, basta um cliente HTTP ou o Swagger UI. Para o
+desenvolvimento completo, o frontend Angular está em `../finance-manager-web`.
 
 ## Configuração local
 
@@ -43,6 +58,18 @@ produção e não versione segredos reais.
 
 `DB_PASSWORD` é a senha do PostgreSQL. Ela é diferente da senha usada pelos
 usuários da API.
+
+O arquivo `.env.example` também documenta as variáveis usadas em produção:
+
+- `FINANCE_MANAGER_DB_*`: conexão da aplicação com o endpoint pooled do Neon,
+  usando o papel `finance_manager_app`.
+- `FINANCE_MANAGER_FLYWAY_*`: conexão das migrations com o endpoint direto do
+  Neon, usando o papel `finance_manager_migrator`.
+- `JWT_*`: emissor, expiração e segredo do token.
+- `CORS_ALLOWED_ORIGINS`: origens autorizadas do frontend, sem usar `*`.
+
+Os valores reais de produção são configurados somente como segredos no Render.
+Não coloque senhas, tokens ou connection strings completas neste arquivo.
 
 ## Executar a stack completa com Docker
 
@@ -160,7 +187,14 @@ A documentacao OpenAPI considera endpoints sob:
 /api/v1/**
 ```
 
-## Autenticacao JWT
+Na API publicada, utilize:
+
+```text
+Swagger UI: https://finance-manager-fttd.onrender.com/swagger-ui.html
+OpenAPI JSON: https://finance-manager-fttd.onrender.com/api-docs/v1
+```
+
+## Autenticação JWT
 
 A autenticacao da API usa Bearer JWT. O fluxo principal e:
 
@@ -273,7 +307,7 @@ stack trace, senhas e tokens nunca são enviados ao cliente.
 
 Senhas nunca sao retornadas pela API. O banco armazena apenas o hash gerado com BCrypt.
 
-## Fase 4 - Contas financeiras
+## Contas financeiras e categorias
 
 A fase 4 implementa o CRUD protegido de contas financeiras. Cada conta pertence a um
 usuario, e o usuario autenticado e obtido exclusivamente do JWT. O cliente nao envia
@@ -358,7 +392,7 @@ primeiro lancamento, essa alteracao e recusada para preservar o historico financ
 | Conta inexistente ou pertencente a outro usuario | `404` | `FINANCIAL_ACCOUNT_NOT_FOUND` |
 | Conta possui transacoes e a operacao e proibida | `409` | `FINANCIAL_ACCOUNT_HAS_TRANSACTIONS` |
 
-### Testes da fase
+### Cobertura de testes
 
 Os testes unitarios do service cobrem criacao, listagem, propriedade, atualizacao,
 alteracao de saldo inicial com historico e exclusao. Os testes de integracao cobrem o
@@ -679,8 +713,12 @@ outros usuários.
 Os testes unitários e de integração são executados com:
 
 ```powershell
-mvn verify
+.\mvnw.cmd verify
 ```
+
+No estado publicado, a suíte do backend foi executada com 109 testes, sem
+falhas, erros ou testes ignorados. O GitHub Actions repete essa validação em
+cada push ou pull request para `main`.
 
 Os testes de integração usam PostgreSQL real em Testcontainers, aplicam as migrations Flyway desde o zero e limpam os dados entre os métodos. Portanto, o Docker precisa estar disponível durante a execução.
 
@@ -699,6 +737,23 @@ As migrations ja aplicadas nao devem ser editadas; qualquer ajuste deve entrar e
 | `V2` | `V2__create_financial_accounts.sql` | Cria `financial_accounts`, vinculo com usuario, tipos permitidos, constraint composta para propriedade e indice por usuario. |
 | `V3` | `V3__create_categories.sql` | Cria `categories`, tipos de transacao permitidos, unicidade por usuario/tipo/nome normalizado e indice por usuario. |
 | `V4` | `V4__create_transactions.sql` | Cria `transactions`, FKs simples e compostas de isolamento por usuario, checks de tipo/valor/descricao e indices de filtros. |
+
+No primeiro deploy de produção, as quatro migrations foram aplicadas com
+sucesso no banco Neon. Migrations já aplicadas são imutáveis; qualquer ajuste
+deve entrar em uma nova versão.
+
+## CORS e segurança
+
+O backend aceita requisições do frontend somente para as origens definidas em
+`CORS_ALLOWED_ORIGINS`. Em produção, a origem atual é:
+
+```text
+https://finance-manager-lime.vercel.app
+```
+
+Os dados são filtrados pelo usuário autenticado. O cliente não envia `userId`
+para definir propriedade, e senhas nunca são retornadas: apenas hashes BCrypt
+são armazenados.
 
 ## Parar o ambiente
 
