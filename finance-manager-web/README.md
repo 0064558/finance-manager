@@ -1,59 +1,176 @@
-# FinanceManagerWeb
+# Finance Manager Web
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.7.
+Frontend Angular do Finance Manager. A aplicação consome a API Spring Boot,
+permite autenticação com JWT e oferece os fluxos do MVP para contas,
+categorias, transações e resumo financeiro.
 
-## Development server
+## Aplicação publicada
 
-To start a local development server, run:
+- Frontend: [finance-manager-lime.vercel.app](https://finance-manager-lime.vercel.app)
+- API consumida: [finance-manager-fttd.onrender.com](https://finance-manager-fttd.onrender.com)
 
-```bash
-ng serve
+O frontend é um site estático publicado na Vercel. Ele não armazena segredos,
+senhas ou credenciais de banco.
+
+## Stack
+
+- Angular 22.
+- TypeScript.
+- Angular Router e HttpClient.
+- Vitest para testes unitários.
+- Vercel para hospedagem do build estático.
+
+## Funcionalidades
+
+- Cadastro e login de usuários.
+- Persistência do JWT no fluxo de autenticação do cliente.
+- Dashboard com resumo financeiro e visualizações.
+- CRUD de contas financeiras.
+- CRUD de categorias de receitas e despesas.
+- CRUD de transações com filtros e paginação.
+- Telas de configurações e feedback visual para estados de carregamento e erro.
+
+## Estrutura principal
+
+```text
+finance-manager-web/
+├── src/app/core/          # autenticação, interceptors e serviços da API
+├── src/app/pages/         # páginas e fluxos de negócio
+├── src/app/shared/        # componentes reutilizáveis e visualizações
+├── src/environments/      # URL da API por ambiente
+├── public/                # arquivos estáticos
+├── angular.json           # build, serve e substituição de ambientes
+└── vercel.json            # rewrite das rotas da SPA
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Pré-requisitos
 
-## Code scaffolding
+- Node.js compatível com o projeto.
+- npm 11 ou superior, conforme `package.json`.
+- API local do Finance Manager disponível em `http://localhost:8080` para o
+  fluxo completo de desenvolvimento.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Executar localmente
 
-```bash
-ng generate component component-name
+Instale as dependências:
+
+```powershell
+npm ci
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Inicie o servidor de desenvolvimento:
 
-```bash
-ng generate --help
+```powershell
+npm start
 ```
 
-## Building
+Abra [http://localhost:4200](http://localhost:4200).
 
-To build the project run:
+No desenvolvimento, `environment.development.ts` deixa `apiBaseUrl` vazio.
+As chamadas iniciadas com `/api/` permanecem relativas e são encaminhadas pelo
+`proxy.conf.json` para a API local em `http://localhost:8080`.
 
-```bash
-ng build
+## Configuração da API
+
+O ambiente de produção está em:
+
+```typescript
+export const environment = {
+  apiBaseUrl: 'https://finance-manager-fttd.onrender.com',
+  production: true,
+};
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+O ambiente de desenvolvimento usa:
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
+```typescript
+export const environment = {
+  apiBaseUrl: '',
+  production: false,
+};
 ```
 
-## Running end-to-end tests
+O `api-url-interceptor` adiciona `apiBaseUrl` somente às URLs que começam com
+`/api/`. Assim, os serviços podem usar caminhos relativos e a mesma aplicação
+funciona localmente pelo proxy e em produção diretamente contra a API pública.
 
-For end-to-end (e2e) testing, run:
+Não coloque tokens, senhas, chaves privadas ou URLs de conexão do banco no
+frontend. O endereço público da API não é um segredo.
 
-```bash
-ng e2e
+## Testes e build
+
+Execute os testes unitários uma vez, sem modo de observação:
+
+```powershell
+npm test -- --watch=false
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Gere o build otimizado de produção:
 
-## Additional Resources
+```powershell
+npm run build
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Os arquivos são gerados em:
+
+```text
+dist/finance-manager-web/browser
+```
+
+O GitHub Actions executa `npm ci`, os testes e o build do frontend em um job
+independente do backend. Uma alteração só deve ser publicada depois que os dois
+jobs estiverem verdes.
+
+## Deploy na Vercel
+
+O projeto está configurado como um projeto Angular estático:
+
+- **Root Directory:** `finance-manager-web`
+- **Install Command:** `npm ci`
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist/finance-manager-web/browser`
+- **Branch de deploy:** `main`
+
+O arquivo `vercel.json` contém o rewrite:
+
+```json
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
+
+Esse rewrite permite que rotas do Angular continuem funcionando quando o
+usuário acessa ou atualiza diretamente uma URL interna da aplicação.
+
+## Integração com CORS
+
+Como o frontend e a API estão em origens diferentes, o backend deve autorizar a
+origem publicada:
+
+```text
+https://finance-manager-lime.vercel.app
+```
+
+Essa configuração é feita na variável `CORS_ALLOWED_ORIGINS` do Render, não no
+frontend. Se o domínio da Vercel mudar, atualize o backend e faça um novo
+deploy da API.
+
+## Solução de problemas
+
+- **Erro `ng: command not found`:** verifique se a instalação usa `npm ci` antes
+  de executar `npm run build`.
+- **Erro de CORS:** confira se a URL atual da Vercel está em
+  `CORS_ALLOWED_ORIGINS` no Render, sem barra final.
+- **Rota interna retorna 404 após atualizar:** confirme se o `vercel.json` está
+  na raiz de `finance-manager-web`.
+- **Chamadas locais não chegam à API:** confirme que o backend está ativo na
+  porta `8080` e que o `npm start` está usando `proxy.conf.json`.
+
+## Documentação relacionada
+
+- [Documentação principal do projeto](../README.md)
+- [Documentação da API](../finance-manager-api/README.md)
+- [Configuração de ambiente de desenvolvimento](src/environments/environment.development.ts)
+- [Configuração de produção](src/environments/environment.ts)
