@@ -40,6 +40,9 @@ public class User implements Serializable {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    @Column(name = "onboarding_version", nullable = false)
+    private int onboardingVersion;
+
     public User() {}
 
     public User(String name, String email, String passwordHash) {
@@ -71,6 +74,10 @@ public class User implements Serializable {
 
     public OffsetDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public int getOnboardingVersion() {
+        return onboardingVersion;
     }
 
     public void setName(String name) {

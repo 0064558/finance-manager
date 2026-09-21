@@ -13,6 +13,8 @@ public record UserResponseDTO(
         @Schema(description = "E-mail normalizado", example = "rodrigo@email.com")
         String email,
         @Schema(description = "Data e hora de criação")
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        @Schema(description = "Última versão concluída do onboarding do usuário", example = "1")
+        int onboardingVersion
 ) {
 }
