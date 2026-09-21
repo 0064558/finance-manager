@@ -562,6 +562,47 @@ app-gradient-wave {
   }
 }
 
+@media (min-width: 901px) and (max-height: 800px) {
+  .brand-panel,
+  .login-panel {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .brand-lockup {
+    width: clamp(10rem, 17vw, 12rem);
+    margin-bottom: 2rem;
+  }
+
+  .brand-panel h1 {
+    font-size: clamp(2.15rem, 3.4vw, 3.1rem);
+  }
+
+  .brand-copy {
+    margin-top: 1rem;
+    line-height: 1.5;
+  }
+
+  app-login-brand-preview {
+    margin-top: 1rem;
+    margin-bottom: -4rem;
+    transform: scale(0.78);
+    transform-origin: top left;
+  }
+
+  .login-card {
+    padding: 1.35rem 1.7rem;
+  }
+
+  .login-header {
+    margin-bottom: 1.2rem;
+  }
+
+  .login-form {
+    gap: 0.85rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .login-card-stage,
   .login-card,
