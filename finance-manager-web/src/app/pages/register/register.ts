@@ -9,6 +9,8 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { Auth } from '../../core/auth';
+import { GradientWave } from '../login/gradient-wave';
+import { LoginBrandPreview } from '../login/login-brand-preview';
 
 function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password')?.value;
@@ -18,13 +20,11 @@ function passwordsMatch(control: AbstractControl): ValidationErrors | null {
     return null;
   }
 
-  return password === confirmPassword
-    ? null
-    : { passwordsMismatch: true };
+  return password === confirmPassword ? null : { passwordsMismatch: true };
 }
 
 @Component({
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, LoginBrandPreview, GradientWave],
   selector: 'app-register',
   styleUrl: './register.css',
   templateUrl: './register.html',
@@ -37,6 +37,8 @@ export class Register {
 
   protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly isPasswordVisible = signal(false);
+  protected readonly isConfirmPasswordVisible = signal(false);
 
   // readonly serve para indicar que a propriedade não pode ser reatribuída após a inicialização, garantindo que o sinal seja imutável.
 
@@ -45,39 +47,24 @@ export class Register {
     {
       name: [
         '', // Valor inicial do campo de nome
-        [
-          Validators.required,
-          Validators.minLength(2),
-          Validators.maxLength(100),
-        ],
+        [Validators.required, Validators.minLength(2), Validators.maxLength(100)],
       ],
-      email: [
-        '',
-        [
-          Validators.required,
-          Validators.email,
-          Validators.maxLength(254),
-        ],
-      ],
+      email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
       password: [
         '',
         [
           Validators.required,
           Validators.minLength(8),
           Validators.maxLength(72),
-          Validators.pattern(/^(?=.*[A-Za-z])(?=.*\d).*$/)
+          Validators.pattern(/^(?=.*[A-Za-z])(?=.*\d).*$/),
         ],
       ],
-      confirmPassword: [
-        '',
-        [
-          Validators.required,
-        ],
-      ],
+      confirmPassword: ['', [Validators.required]],
     },
     {
       validators: passwordsMatch,
-    });
+    },
+  );
 
   // Método chamado quando o formulário de registro é enviado
   protected submit(): void {
@@ -115,10 +102,41 @@ export class Register {
             return;
           }
 
-          this.errorMessage.set(
-            'Não foi possível criar sua conta. Tente novamente.',
-          );
+          this.errorMessage.set('Não foi possível criar sua conta. Tente novamente.');
         },
       });
+  }
+
+  protected togglePasswordVisibility(): void {
+    this.isPasswordVisible.update((visible) => !visible);
+  }
+
+  protected toggleConfirmPasswordVisibility(): void {
+    this.isConfirmPasswordVisible.update((visible) => !visible);
+  }
+
+  protected moveCard(event: PointerEvent): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    const card = event.currentTarget as HTMLElement;
+    const bounds = card.getBoundingClientRect();
+    const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+
+    card.style.setProperty('--card-rotate-x', `${y * -8}deg`);
+    card.style.setProperty('--card-rotate-y', `${x * 10}deg`);
+    card.style.setProperty('--card-glow-x', `${(x + 0.5) * 100}%`);
+    card.style.setProperty('--card-glow-y', `${(y + 0.5) * 100}%`);
+  }
+
+  protected resetCard(event: PointerEvent): void {
+    const card = event.currentTarget as HTMLElement;
+
+    card.style.setProperty('--card-rotate-x', '0deg');
+    card.style.setProperty('--card-rotate-y', '0deg');
+    card.style.setProperty('--card-glow-x', '50%');
+    card.style.setProperty('--card-glow-y', '50%');
   }
 }
