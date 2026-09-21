@@ -6,7 +6,6 @@ import { filter, map } from 'rxjs';
 import {
   LucideArrowLeftRight,
   LucideChartNoAxesCombined,
-  LucideCircleDollarSign,
   LucideLayoutDashboard,
   LucideLogOut,
   LucideMenu,
@@ -30,7 +29,6 @@ import { ValuePrivacy } from '../../core/value-privacy';
     RouterOutlet,
     LucideArrowLeftRight,
     LucideChartNoAxesCombined,
-    LucideCircleDollarSign,
     LucideLayoutDashboard,
     LucideLogOut,
     LucideMenu,

@@ -89,8 +89,8 @@ export class Login {
     const x = (event.clientX - bounds.left) / bounds.width - 0.5;
     const y = (event.clientY - bounds.top) / bounds.height - 0.5;
 
-    card.style.setProperty('--card-rotate-x', `${y * -100}deg`);
-    card.style.setProperty('--card-rotate-y', `${x * 104}deg`);
+    card.style.setProperty('--card-rotate-x', `${y * -18}deg`);
+    card.style.setProperty('--card-rotate-y', `${x * 22}deg`);
     card.style.setProperty('--card-glow-x', `${(x + 0.5) * 100}%`);
     card.style.setProperty('--card-glow-y', `${(y + 0.5) * 100}%`);
   }

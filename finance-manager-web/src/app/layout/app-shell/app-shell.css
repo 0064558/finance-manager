@@ -79,17 +79,20 @@
   flex: 0 0 auto;
 }
 
+.brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .brand-mark {
   width: 2.4rem;
   height: 2.4rem;
   border-radius: 0.75rem;
+  overflow: hidden;
   color: #d8ffed;
-  background: var(--primary);
-}
-
-.brand-mark svg {
-  width: 1.3rem;
-  height: 1.3rem;
+  background: transparent;
 }
 
 .sidebar-close {
