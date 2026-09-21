@@ -21,11 +21,13 @@ import { Report } from '../../core/report';
 import { CashFlowResponse, CategoryBreakdownResponse, CurrentBalance, ReportSummary } from '../../core/report.models';
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import { FinancialAccount } from '../../core/financial-account.models';
+import { Auth } from '../../core/auth';
 import { TransactionApi } from '../../core/transaction';
 import { PageResponse, TransactionResponse, TransactionType } from '../../core/transaction.models';
 import { RecentTransactions } from '../../shared/recent-transactions/recent-transactions';
 import { CashFlowChart } from '../../shared/cash-flow-chart/cash-flow-chart';
 import { CategoryExpenses } from '../../shared/category-expenses/category-expenses';
+import { AuthUser } from '../../core/auth.models';
 
 @Component({
   selector: 'app-dashboard',
@@ -52,8 +54,10 @@ import { CategoryExpenses } from '../../shared/category-expenses/category-expens
   styleUrl: './dashboard.css',
 })
 export class Dashboard implements OnInit {
+
   private readonly report = inject(Report);
   private readonly accountApi = inject(FinancialAccountApi);
+  private readonly auth = inject(Auth);
   private readonly transactionApi = inject(TransactionApi);
   private readonly destroyRef = inject(DestroyRef);
   private categorySubscription?: Subscription;
@@ -77,6 +81,8 @@ export class Dashboard implements OnInit {
   protected readonly recentTransactions = signal<PageResponse<TransactionResponse> | null>(null);
   protected readonly selectedMonth = signal(this.firstDayOfMonth(new Date()));
 
+  protected readonly currentUser = signal<AuthUser | null>(null);
+
   protected readonly monthLabel = computed(() => this.monthFormatter.format(this.selectedMonth()));
 
   protected readonly previousMonthLabel = computed(() => {
@@ -93,8 +99,15 @@ export class Dashboard implements OnInit {
     return selectedMonth.getTime() === currentMonth.getTime();
   });
 
+  // O método ngOnInit é chamado quando o componente é inicializado. Ele configura a assinatura para carregar o usuário autenticado e os dados do dashboard.
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.categorySubscription?.unsubscribe());
+    // Carrega o usuário autenticado ao inicializar o componente
+    this.auth.getCurrentUser()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (user) => this.currentUser.set(user),
+      });
     this.loadDashboard();
   }
 

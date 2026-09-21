@@ -9,6 +9,7 @@ import { Report } from '../../core/report';
 import { CategoryBreakdownResponse } from '../../core/report.models';
 import { TransactionApi } from '../../core/transaction';
 import { FinancialAccountApi } from '../../core/financial-accounts';
+import { Auth } from '../../core/auth';
 
 describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
@@ -36,6 +37,7 @@ describe('Dashboard', () => {
         provideRouter([]),
         { provide: Report, useValue: report },
         { provide: FinancialAccountApi, useValue: { getAll: accounts } },
+        { provide: Auth, useValue: { getCurrentUser: () => of({ id: 'user-1', name: 'Rodrigo', email: 'rodrigo@example.com', createdAt: '' }) } },
         { provide: TransactionApi, useValue: { getRecent: () => of({ content: [], totalElements: 0 }) } },
       ],
     });
@@ -49,6 +51,12 @@ describe('Dashboard', () => {
     expect(report.getCategoryBreakdown).toHaveBeenCalledTimes(2);
     expect(report.getCategoryBreakdown.mock.calls[1].slice(0, 2)).toEqual(report.getSummary.mock.calls[1]);
     expect(report.getCategoryBreakdown.mock.calls[1]).not.toEqual(report.getCategoryBreakdown.mock.calls[0]);
+  });
+
+  it('shows the authenticated user name in the dashboard heading', () => {
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#dashboard-title').textContent.trim()).toBe('Olá, Rodrigo!');
   });
 
   it('shows the icon that matches each account type', () => {
