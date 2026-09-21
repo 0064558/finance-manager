@@ -4,19 +4,23 @@ import { RouterLink } from '@angular/router';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
+  LucideBanknote,
   LucideCalendarDays,
   LucideChevronLeft,
   LucideChevronRight,
   LucideLandmark,
+  LucidePiggyBank,
   LucideRefreshCw,
   LucideScale,
   LucideTrendingDown,
   LucideTrendingUp,
   LucideWalletCards,
 } from '@lucide/angular';
-import { finalize, forkJoin, Subscription } from 'rxjs';
+import { catchError, finalize, forkJoin, of, Subscription } from 'rxjs';
 import { Report } from '../../core/report';
 import { CashFlowResponse, CategoryBreakdownResponse, CurrentBalance, ReportSummary } from '../../core/report.models';
+import { FinancialAccountApi } from '../../core/financial-accounts';
+import { FinancialAccount } from '../../core/financial-account.models';
 import { TransactionApi } from '../../core/transaction';
 import { PageResponse, TransactionResponse, TransactionType } from '../../core/transaction.models';
 import { RecentTransactions } from '../../shared/recent-transactions/recent-transactions';
@@ -29,10 +33,12 @@ import { CategoryExpenses } from '../../shared/category-expenses/category-expens
     EmptyState,
     AnimatedNumber,
     RouterLink,
+    LucideBanknote,
     LucideCalendarDays,
     LucideChevronLeft,
     LucideChevronRight,
     LucideLandmark,
+    LucidePiggyBank,
     LucideRefreshCw,
     LucideScale,
     LucideTrendingDown,
@@ -47,6 +53,7 @@ import { CategoryExpenses } from '../../shared/category-expenses/category-expens
 })
 export class Dashboard implements OnInit {
   private readonly report = inject(Report);
+  private readonly accountApi = inject(FinancialAccountApi);
   private readonly transactionApi = inject(TransactionApi);
   private readonly destroyRef = inject(DestroyRef);
   private categorySubscription?: Subscription;
@@ -158,14 +165,22 @@ export class Dashboard implements OnInit {
     forkJoin({
       summary: this.report.getSummary(startDate, endDate),
       currentBalance: this.report.getCurrentBalance(),
+      accounts: this.accountApi.getAll().pipe(catchError(() => of([] as FinancialAccount[]))),
       cashFlow: this.report.getCashFlow(startDate, endDate),
       recentTransactions: this.transactionApi.getRecent(startDate, endDate),
     })
       .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (response) => {
+          const accountTypes = new Map(response.accounts.map((account) => [account.id, account.type]));
           this.summary.set(response.summary);
-          this.currentBalance.set(response.currentBalance);
+          this.currentBalance.set({
+            ...response.currentBalance,
+            accounts: response.currentBalance.accounts.map((account) => ({
+              ...account,
+              accountType: account.accountType ?? accountTypes.get(account.accountId) ?? 'CHECKING',
+            })),
+          });
           this.cashFlow.set(response.cashFlow);
           this.recentTransactions.set(response.recentTransactions);
         },

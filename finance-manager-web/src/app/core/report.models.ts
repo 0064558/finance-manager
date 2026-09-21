@@ -1,4 +1,5 @@
 import type { TransactionType } from './transaction.models';
+import type { AccountType } from './financial-account.models';
 
 // Este arquivo define interfaces TypeScript para representar os dados de relatórios financeiros, 
 // incluindo resumo de relatórios, saldo de contas e fluxo de caixa.
@@ -41,6 +42,7 @@ export interface CategoryExpensesResponse {
 export interface AccountBalance {
     accountId: string;
     accountName: string;
+    accountType: AccountType;
     balance: number;
 };
 

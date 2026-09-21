@@ -84,6 +84,7 @@ public class ReportService {
             accountBalanceDtos.add(new AccountBalanceResponseDTO(
                     acc.getAccountId(),
                     acc.getAccountName(),
+                    acc.getAccountType(),
                     balance
             ));
             // soma o saldo ao total

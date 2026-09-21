@@ -116,6 +116,7 @@ class ReportControllerIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.totalBalance").value(2777.77))
                 .andExpect(jsonPath("$.accounts.length()").value(2))
                 .andExpect(jsonPath("$.accounts[0].accountName").value("Bradesco"))
+                .andExpect(jsonPath("$.accounts[0].accountType").value("CHECKING"))
                 .andExpect(jsonPath("$.accounts[0].balance").value(2000.00))
                 .andExpect(jsonPath("$.accounts[1].accountName").value("Nubank"))
                 .andExpect(jsonPath("$.accounts[1].balance").value(777.77));

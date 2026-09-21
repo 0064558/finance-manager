@@ -24,6 +24,7 @@ public interface FinancialAccountRepository extends JpaRepository<FinancialAccou
     SELECT
         account.id AS accountId,
         account.name AS accountName,
+        account.type AS accountType,
 
         account.initialBalance
             + COALESCE(SUM(
@@ -50,6 +51,7 @@ public interface FinancialAccountRepository extends JpaRepository<FinancialAccou
     GROUP BY
         account.id,
         account.name,
+        account.type,
         account.initialBalance,
         account.createdAt
 

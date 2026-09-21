@@ -266,36 +266,45 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.7rem;
+  width: 100%;
   min-height: 4.6rem;
   padding: 0.8rem 0;
+  border-radius: 0.7rem;
   border-bottom: 1px solid #edf1ee;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+.account-row:hover {
+  background-color: #f3f8f5;
+  border-bottom-color: transparent;
 }
 .account-row:last-child {
   border-bottom: 0;
 }
 .account-avatar {
   display: grid;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2.9rem;
+  height: 2.9rem;
   place-items: center;
-  border: 1px solid #dfeee5;
-  border-radius: 0.8rem;
-  color: #247a5d;
-  background: #eff7f2;
+  flex: 0 0 auto;
+  border-radius: 0.95rem;
+  color: #fff;
+  background: #1c8b68;
+  box-shadow: 0 5px 12px #1c8b6830;
 }
-.account-row:nth-child(3n + 2) .account-avatar {
-  color: #7f70a5;
-  border-color: #e9e3f2;
-  background: #f5f1fa;
+
+.account-avatar--checking {
+  background: #367bc8;
+  box-shadow: 0 5px 12px #367bc830;
 }
-.account-row:nth-child(3n + 3) .account-avatar {
-  color: #a68a4b;
-  border-color: #efe7d7;
-  background: #fbf7ed;
+
+.account-avatar--savings {
+  background: #7854c7;
+  box-shadow: 0 5px 12px #7854c730;
 }
+
 .account-avatar svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.35rem;
+  height: 1.35rem;
 }
 .account-copy {
   display: grid;

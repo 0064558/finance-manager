@@ -8,6 +8,7 @@ import { Dashboard } from './dashboard';
 import { Report } from '../../core/report';
 import { CategoryBreakdownResponse } from '../../core/report.models';
 import { TransactionApi } from '../../core/transaction';
+import { FinancialAccountApi } from '../../core/financial-accounts';
 
 describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
@@ -19,6 +20,7 @@ describe('Dashboard', () => {
     getSummary: ReturnType<typeof vi.fn>; getCurrentBalance: ReturnType<typeof vi.fn>;
     getCashFlow: ReturnType<typeof vi.fn>; getCategoryBreakdown: ReturnType<typeof vi.fn>;
   };
+  let accounts: ReturnType<typeof vi.fn>;
   beforeEach(() => {
     registerLocaleData(localePt, 'pt-BR');
     report = {
@@ -27,11 +29,13 @@ describe('Dashboard', () => {
       getCashFlow: vi.fn(() => of({ points: [] })),
       getCategoryBreakdown: vi.fn(() => of(expenses)),
     };
+    accounts = vi.fn(() => of([]));
     TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [
         provideRouter([]),
         { provide: Report, useValue: report },
+        { provide: FinancialAccountApi, useValue: { getAll: accounts } },
         { provide: TransactionApi, useValue: { getRecent: () => of({ content: [], totalElements: 0 }) } },
       ],
     });
@@ -45,6 +49,47 @@ describe('Dashboard', () => {
     expect(report.getCategoryBreakdown).toHaveBeenCalledTimes(2);
     expect(report.getCategoryBreakdown.mock.calls[1].slice(0, 2)).toEqual(report.getSummary.mock.calls[1]);
     expect(report.getCategoryBreakdown.mock.calls[1]).not.toEqual(report.getCategoryBreakdown.mock.calls[0]);
+  });
+
+  it('shows the icon that matches each account type', () => {
+    report.getCurrentBalance.mockReturnValue(of({
+      totalBalance: 60,
+      accounts: [
+        { accountId: 'cash', accountName: 'Carteira', accountType: 'CASH', balance: 10 },
+        { accountId: 'checking', accountName: 'Conta corrente', accountType: 'CHECKING', balance: 20 },
+        { accountId: 'savings', accountName: 'Poupança', accountType: 'SAVINGS', balance: 30 },
+      ],
+    }));
+
+    fixture.detectChanges();
+
+    const avatars = fixture.nativeElement.querySelectorAll('.account-avatar');
+    expect(avatars[0].classList.contains('account-avatar--cash')).toBe(true);
+    expect(avatars[1].classList.contains('account-avatar--checking')).toBe(true);
+    expect(avatars[2].classList.contains('account-avatar--savings')).toBe(true);
+    expect(avatars[0].querySelector('svg.lucide-banknote')).not.toBeNull();
+    expect(avatars[1].querySelector('svg.lucide-landmark')).not.toBeNull();
+    expect(avatars[2].querySelector('svg.lucide-piggy-bank')).not.toBeNull();
+  });
+
+  it('uses the account list type when the balance report is from an older API', () => {
+    report.getCurrentBalance.mockReturnValue(of({
+      totalBalance: 35,
+      accounts: [
+        { accountId: 'cash', accountName: 'Cofre', balance: 25 },
+        { accountId: 'checking', accountName: 'Nubank', balance: 10 },
+      ],
+    }));
+    accounts.mockReturnValue(of([
+      { id: 'cash', name: 'Cofre', type: 'CASH', initialBalance: 25, createdAt: '', updatedAt: '' },
+      { id: 'checking', name: 'Nubank', type: 'CHECKING', initialBalance: 10, createdAt: '', updatedAt: '' },
+    ]));
+
+    fixture.detectChanges();
+
+    const avatars = fixture.nativeElement.querySelectorAll('.account-avatar');
+    expect(avatars[0].querySelector('svg.lucide-banknote')).not.toBeNull();
+    expect(avatars[1].querySelector('svg.lucide-landmark')).not.toBeNull();
   });
   it('keeps the dashboard available if the category report fails and retries only that report', () => {
     report.getCategoryBreakdown.mockReturnValueOnce(throwError(() => new Error('offline')));

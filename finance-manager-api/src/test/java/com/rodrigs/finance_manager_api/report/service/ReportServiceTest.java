@@ -2,6 +2,7 @@ package com.rodrigs.finance_manager_api.report.service;
 
 import com.rodrigs.finance_manager_api.financial_account.repository.FinancialAccountRepository;
 import com.rodrigs.finance_manager_api.report.dto.CurrentBalanceResponseDTO;
+import com.rodrigs.finance_manager_api.financial_account.enums.AccountType;
 import com.rodrigs.finance_manager_api.report.dto.CashFlowResponseDTO;
 import com.rodrigs.finance_manager_api.report.dto.ReportSummaryResponseDTO;
 import com.rodrigs.finance_manager_api.report.repository.AccountBalanceProjection;
@@ -274,9 +275,11 @@ class ReportServiceTest {
         )).thenReturn(List.of(firstAccountProjection, secondAccountProjection));
         when(firstAccountProjection.getAccountId()).thenReturn(firstAccountId);
         when(firstAccountProjection.getAccountName()).thenReturn("Bradesco");
+        when(firstAccountProjection.getAccountType()).thenReturn(AccountType.CHECKING);
         when(firstAccountProjection.getBalance()).thenReturn(new BigDecimal("2000.00"));
         when(secondAccountProjection.getAccountId()).thenReturn(secondAccountId);
         when(secondAccountProjection.getAccountName()).thenReturn("Nubank");
+        when(secondAccountProjection.getAccountType()).thenReturn(AccountType.SAVINGS);
         when(secondAccountProjection.getBalance()).thenReturn(new BigDecimal("777.77"));
 
         CurrentBalanceResponseDTO response = reportService.getCurrentBalance(userId);
@@ -287,7 +290,9 @@ class ReportServiceTest {
                 .extracting(account -> account.accountName())
                 .containsExactly("Bradesco", "Nubank");
         assertThat(response.accounts().get(0).balance()).isEqualByComparingTo("2000.00");
+        assertThat(response.accounts().get(0).accountType()).isEqualTo(AccountType.CHECKING);
         assertThat(response.accounts().get(1).balance()).isEqualByComparingTo("777.77");
+        assertThat(response.accounts().get(1).accountType()).isEqualTo(AccountType.SAVINGS);
     }
 
     @Test
