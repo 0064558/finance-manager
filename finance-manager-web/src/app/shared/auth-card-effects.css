@@ -1,0 +1,167 @@
+:is(.login-card, .register-card)::before,
+:is(.login-card, .register-card)::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: '';
+  pointer-events: none;
+}
+
+:is(.login-card, .register-card)::before {
+  background-image:
+    linear-gradient(135deg, var(--card-pattern) 0.5px, transparent 0.5px),
+    linear-gradient(45deg, var(--card-pattern) 0.5px, transparent 0.5px);
+  background-size: 30px 30px;
+  opacity: 0.72;
+}
+
+:is(.login-card, .register-card)::after {
+  background: radial-gradient(
+    circle at var(--card-glow-x) var(--card-glow-y),
+    var(--card-beam-glow),
+    transparent 38%
+  );
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+
+:is(.login-card-stage, .register-card-stage):hover :is(.login-card, .register-card)::after {
+  opacity: 0.24;
+}
+
+:is(.login-card, .register-card) > :not(.card-surface-effects) {
+  position: relative;
+  z-index: 2;
+}
+
+:is(.login-card, .register-card) > .card-surface-effects {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  background: transparent;
+  opacity: 1;
+  pointer-events: none;
+}
+
+:is(.login-card, .register-card) .card-beam {
+  position: absolute;
+  display: block;
+  opacity: 0;
+}
+
+:is(.login-card, .register-card) :is(.card-beam--top, .card-beam--bottom) {
+  width: 44%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--card-beam), transparent);
+}
+
+:is(.login-card, .register-card) :is(.card-beam--right, .card-beam--left) {
+  width: 2px;
+  height: 44%;
+  background: linear-gradient(180deg, transparent, var(--card-beam), transparent);
+}
+
+:is(.login-card, .register-card) .card-beam--top {
+  top: 0;
+  left: 0;
+  animation: auth-beam-horizontal-forward 4.8s 0s ease-in-out infinite;
+}
+
+:is(.login-card, .register-card) .card-beam--right {
+  top: 0;
+  right: 0;
+  animation: auth-beam-vertical-forward 4.8s 0.65s ease-in-out infinite;
+}
+
+:is(.login-card, .register-card) .card-beam--bottom {
+  right: 0;
+  bottom: 0;
+  animation: auth-beam-horizontal-reverse 4.8s 1.3s ease-in-out infinite;
+}
+
+:is(.login-card, .register-card) .card-beam--left {
+  bottom: 0;
+  left: 0;
+  animation: auth-beam-vertical-reverse 4.8s 1.95s ease-in-out infinite;
+}
+
+@keyframes auth-beam-horizontal-forward {
+  0%,
+  10% {
+    opacity: 0;
+    transform: translateX(-145%);
+  }
+  25%,
+  65% {
+    opacity: 0.88;
+  }
+  82%,
+  100% {
+    opacity: 0;
+    transform: translateX(330%);
+  }
+}
+
+@keyframes auth-beam-horizontal-reverse {
+  0%,
+  10% {
+    opacity: 0;
+    transform: translateX(145%);
+  }
+  25%,
+  65% {
+    opacity: 0.88;
+  }
+  82%,
+  100% {
+    opacity: 0;
+    transform: translateX(-330%);
+  }
+}
+
+@keyframes auth-beam-vertical-forward {
+  0%,
+  10% {
+    opacity: 0;
+    transform: translateY(-145%);
+  }
+  25%,
+  65% {
+    opacity: 0.88;
+  }
+  82%,
+  100% {
+    opacity: 0;
+    transform: translateY(330%);
+  }
+}
+
+@keyframes auth-beam-vertical-reverse {
+  0%,
+  10% {
+    opacity: 0;
+    transform: translateY(145%);
+  }
+  25%,
+  65% {
+    opacity: 0.88;
+  }
+  82%,
+  100% {
+    opacity: 0;
+    transform: translateY(-330%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.login-card, .register-card) > .card-surface-effects,
+  :is(.login-card, .register-card) .card-beam {
+    animation: none;
+  }
+
+  :is(.login-card, .register-card) .card-beam {
+    opacity: 0;
+  }
+}

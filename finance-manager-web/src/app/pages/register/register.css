@@ -8,6 +8,9 @@
   --brand-from: #087257;
   --brand-via: #0f8b68;
   --brand-to: #20a878;
+  --card-beam: rgba(25, 139, 103, 0.82);
+  --card-beam-glow: rgba(37, 174, 130, 0.38);
+  --card-pattern: rgba(22, 107, 85, 0.08);
   display: block;
   min-height: 100dvh;
   color: var(--ink);
@@ -31,6 +34,9 @@
   --brand-from: #062c23;
   --brand-via: #093b2e;
   --brand-to: #0d5641;
+  --card-beam: rgba(126, 235, 191, 0.86);
+  --card-beam-glow: rgba(77, 211, 158, 0.46);
+  --card-pattern: rgba(193, 247, 222, 0.06);
 }
 
 .register-page {
@@ -151,13 +157,13 @@ app-gradient-wave {
   inset: -1.2rem;
   z-index: -2;
   border-radius: 2rem;
-  opacity: 0.44;
+  opacity: 0;
   background: radial-gradient(
     circle at var(--card-glow-x) var(--card-glow-y),
     rgba(49, 164, 124, 0.28),
     transparent 48%
   );
-  filter: blur(22px);
+  filter: none;
   transition: opacity 300ms ease;
 }
 
