@@ -30,7 +30,7 @@ class DatabaseSchemaIntegrationTest extends PostgresIntegrationTest {
                   AND table_name IN ('users', 'financial_accounts', 'categories', 'transactions')
                 """, Integer.class);
 
-        assertThat(appliedMigrations).isEqualTo(4);
+        assertThat(appliedMigrations).isEqualTo(5);
         assertThat(applicationTables).isEqualTo(4);
     }
 

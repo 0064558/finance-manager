@@ -1,10 +1,7 @@
 package com.rodrigs.finance_manager_api.user.controller;
 
 import com.rodrigs.finance_manager_api.auth.AuthenticatedUser;
-import com.rodrigs.finance_manager_api.user.dto.LoginRequestDTO;
-import com.rodrigs.finance_manager_api.user.dto.LoginResponseDTO;
-import com.rodrigs.finance_manager_api.user.dto.RegisterUserRequestDTO;
-import com.rodrigs.finance_manager_api.user.dto.UserResponseDTO;
+import com.rodrigs.finance_manager_api.user.dto.*;
 import com.rodrigs.finance_manager_api.user.service.UserService;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,5 +70,25 @@ public class AuthController {
     @GetMapping("/me")
     public UserResponseDTO me(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
         return userService.findAuthenticatedUser(authenticatedUser.id());
+    }
+
+    @Operation(
+            summary = "Atualiza a versão do onboarding do usuário autenticado",
+            description = "Permite que o usuário atualize a versão do onboarding que ele concluiu, garantindo que não seja possível definir uma versão futura nem ultrapassar a versão mais recente disponível."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Versão do onboarding atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos ou versão não suportada"),
+            @ApiResponse(responseCode = "401", description = "Token ausente ou inválido"),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado"),
+            @ApiResponse(responseCode = "409", description = "Tentativa de regressão de versão do onboarding")
+    })
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/me/onboarding")
+    public UserResponseDTO updateOnboardingVersion(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody UpdateOnboardingRequestDTO requestDTO
+            ) {
+        return userService.updateOnboardingVersion(authenticatedUser.id(), requestDTO);
     }
 }

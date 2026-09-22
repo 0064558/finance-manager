@@ -182,6 +182,18 @@ public class GlobalExceptionHandler {
                 "INTERNAL_SERVER_ERROR", request);
     }
 
+    @ExceptionHandler(OnboardingVersionLaterException.class)
+    public ProblemDetail handleOnboardingVersionLater(OnboardingVersionLaterException exception, HttpServletRequest request) {
+        return problem(HttpStatus.BAD_REQUEST, "Onboarding version later",
+                "The onboarding version is later than the current one.", "UNSUPPORTED_ONBOARDING_VERSION", request);
+    }
+
+    @ExceptionHandler(OnboardingVersionPreviousException.class)
+    public ProblemDetail handleOnboardingVersionPrevious(OnboardingVersionPreviousException exception, HttpServletRequest request) {
+        return problem(HttpStatus.CONFLICT, "Onboarding version previous",
+                "The onboarding version is previous to the current one.", "ONBOARDING_VERSION_CONFLICT", request);
+    }
+
     private ProblemDetail problem(
             HttpStatus status,
             String title,

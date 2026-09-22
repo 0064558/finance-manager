@@ -18,6 +18,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Constraint(validatedBy = TrimmedSizeValidator.class)
 @Target({FIELD, METHOD, PARAMETER, ANNOTATION_TYPE, RECORD_COMPONENT})
 @Retention(RUNTIME)
+// Anotação personalizada para validar o tamanho de uma string após remover espaços em branco no início e no final.
 public @interface TrimmedSize {
 
     String message() default "must have between {min} and {max} characters after trimming";

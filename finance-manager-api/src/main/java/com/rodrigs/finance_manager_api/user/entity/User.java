@@ -1,5 +1,8 @@
 package com.rodrigs.finance_manager_api.user.entity;
 
+import com.rodrigs.finance_manager_api.shared.exception.OnboardingVersionLaterException;
+import com.rodrigs.finance_manager_api.shared.exception.OnboardingVersionPreviousException;
+import com.rodrigs.finance_manager_api.user.dto.UpdateOnboardingRequestDTO;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -112,6 +115,21 @@ public class User implements Serializable {
                 ", email='" + email + '\'' +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
+                ", onboardingVersion=" + onboardingVersion +
                 '}';
+    }
+
+    // Método para avançar a versão de onboarding do usuário. Ele garante que a versão solicitada seja maior ou igual à versão atual.
+    //  Se a versão solicitada for menor, lança uma exceção. Se for igual, não faz nada. Se for maior, atualiza a versão de onboarding.
+    public void advanceOnboardingVersion(int requestedVersion) {
+        if (requestedVersion < this.onboardingVersion) {
+            throw new OnboardingVersionPreviousException();
+        }
+        if (requestedVersion == this.onboardingVersion) {
+            return; // Sem mudança necessária, a versão solicitada é igual à versão atual.
+        }
+
+        // Se a versão solicitada for maior que a versão atual, atualizamos a versão de onboarding.
+        this.onboardingVersion = requestedVersion;
     }
 }

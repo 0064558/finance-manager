@@ -4,9 +4,13 @@ import com.rodrigs.finance_manager_api.auth.JwtService;
 import com.rodrigs.finance_manager_api.config.JwtProperties;
 import com.rodrigs.finance_manager_api.shared.exception.EmailAlreadyRegisteredException;
 import com.rodrigs.finance_manager_api.shared.exception.InvalidCredentialsException;
+import com.rodrigs.finance_manager_api.shared.exception.OnboardingVersionLaterException;
+import com.rodrigs.finance_manager_api.shared.exception.OnboardingVersionPreviousException;
+import com.rodrigs.finance_manager_api.shared.exception.UserNotFoundException;
 import com.rodrigs.finance_manager_api.user.dto.LoginRequestDTO;
 import com.rodrigs.finance_manager_api.user.dto.LoginResponseDTO;
 import com.rodrigs.finance_manager_api.user.dto.RegisterUserRequestDTO;
+import com.rodrigs.finance_manager_api.user.dto.UpdateOnboardingRequestDTO;
 import com.rodrigs.finance_manager_api.user.dto.UserResponseDTO;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
@@ -137,6 +141,69 @@ class UserServiceTest {
         assertThat(response.id()).isEqualTo(user.getId());
         assertThat(response.name()).isEqualTo("Rodrigo");
         assertThat(response.email()).isEqualTo("rodrigo@email.com");
+    }
+
+    @Test
+    void shouldAdvanceOnboardingVersion() {
+        User user = userWithId();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        UserResponseDTO response = userService.updateOnboardingVersion(
+                user.getId(), new UpdateOnboardingRequestDTO(1)
+        );
+
+        assertThat(user.getOnboardingVersion()).isEqualTo(1);
+        assertThat(response.onboardingVersion()).isEqualTo(1);
+        verify(userRepository).findById(user.getId());
+    }
+
+    @Test
+    void shouldTreatRepeatedOnboardingVersionAsIdempotent() {
+        User user = userWithId();
+        user.advanceOnboardingVersion(1);
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        UserResponseDTO response = userService.updateOnboardingVersion(
+                user.getId(), new UpdateOnboardingRequestDTO(1)
+        );
+
+        assertThat(user.getOnboardingVersion()).isEqualTo(1);
+        assertThat(response.onboardingVersion()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldRejectOnboardingVersionRegression() {
+        User user = userWithId();
+        user.advanceOnboardingVersion(1);
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.updateOnboardingVersion(
+                user.getId(), new UpdateOnboardingRequestDTO(0)
+        )).isInstanceOf(OnboardingVersionPreviousException.class);
+
+        assertThat(user.getOnboardingVersion()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldRejectUnsupportedOnboardingVersion() {
+        User user = userWithId();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.updateOnboardingVersion(
+                user.getId(), new UpdateOnboardingRequestDTO(2)
+        )).isInstanceOf(OnboardingVersionLaterException.class);
+
+        assertThat(user.getOnboardingVersion()).isEqualTo(0);
+    }
+
+    @Test
+    void shouldRejectOnboardingUpdateForUnknownUser() {
+        UUID authenticatedUserId = UUID.randomUUID();
+        when(userRepository.findById(authenticatedUserId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.updateOnboardingVersion(
+                authenticatedUserId, new UpdateOnboardingRequestDTO(1)
+        )).isInstanceOf(UserNotFoundException.class);
     }
 
     private User userWithId() {

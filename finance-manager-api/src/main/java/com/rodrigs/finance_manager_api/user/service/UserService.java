@@ -2,10 +2,8 @@ package com.rodrigs.finance_manager_api.user.service;
 
 import com.rodrigs.finance_manager_api.config.JwtProperties;
 import com.rodrigs.finance_manager_api.auth.JwtService;
-import com.rodrigs.finance_manager_api.user.dto.LoginRequestDTO;
-import com.rodrigs.finance_manager_api.user.dto.LoginResponseDTO;
-import com.rodrigs.finance_manager_api.user.dto.RegisterUserRequestDTO;
-import com.rodrigs.finance_manager_api.user.dto.UserResponseDTO;
+import com.rodrigs.finance_manager_api.shared.exception.OnboardingVersionLaterException;
+import com.rodrigs.finance_manager_api.user.dto.*;
 import com.rodrigs.finance_manager_api.user.entity.User;
 import com.rodrigs.finance_manager_api.user.repository.UserRepository;
 import com.rodrigs.finance_manager_api.shared.exception.EmailAlreadyRegisteredException;
@@ -24,6 +22,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
+
+    // Constante para a versão atual do onboarding. Isso é útil para controlar o progresso do usuário no processo de onboarding e garantir que ele esteja atualizado com as mudanças na experiência do usuário.
+    // Static serve para que a constante seja compartilhada entre todas as instâncias da classe UserService, garantindo consistência na versão do onboarding em toda a aplicação.
+    private static final int CURRENT_ONBOARDING_VERSION = 1;
 
     // dependency injection
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, JwtProperties jwtProperties) {
@@ -95,6 +97,30 @@ public class UserService {
     public UserResponseDTO findAuthenticatedUser(UUID authenticatedUserId) {
         User user = userRepository.findById(authenticatedUserId)
                 .orElseThrow(UserNotFoundException::new);
+
+        return toResponse(user);
+    }
+
+    /**
+     * Updates the onboarding version for the authenticated user.
+     * @param authenticatedUserId the ID of the authenticated user
+     * @param requestDTO the request containing the new onboarding version
+     * @return the updated user response
+     **/
+    @Transactional
+    public UserResponseDTO updateOnboardingVersion(UUID authenticatedUserId, UpdateOnboardingRequestDTO requestDTO) {
+        // busca o usuário autenticado pelo ID fornecido. Se não for encontrado, lança uma exceção UserNotFoundException.
+        User user = userRepository.findById(authenticatedUserId)
+                .orElseThrow(UserNotFoundException::new);
+
+        // Verifica se a versão de onboarding fornecida na solicitação é maior do que a versão atual definida na constante CURRENT_ONBOARDING_VERSION.
+        // Se for maior, lança uma exceção OnboardingVersionLaterException.
+        if (requestDTO.onboardingVersion() > CURRENT_ONBOARDING_VERSION) {
+            throw new OnboardingVersionLaterException();
+        }
+
+        // Avança a versão de onboarding do usuário para a versão fornecida na solicitação.
+        user.advanceOnboardingVersion(requestDTO.onboardingVersion());
 
         return toResponse(user);
     }
