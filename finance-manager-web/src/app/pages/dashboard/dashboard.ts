@@ -82,6 +82,7 @@ export class Dashboard implements OnInit {
   protected readonly selectedMonth = signal(this.firstDayOfMonth(new Date()));
 
   protected readonly currentUser = signal<AuthUser | null>(null);
+  protected readonly userLoading = signal(true);
 
   protected readonly monthLabel = computed(() => this.monthFormatter.format(this.selectedMonth()));
 
@@ -101,12 +102,17 @@ export class Dashboard implements OnInit {
 
   // O método ngOnInit é chamado quando o componente é inicializado. Ele configura a assinatura para carregar o usuário autenticado e os dados do dashboard.
   ngOnInit(): void {
+    this.userLoading.set(true);
     this.destroyRef.onDestroy(() => this.categorySubscription?.unsubscribe());
     // Carrega o usuário autenticado ao inicializar o componente
     this.auth.getCurrentUser()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (user) => this.currentUser.set(user),
+        next: (user) => {
+          this.currentUser.set(user);
+          this.userLoading.set(false);
+        },
+        error: () => this.userLoading.set(false),
       });
     this.loadDashboard();
   }

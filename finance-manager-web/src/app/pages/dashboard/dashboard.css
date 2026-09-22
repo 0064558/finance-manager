@@ -40,6 +40,11 @@
   letter-spacing: -0.055em;
   line-height: 1.1;
 }
+.page-heading .fm-skeleton--heading {
+  width: min(18rem, 68vw);
+  height: 1.1em;
+  border-radius: 0.25em;
+}
 .page-heading p:not(.eyebrow) {
   margin: 0.65rem 0 0;
   color: #738077;

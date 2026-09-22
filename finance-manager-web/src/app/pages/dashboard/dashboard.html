@@ -2,7 +2,14 @@
   <div class="page-heading">
     <div>
       <p class="eyebrow"><span></span> SEU RESUMO FINANCEIRO</p>
-      <h1 id="dashboard-title">Olá, {{ currentUser()?.name }}!</h1>
+      <h1 id="dashboard-title" [attr.aria-busy]="userLoading()">
+        @if (userLoading()) {
+          <span class="fm-skeleton fm-skeleton--heading" aria-hidden="true"></span>
+          <span class="sr-only">Carregando seu nome...</span>
+        } @else {
+          Olá, {{ currentUser()?.name || 'usuário' }}
+        }
+      </h1>
       <p>Uma visão clara das suas movimentações e saldos.</p>
     </div>
 

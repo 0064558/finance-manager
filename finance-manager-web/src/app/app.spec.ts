@@ -19,5 +19,6 @@ describe('App', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('router-outlet')).not.toBeNull();
+    expect(compiled.querySelector('app-slow-api-notice')).not.toBeNull();
   });
 });

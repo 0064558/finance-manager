@@ -10,6 +10,7 @@ import { CategoryBreakdownResponse } from '../../core/report.models';
 import { TransactionApi } from '../../core/transaction';
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import { Auth } from '../../core/auth';
+import { AuthUser } from '../../core/auth.models';
 
 describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
@@ -56,7 +57,38 @@ describe('Dashboard', () => {
   it('shows the authenticated user name in the dashboard heading', () => {
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('#dashboard-title').textContent.trim()).toBe('Olá, Rodrigo!');
+    expect(fixture.nativeElement.querySelector('#dashboard-title').textContent.trim()).toBe('Olá, Rodrigo');
+  });
+
+  it('shows a heading skeleton while the user is loading', () => {
+    const userResponse = new Subject<AuthUser>();
+    vi.spyOn(TestBed.inject(Auth), 'getCurrentUser').mockReturnValue(userResponse);
+
+    fixture.detectChanges();
+
+    const heading = fixture.nativeElement.querySelector('#dashboard-title');
+    expect(heading.getAttribute('aria-busy')).toBe('true');
+    expect(heading.querySelector('.fm-skeleton--heading')).not.toBeNull();
+    expect(heading.textContent).toContain('Carregando seu nome...');
+
+    userResponse.next({ id: 'user-1', name: 'Rodrigo', email: 'rodrigo@example.com', createdAt: '', onboardingVersion: 0 });
+    userResponse.complete();
+    fixture.detectChanges();
+
+    expect(heading.getAttribute('aria-busy')).toBe('false');
+    expect(heading.querySelector('.fm-skeleton--heading')).toBeNull();
+    expect(heading.textContent.trim()).toBe('Olá, Rodrigo');
+  });
+
+  it('shows a fallback greeting if the user request fails', () => {
+    vi.spyOn(TestBed.inject(Auth), 'getCurrentUser').mockReturnValue(throwError(() => new Error('offline')));
+
+    fixture.detectChanges();
+
+    const heading = fixture.nativeElement.querySelector('#dashboard-title');
+    expect(heading.getAttribute('aria-busy')).toBe('false');
+    expect(heading.querySelector('.fm-skeleton--heading')).toBeNull();
+    expect(heading.textContent.trim()).toBe('Olá, usuário');
   });
 
   it('shows the icon that matches each account type', () => {

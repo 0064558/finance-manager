@@ -13,6 +13,7 @@ import { routes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth.interceptor';
 import { apiUrlInterceptor } from './core/api-url-interceptor';
+import { slowApiLoadingInterceptor } from './core/slow-api-loading.interceptor';
 import { Theme } from './core/theme';
 
 registerLocaleData(localePt, 'pt-BR');
@@ -25,7 +26,7 @@ export const appConfig: ApplicationConfig = {
     // Configura o provedor de cliente HTTP com os interceptadores de URL da API e autenticação
     // O interceptor de URL da API adiciona a URL base da API às requisições
     // O interceptor de autenticação adiciona o token de autenticação aos cabeçalhos das requisições
-    provideHttpClient(withInterceptors([apiUrlInterceptor, authInterceptor])),
+    provideHttpClient(withInterceptors([apiUrlInterceptor, authInterceptor, slowApiLoadingInterceptor])),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
