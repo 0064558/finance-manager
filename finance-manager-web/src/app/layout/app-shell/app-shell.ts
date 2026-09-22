@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -30,6 +30,7 @@ type OnboardingStep = {
   title: string;
   description: string;
   detail: string;
+  focusLabel: string;
 };
 
 @Component({
@@ -93,7 +94,8 @@ export class AppShell implements OnInit {
       section: 'SUA VISÃO GERAL',
       title: 'Tudo em um só lugar',
       description: 'Acompanhe seus saldos, receitas e despesas em uma visão rápida da sua vida financeira.',
-      detail: 'A Dashboard reúne os principais números e as movimentações recentes das suas contas.',
+      detail: 'O primeiro cartão mostra o saldo total. Logo abaixo você encontra gráficos e movimentações recentes.',
+      focusLabel: 'Veja o cartão de saldo atual',
     },
     {
       id: 'accounts',
@@ -101,7 +103,8 @@ export class AppShell implements OnInit {
       section: 'CONTAS',
       title: 'Organize onde seu dinheiro está',
       description: 'Cadastre conta corrente, poupança e dinheiro em mãos para manter os saldos reunidos.',
-      detail: 'Você pode criar, editar e acompanhar cada conta sem misturar os valores.',
+      detail: 'O botão Nova conta é o ponto de partida. Depois, cada conta aparece com seu saldo individual.',
+      focusLabel: 'Encontre o botão Nova conta',
     },
     {
       id: 'transactions',
@@ -109,7 +112,8 @@ export class AppShell implements OnInit {
       section: 'TRANSAÇÕES',
       title: 'Registre entradas e despesas',
       description: 'Cada movimentação ajuda a manter seus saldos e relatórios em dia.',
-      detail: 'Use os filtros por período, conta, categoria ou tipo para encontrar um lançamento.',
+      detail: 'Comece em Nova transação. Nesta mesma tela, os filtros ajudam a encontrar lançamentos anteriores.',
+      focusLabel: 'Encontre o botão Nova transação',
     },
     {
       id: 'categories',
@@ -117,7 +121,8 @@ export class AppShell implements OnInit {
       section: 'CATEGORIAS',
       title: 'Entenda para onde vai seu dinheiro',
       description: 'Separe receitas e despesas em categorias que façam sentido para você.',
-      detail: 'As categorias ajudam a dar contexto às transações e a enxergar seus hábitos.',
+      detail: 'Use Nova categoria para criar grupos como Salário, Alimentação ou Moradia.',
+      focusLabel: 'Encontre o botão Nova categoria',
     },
     {
       id: 'settings',
@@ -125,7 +130,8 @@ export class AppShell implements OnInit {
       section: 'CONFIGURAÇÕES',
       title: 'Deixe o espaço com a sua cara',
       description: 'Escolha o tema visual e controle quando os valores financeiros ficam visíveis.',
-      detail: 'Suas preferências ficam salvas neste dispositivo e podem ser alteradas quando quiser.',
+      detail: 'Nesta tela você pode mudar o tema e ocultar valores quando precisar de privacidade.',
+      focusLabel: 'Veja as opções de aparência',
     },
   ];
   protected readonly activeOnboardingStep = computed(() => {
@@ -138,6 +144,21 @@ export class AppShell implements OnInit {
     () => this.onboardingStepIndex() === this.onboardingSteps.length - 1,
   );
   @ViewChild('onboardingTitle') private onboardingTitle?: ElementRef<HTMLHeadingElement>;
+
+  constructor() {
+    effect(() => {
+      if (this.onboardingStepIndex() === null) {
+        return;
+      }
+
+      const path = this.currentUrl().split(/[?#]/)[0];
+      const visibleStepIndex = this.onboardingSteps.findIndex((step) => step.route === path);
+      if (visibleStepIndex >= 0 && visibleStepIndex !== this.onboardingStepIndex()) {
+        this.onboardingStepIndex.set(visibleStepIndex);
+        this.onboardingError.set(null);
+      }
+    });
+  }
 
   protected readonly userInitials = computed(() => {
     const fullName = this.currentUser()?.name?.trim() ?? '';
@@ -269,49 +290,6 @@ export class AppShell implements OnInit {
 
   private focusOnboardingTitle(): void {
     setTimeout(() => this.onboardingTitle?.nativeElement.focus(), 0);
-  }
-
-  @HostListener('document:keydown', ['$event'])
-  protected handleOnboardingKeyboard(event: KeyboardEvent): void {
-    if (!this.activeOnboardingStep()) {
-      return;
-    }
-
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.skipOnboarding();
-      return;
-    }
-
-    if (event.key !== 'Tab') {
-      return;
-    }
-
-    const dialog = document.querySelector<HTMLElement>('.onboarding-dialog');
-    const focusableElements = dialog
-      ? Array.from(dialog.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
-        ))
-      : [];
-    if (!dialog || focusableElements.length === 0) {
-      event.preventDefault();
-      dialog?.focus();
-      return;
-    }
-
-    const first = focusableElements[0];
-    const last = focusableElements[focusableElements.length - 1];
-    const activeIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
-    if (activeIndex === -1) {
-      event.preventDefault();
-      (event.shiftKey ? last : first).focus();
-    } else if (event.shiftKey && activeIndex === 0) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && activeIndex === focusableElements.length - 1) {
-      event.preventDefault();
-      first.focus();
-    }
   }
 
   @HostListener('document:keydown.escape')

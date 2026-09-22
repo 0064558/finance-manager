@@ -1,5 +1,6 @@
 <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
 <div class="app-shell" [class.app-shell--collapsed]="sidebarCollapsed()"
+  [attr.data-onboarding-step]="activeOnboardingStep()?.id ?? null"
   [class.app-shell--mobile-open]="mobileMenuOpen()">
   <aside id="primary-sidebar" class="sidebar" aria-label="Navegação principal">
     <div class="sidebar-header">
@@ -23,22 +24,26 @@
     <div class="sidebar-section-label sidebar-copy">MENU</div>
     <nav class="sidebar-nav">
       <a class="sidebar-link" routerLink="/dashboard" routerLinkActive="sidebar-link--active"
+        [class.sidebar-link--tour-target]="activeOnboardingStep()?.id === 'dashboard'"
         [routerLinkActiveOptions]="{ exact: true }" title="Dashboard" (click)="closeMobileNavigation()">
         <svg lucideLayoutDashboard class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Dashboard</span>
       </a>
       <a class="sidebar-link" routerLink="/accounts" routerLinkActive="sidebar-link--active" title="Contas"
+        [class.sidebar-link--tour-target]="activeOnboardingStep()?.id === 'accounts'"
         (click)="closeMobileNavigation()">
         <svg lucideWalletCards class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Contas</span>
       </a>
       <a class="sidebar-link" routerLink="/transactions" routerLinkActive="sidebar-link--active" title="Transações"
+        [class.sidebar-link--tour-target]="activeOnboardingStep()?.id === 'transactions'"
         (click)="closeMobileNavigation()">
         <svg lucideArrowLeftRight class="sidebar-icon" aria-hidden="true"></svg>
 
         <span class="sidebar-copy">Transações</span>
       </a>
       <a class="sidebar-link" routerLink="/categories" routerLinkActive="sidebar-link--active" title="Categorias"
+        [class.sidebar-link--tour-target]="activeOnboardingStep()?.id === 'categories'"
         (click)="closeMobileNavigation()">
         <svg lucideTags class="sidebar-icon" aria-hidden="true"></svg>
 
@@ -53,6 +58,7 @@
     <div class="sidebar-section-label sidebar-section-label--secondary sidebar-copy">GERAL</div>
     <nav class="sidebar-nav sidebar-nav--secondary">
       <a class="sidebar-link sidebar-link--settings" routerLink="/settings" routerLinkActive="sidebar-link--active"
+        [class.sidebar-link--tour-target]="activeOnboardingStep()?.id === 'settings'"
         ariaCurrentWhenActive="page" title="Configurações" (click)="openSettings()">
         <svg lucideSettings class="sidebar-icon" aria-hidden="true"></svg>
         <span class="sidebar-copy">Configurações</span>
@@ -70,6 +76,7 @@
     <header class="topbar">
       <div class="topbar-leading">
         <button class="menu-button" type="button" aria-controls="primary-sidebar"
+          [class.menu-button--tour-target]="activeOnboardingStep()?.id === 'settings'"
           [attr.aria-expanded]="isNavigationExpanded()" aria-label="Expandir ou recolher menu"
           (click)="toggleNavigation()">
           <svg lucideMenu aria-hidden="true"></svg>
@@ -114,21 +121,25 @@
 
   <nav class="mobile-bottom-nav" aria-label="Navegação rápida" [attr.inert]="mobileMenuOpen() ? '' : null">
     <a routerLink="/dashboard" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+      [class.is-tour-target]="activeOnboardingStep()?.id === 'dashboard'"
       (click)="closeMobileNavigation()">
       <span class="mobile-nav-icon"><svg lucideLayoutDashboard aria-hidden="true"></svg></span>
       <span>Dashboard</span>
     </a>
     <a routerLink="/accounts" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+      [class.is-tour-target]="activeOnboardingStep()?.id === 'accounts'"
       (click)="closeMobileNavigation()">
       <span class="mobile-nav-icon"><svg lucideWalletCards aria-hidden="true"></svg></span>
       <span>Contas</span>
     </a>
     <a routerLink="/transactions" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+      [class.is-tour-target]="activeOnboardingStep()?.id === 'transactions'"
       (click)="closeMobileNavigation()">
       <span class="mobile-nav-icon"><svg lucideArrowLeftRight aria-hidden="true"></svg></span>
       <span>Transações</span>
     </a>
     <a routerLink="/categories" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+      [class.is-tour-target]="activeOnboardingStep()?.id === 'categories'"
       (click)="closeMobileNavigation()">
       <span class="mobile-nav-icon"><svg lucideTags aria-hidden="true"></svg></span>
       <span>Categorias</span>
@@ -136,27 +147,11 @@
   </nav>
 
   @if (activeOnboardingStep(); as step) {
-    <div class="onboarding-backdrop" aria-hidden="true"></div>
-    <section class="onboarding-dialog" role="dialog" aria-modal="true"
-      aria-labelledby="onboarding-title" aria-describedby="onboarding-description onboarding-detail"
-      tabindex="-1">
-      <div class="onboarding-dialog__header">
-        <div class="onboarding-dialog__identity">
-          <span class="onboarding-dialog__icon" aria-hidden="true">
-            @switch (step.id) {
-              @case ('dashboard') { <svg lucideLayoutDashboard></svg> }
-              @case ('accounts') { <svg lucideWalletCards></svg> }
-              @case ('transactions') { <svg lucideArrowLeftRight></svg> }
-              @case ('categories') { <svg lucideTags></svg> }
-              @case ('settings') { <svg lucideSettings></svg> }
-            }
-          </span>
-          <div>
-            <p class="onboarding-dialog__eyebrow">UM TOUR PELO DINDIM</p>
-            <p class="onboarding-dialog__section">{{ step.section }}</p>
-          </div>
-        </div>
-        <span class="onboarding-dialog__counter" aria-label="Etapa {{ onboardingStepNumber() }} de {{ onboardingSteps.length }}">
+    <section class="onboarding-guide" role="region"
+      aria-labelledby="onboarding-title" aria-describedby="onboarding-description onboarding-detail">
+      <div class="onboarding-guide__topline">
+        <span class="onboarding-guide__brand"><span class="onboarding-guide__spark" aria-hidden="true">✦</span> GUIA RÁPIDO</span>
+        <span class="onboarding-guide__counter" aria-label="Etapa {{ onboardingStepNumber() }} de {{ onboardingSteps.length }}">
           {{ onboardingStepNumber() }} <span>/ {{ onboardingSteps.length }}</span>
         </span>
       </div>
@@ -171,27 +166,42 @@
         }
       </div>
 
-      <div class="onboarding-dialog__content">
-        <h2 #onboardingTitle id="onboarding-title" class="onboarding-dialog__title" tabindex="-1">
+      <div class="onboarding-guide__body">
+        <div class="onboarding-guide__section-row">
+          <span class="onboarding-guide__icon" aria-hidden="true">
+            @switch (step.id) {
+              @case ('dashboard') { <svg lucideLayoutDashboard></svg> }
+              @case ('accounts') { <svg lucideWalletCards></svg> }
+              @case ('transactions') { <svg lucideArrowLeftRight></svg> }
+              @case ('categories') { <svg lucideTags></svg> }
+              @case ('settings') { <svg lucideSettings></svg> }
+            }
+          </span>
+          <span class="onboarding-guide__section">Você está em <strong>{{ step.section }}</strong></span>
+        </div>
+        <h2 #onboardingTitle id="onboarding-title" class="onboarding-guide__title" tabindex="-1">
           {{ step.title }}
         </h2>
-        <p id="onboarding-description" class="onboarding-dialog__description">{{ step.description }}</p>
-        <div id="onboarding-detail" class="onboarding-dialog__tip">
-          <span class="onboarding-dialog__tip-mark" aria-hidden="true">i</span>
-          <p>{{ step.detail }}</p>
+        <p id="onboarding-description" class="onboarding-guide__description">{{ step.description }}</p>
+        <div id="onboarding-detail" class="onboarding-guide__focus">
+          <span class="onboarding-guide__focus-mark" aria-hidden="true">↗</span>
+          <div>
+            <strong>{{ step.focusLabel }}</strong>
+            <p>{{ step.detail }}</p>
+          </div>
         </div>
       </div>
 
       @if (onboardingError(); as error) {
-        <p class="onboarding-dialog__error" role="alert">{{ error }}</p>
+        <p class="onboarding-guide__error" role="alert">{{ error }}</p>
       }
 
-      <footer class="onboarding-dialog__footer">
+      <footer class="onboarding-guide__footer">
         <button class="onboarding-skip" type="button" [disabled]="isSavingOnboarding()"
           (click)="skipOnboarding()">
-          Pular tutorial
+          Pular guia
         </button>
-        <div class="onboarding-dialog__actions">
+        <div class="onboarding-guide__actions">
           <button class="onboarding-back-button" type="button" [disabled]="isFirstOnboardingStep() || isSavingOnboarding()"
             (click)="goToPreviousOnboardingStep()">
             Voltar
@@ -201,9 +211,9 @@
             @if (isSavingOnboarding()) {
               Salvando...
             } @else if (isLastOnboardingStep()) {
-              Concluir tutorial
+              Concluir
             } @else {
-              Próxima etapa
+              Próxima
             }
             @if (!isSavingOnboarding() && !isLastOnboardingStep()) {
               <span aria-hidden="true">→</span>
