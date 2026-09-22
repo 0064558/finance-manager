@@ -126,7 +126,7 @@ public class SecurityConfig {
 
         // Define as origens permitidas para requisições CORS com base nas propriedades fornecidas
         configuration.setAllowedOrigins(corsProperties.allowedOrigins());
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Content-Type", "Authorization"));
 
         // Cria uma fonte de configuração CORS baseada em URL e registra a configuração para os endpoints da API

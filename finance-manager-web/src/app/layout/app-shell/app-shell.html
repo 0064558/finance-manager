@@ -134,4 +134,83 @@
       <span>Categorias</span>
     </a>
   </nav>
+
+  @if (activeOnboardingStep(); as step) {
+    <div class="onboarding-backdrop" aria-hidden="true"></div>
+    <section class="onboarding-dialog" role="dialog" aria-modal="true"
+      aria-labelledby="onboarding-title" aria-describedby="onboarding-description onboarding-detail"
+      tabindex="-1">
+      <div class="onboarding-dialog__header">
+        <div class="onboarding-dialog__identity">
+          <span class="onboarding-dialog__icon" aria-hidden="true">
+            @switch (step.id) {
+              @case ('dashboard') { <svg lucideLayoutDashboard></svg> }
+              @case ('accounts') { <svg lucideWalletCards></svg> }
+              @case ('transactions') { <svg lucideArrowLeftRight></svg> }
+              @case ('categories') { <svg lucideTags></svg> }
+              @case ('settings') { <svg lucideSettings></svg> }
+            }
+          </span>
+          <div>
+            <p class="onboarding-dialog__eyebrow">UM TOUR PELO DINDIM</p>
+            <p class="onboarding-dialog__section">{{ step.section }}</p>
+          </div>
+        </div>
+        <span class="onboarding-dialog__counter" aria-label="Etapa {{ onboardingStepNumber() }} de {{ onboardingSteps.length }}">
+          {{ onboardingStepNumber() }} <span>/ {{ onboardingSteps.length }}</span>
+        </span>
+      </div>
+
+      <div class="onboarding-progress" role="progressbar" aria-label="Progresso do tutorial"
+        [attr.aria-valuemin]="1" [attr.aria-valuemax]="onboardingSteps.length"
+        [attr.aria-valuenow]="onboardingStepNumber()">
+        @for (tourStep of onboardingSteps; track tourStep.id; let index = $index) {
+          <span class="onboarding-progress__segment"
+            [class.is-complete]="index < onboardingStepNumber() - 1"
+            [class.is-current]="index === onboardingStepNumber() - 1"></span>
+        }
+      </div>
+
+      <div class="onboarding-dialog__content">
+        <h2 #onboardingTitle id="onboarding-title" class="onboarding-dialog__title" tabindex="-1">
+          {{ step.title }}
+        </h2>
+        <p id="onboarding-description" class="onboarding-dialog__description">{{ step.description }}</p>
+        <div id="onboarding-detail" class="onboarding-dialog__tip">
+          <span class="onboarding-dialog__tip-mark" aria-hidden="true">i</span>
+          <p>{{ step.detail }}</p>
+        </div>
+      </div>
+
+      @if (onboardingError(); as error) {
+        <p class="onboarding-dialog__error" role="alert">{{ error }}</p>
+      }
+
+      <footer class="onboarding-dialog__footer">
+        <button class="onboarding-skip" type="button" [disabled]="isSavingOnboarding()"
+          (click)="skipOnboarding()">
+          Pular tutorial
+        </button>
+        <div class="onboarding-dialog__actions">
+          <button class="onboarding-back-button" type="button" [disabled]="isFirstOnboardingStep() || isSavingOnboarding()"
+            (click)="goToPreviousOnboardingStep()">
+            Voltar
+          </button>
+          <button class="onboarding-next-button" type="button" [disabled]="isSavingOnboarding()"
+            (click)="goToNextOnboardingStep()">
+            @if (isSavingOnboarding()) {
+              Salvando...
+            } @else if (isLastOnboardingStep()) {
+              Concluir tutorial
+            } @else {
+              Próxima etapa
+            }
+            @if (!isSavingOnboarding() && !isLastOnboardingStep()) {
+              <span aria-hidden="true">→</span>
+            }
+          </button>
+        </div>
+      </footer>
+    </section>
+  }
 </div>

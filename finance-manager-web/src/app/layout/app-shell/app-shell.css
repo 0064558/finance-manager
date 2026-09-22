@@ -538,5 +538,5 @@
 }
 .skip-link:focus { transform: none; }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .sidebar-link:hover .sidebar-icon { transform: translateX(2px); }
+.sidebar-link:hover .sidebar-icon { transform: translateX(2px); }
 }

@@ -49,6 +49,19 @@ class CorsIntegrationTest extends PostgresIntegrationTest {
                 ));
     }
 
+    @Test
+    void shouldAllowOnboardingPatchPreflightFromConfiguredOrigin() throws Exception {
+        mockMvc.perform(options("/api/v1/auth/me/onboarding")
+                        .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "PATCH")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization, Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ALLOWED_ORIGIN))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("PATCH")))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, containsString("Authorization")))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, containsString("Content-Type")));
+    }
+
     // Teste para verificar se uma requisição preflight (OPTIONS) de um domínio não permitido é rejeitada e não retorna os cabeçalhos CORS
     @Test
     void shouldRejectPreflightRequestFromUnknownOrigin() throws Exception {
