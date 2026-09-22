@@ -18,6 +18,7 @@ export interface AuthUser {
   name: string;
   email: string;
   createdAt: string;
+  onboardingVersion: number;
 }
 
 export interface LoginResponse {
@@ -25,4 +26,9 @@ export interface LoginResponse {
   tokenType: string;
   expiresIn: number;
   user: AuthUser;
+}
+
+// Esta interface define a estrutura da solicitação para atualizar a versão de onboarding do usuário.
+export interface UpdateOnboardingVersionRequest {
+  onboardingVersion: number;
 }

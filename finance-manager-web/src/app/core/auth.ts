@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { LoginRequest, LoginResponse, AuthUser, RegisterRequest } from './auth.models';
+import { LoginRequest, LoginResponse, AuthUser, RegisterRequest, UpdateOnboardingVersionRequest } from './auth.models';
 
 @Service()
 // Classe responsável por gerenciar a autenticação do usuário
@@ -41,5 +41,9 @@ export class Auth {
 
   logout(): void {
     localStorage.removeItem(this.tokenStorageKey);
+  }
+
+  updateOnboardingVersion(request: UpdateOnboardingVersionRequest): Observable<AuthUser> {
+    return this.http.patch<AuthUser>('/api/v1/auth/me/onboarding', request);
   }
 }
