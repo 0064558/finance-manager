@@ -25,10 +25,33 @@ senhas ou credenciais de banco.
 - Cadastro e login de usuários.
 - Persistência do JWT no fluxo de autenticação do cliente.
 - Dashboard com resumo financeiro e visualizações.
+- Guia inicial para usuários com onboarding pendente.
 - CRUD de contas financeiras.
 - CRUD de categorias de receitas e despesas.
 - CRUD de transações com filtros e paginação.
 - Telas de configurações e feedback visual para estados de carregamento e erro.
+
+## Guia inicial e estados de carregamento
+
+Após autenticar, a aplicação consulta `GET /api/v1/auth/me`. Quando
+`onboardingVersion` é menor que `CURRENT_ONBOARDING_VERSION` (atualmente `1`),
+o guia começa na dashboard e percorre Contas, Transações, Categorias e
+Configurações. Cada etapa navega para a tela correspondente, destaca o ponto
+de partida e mantém o restante da página visível. O usuário pode voltar,
+avançar, pular ou concluir. Pular e concluir enviam
+`PATCH /api/v1/auth/me/onboarding` com `{ "onboardingVersion": 1 }`. Se a
+gravação falhar, o guia permanece aberto e oferece uma mensagem de erro.
+
+O título da dashboard mostra um skeleton enquanto o nome do usuário é
+carregado e usa “Olá, usuário” caso a consulta falhe. Na lista de contas da
+dashboard, o ícone acompanha o tipo: dinheiro (`CASH`), conta corrente
+(`CHECKING`) ou poupança (`SAVINGS`).
+
+Os estados de carregamento de cada tela continuam ativos. Um aviso global
+complementar aparece quando alguma requisição HTTP ultrapassa cinco segundos,
+explicando a possível demora da API hospedada no Render; ele desaparece quando
+não há mais requisições lentas pendentes. Esse aviso não indica falha nem
+substitui as mensagens de erro das telas.
 
 ## Estrutura principal
 

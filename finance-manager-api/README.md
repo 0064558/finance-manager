@@ -218,10 +218,11 @@ GET  /swagger-ui.html
 GET  /api-docs/v1
 ```
 
-Endpoint protegido disponivel nesta fase:
+Endpoints de autenticação protegidos:
 
 ```text
-GET /api/v1/auth/me
+GET   /api/v1/auth/me
+PATCH /api/v1/auth/me/onboarding
 ```
 
 Exemplo de cadastro:
@@ -264,10 +265,47 @@ Resposta esperada do login:
     "id": "uuid-do-usuario",
     "name": "Rodrigo",
     "email": "rodrigo@email.com",
-    "createdAt": "2026-08-05T17:00:00-03:00"
+    "createdAt": "2026-08-05T17:00:00-03:00",
+    "onboardingVersion": 0
   }
 }
 ```
+
+### Progresso do guia inicial
+
+`onboardingVersion` é a última versão do guia concluída pelo usuário e aparece
+no `UserResponseDTO` retornado pelo cadastro, login, `GET /api/v1/auth/me` e
+pela atualização abaixo. A versão atualmente suportada pela API é `1`.
+Usuários novos começam com `0`; a migration V5 atribui `1` aos usuários que
+já existiam antes da funcionalidade. A versão pertence ao usuário autenticado
+identificado pelo JWT, sem `userId` enviado pelo cliente.
+
+Para registrar que o usuário pulou ou concluiu o guia:
+
+```http
+PATCH /api/v1/auth/me/onboarding
+Authorization: Bearer seu_access_token
+Content-Type: application/json
+```
+
+```json
+{
+  "onboardingVersion": 1
+}
+```
+
+Em caso de sucesso, a API responde `200 OK` com o `UserResponseDTO` atualizado.
+O campo é obrigatório, inteiro e não negativo. Repetir a versão já registrada
+é permitido; diminuir a versão gera conflito. Uma versão acima de `1` não é
+suportada nesta implementação.
+
+| Situação | Status | Código |
+| --- | --- | --- |
+| Corpo ausente ou `onboardingVersion` nulo, negativo ou inválido | `400` | `VALIDATION_FAILED` |
+| Versão acima da suportada | `400` | `UNSUPPORTED_ONBOARDING_VERSION` |
+| Token ausente, inválido ou expirado | `401` | `AUTHENTICATION_REQUIRED` |
+| Usuário autenticado não encontrado | `404` | `USER_NOT_FOUND` |
+| Tentativa de regressão de versão | `409` | `ONBOARDING_VERSION_CONFLICT` |
 
 Para usar pelo Swagger UI, acesse `http://localhost:8080/swagger-ui.html`, faca login pelo endpoint `/auth/login`, copie o `accessToken`, clique em `Authorize` e informe somente o token. O Swagger ja aplica o prefixo Bearer no header.
 
@@ -693,11 +731,13 @@ Exemplo de resposta:
     {
       "accountId": "8eb438af-1c4e-4395-8385-15ed32a80a60",
       "accountName": "Bradesco",
+      "accountType": "SAVINGS",
       "balance": 2000.00
     },
     {
       "accountId": "53e8cae9-ddf6-4e6a-a328-8a1fedcbfb5c",
       "accountName": "Nubank",
+      "accountType": "CHECKING",
       "balance": 777.77
     }
   ]
@@ -716,9 +756,8 @@ Os testes unitários e de integração são executados com:
 .\mvnw.cmd verify
 ```
 
-No estado publicado, a suíte do backend foi executada com 109 testes, sem
-falhas, erros ou testes ignorados. O GitHub Actions repete essa validação em
-cada push ou pull request para `main`.
+O GitHub Actions repete essa validação em cada push ou pull request para
+`main`.
 
 Os testes de integração usam PostgreSQL real em Testcontainers, aplicam as migrations Flyway desde o zero e limpam os dados entre os métodos. Portanto, o Docker precisa estar disponível durante a execução.
 
@@ -737,10 +776,11 @@ As migrations ja aplicadas nao devem ser editadas; qualquer ajuste deve entrar e
 | `V2` | `V2__create_financial_accounts.sql` | Cria `financial_accounts`, vinculo com usuario, tipos permitidos, constraint composta para propriedade e indice por usuario. |
 | `V3` | `V3__create_categories.sql` | Cria `categories`, tipos de transacao permitidos, unicidade por usuario/tipo/nome normalizado e indice por usuario. |
 | `V4` | `V4__create_transactions.sql` | Cria `transactions`, FKs simples e compostas de isolamento por usuario, checks de tipo/valor/descricao e indices de filtros. |
+| `V5` | `V5__add_user_onboarding_version.sql` | Adiciona `users.onboarding_version`, preserva usuários existentes em `1`, define `0` como padrão para novos usuários e impede versões negativas. |
 
-No primeiro deploy de produção, as quatro migrations foram aplicadas com
-sucesso no banco Neon. Migrations já aplicadas são imutáveis; qualquer ajuste
-deve entrar em uma nova versão.
+Migrations já aplicadas são imutáveis. Ao iniciar com uma versão nova da API,
+o Flyway aplica apenas as migrations pendentes no banco Neon; qualquer ajuste
+posterior deve entrar em uma nova versão.
 
 ## CORS e segurança
 

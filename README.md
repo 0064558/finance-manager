@@ -29,6 +29,7 @@ aplicação.
 - Paginação e filtros de transações por período, tipo, conta e categoria.
 - Resumo financeiro por período e saldos consolidados.
 - Isolamento completo dos dados por usuário autenticado.
+- Guia inicial pelas principais telas, com conclusão registrada por versão para cada usuário.
 
 O projeto não inclui, neste MVP, funcionalidades como recuperação de senha,
 integrações bancárias, recorrência automática ou múltiplas moedas.
@@ -74,6 +75,13 @@ PostgreSQL (Neon)
 As migrations criam o schema do banco. Constraints PostgreSQL, validações da
 aplicação e filtros por usuário trabalham em conjunto para preservar integridade
 e isolamento dos dados.
+
+O frontend consulta `GET /api/v1/auth/me` para obter o nome e a versão de
+onboarding do usuário. O guia é exibido quando essa versão está abaixo da
+versão suportada pelo frontend; ao pular ou concluir, o progresso é salvo pela
+API. Durante carregamentos, a interface mostra estados visuais e, se uma
+requisição demorar mais de cinco segundos, informa que o servidor pode estar
+iniciando após um período de inatividade.
 
 ## Estrutura do repositório
 
@@ -215,6 +223,8 @@ Fluxo básico:
 2. `POST /api/v1/auth/login` retorna um `accessToken`.
 3. Envie `Authorization: Bearer <accessToken>` nas rotas protegidas.
 4. Use `GET /api/v1/auth/me` para confirmar a identidade autenticada.
+5. Para registrar o fim do guia, envie `PATCH /api/v1/auth/me/onboarding` com
+   `{ "onboardingVersion": 1 }` e o mesmo token.
 
 O Swagger possui o botão **Authorize** para testar as rotas protegidas. Informe
 somente o token; a interface adiciona o prefixo `Bearer`.
@@ -228,8 +238,8 @@ O deploy atual é acionado automaticamente por commits na branch `main`:
 
 1. O GitHub Actions executa testes e build do backend e do frontend.
 2. O Render constrói a imagem Docker e publica a API.
-3. No primeiro deploy, o Flyway aplica as migrations no Neon usando o usuário
-   migrator.
+3. Na inicialização da API, o Flyway aplica no Neon as migrations ainda
+   pendentes usando o usuário migrator.
 4. A Vercel compila o Angular e publica `dist/finance-manager-web/browser`.
 5. O backend permite somente a origem pública configurada em
    `CORS_ALLOWED_ORIGINS`.
