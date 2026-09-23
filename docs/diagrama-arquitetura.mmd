@@ -1,0 +1,72 @@
+classDiagram
+    direction LR
+
+    class Auth
+    class FinancialAccountApi
+    class CategoryApi
+    class TransactionApi
+    class Report
+
+    class AuthController
+    class FinancialAccountController
+    class CategoryController
+    class TransactionController
+    class ReportController
+
+    class UserService
+    class FinancialAccountService
+    class CategoryService
+    class TransactionService
+    class ReportService
+    class JwtService
+
+    class UserRepository {
+        <<interface>>
+    }
+    class FinancialAccountRepository {
+        <<interface>>
+    }
+    class CategoryRepository {
+        <<interface>>
+    }
+    class TransactionRepository {
+        <<interface>>
+    }
+
+    class User
+    class FinancialAccount
+    class Category
+    class Transaction
+
+    Auth ..> AuthController : HTTP auth
+    FinancialAccountApi ..> FinancialAccountController : HTTP accounts
+    CategoryApi ..> CategoryController : HTTP categories
+    TransactionApi ..> TransactionController : HTTP transactions
+    Report ..> ReportController : HTTP reports
+
+    AuthController --> UserService
+    FinancialAccountController --> FinancialAccountService
+    CategoryController --> CategoryService
+    TransactionController --> TransactionService
+    ReportController --> ReportService
+
+    UserService --> UserRepository
+    UserService --> JwtService
+    FinancialAccountService --> FinancialAccountRepository
+    FinancialAccountService --> UserRepository
+    FinancialAccountService --> TransactionRepository
+    CategoryService --> CategoryRepository
+    CategoryService --> UserRepository
+    CategoryService --> TransactionRepository
+    TransactionService --> TransactionRepository
+    TransactionService --> UserRepository
+    TransactionService --> FinancialAccountRepository
+    TransactionService --> CategoryRepository
+    ReportService --> TransactionRepository
+    ReportService --> FinancialAccountRepository
+
+    UserRepository ..> User : persiste
+    FinancialAccountRepository ..> FinancialAccount : persiste
+    CategoryRepository ..> Category : persiste
+    TransactionRepository ..> Transaction : persiste
+    JwtService ..> User : gera token

@@ -1,0 +1,71 @@
+classDiagram
+    direction LR
+
+    class User {
+        -UUID id
+        -String name
+        -String email
+        -String passwordHash
+        -int onboardingVersion
+        -OffsetDateTime createdAt
+        -OffsetDateTime updatedAt
+        +advanceOnboardingVersion(int requestedVersion) void
+    }
+
+    class FinancialAccount {
+        -UUID id
+        -User user
+        -String name
+        -AccountType type
+        -BigDecimal initialBalance
+        -OffsetDateTime createdAt
+        -OffsetDateTime updatedAt
+        +update(String name, AccountType type, BigDecimal initialBalance) void
+    }
+
+    class Category {
+        -UUID id
+        -User user
+        -String name
+        -TransactionType transactionType
+        -OffsetDateTime createdAt
+        -OffsetDateTime updatedAt
+        +setName(String name) void
+        +setTransactionType(TransactionType type) void
+    }
+
+    class Transaction {
+        -UUID id
+        -User user
+        -FinancialAccount financialAccount
+        -Category category
+        -TransactionType type
+        -BigDecimal amount
+        -LocalDate occurredOn
+        -String description
+        -OffsetDateTime createdAt
+        -OffsetDateTime updatedAt
+        +update(FinancialAccount account, Category category, TransactionType type, BigDecimal amount, LocalDate occurredOn, String description) void
+    }
+
+    class AccountType {
+        <<enumeration>>
+        CHECKING
+        SAVINGS
+        CASH
+    }
+
+    class TransactionType {
+        <<enumeration>>
+        INCOME
+        EXPENSE
+    }
+
+    User "1" <-- "0..*" FinancialAccount : pertence a
+    User "1" <-- "0..*" Category : pertence a
+    User "1" <-- "0..*" Transaction : registra
+    FinancialAccount "1" <-- "0..*" Transaction : movimenta
+    Category "1" <-- "0..*" Transaction : classifica
+    FinancialAccount --> AccountType : usa
+    Category --> TransactionType : aceita
+    Transaction --> TransactionType : possui

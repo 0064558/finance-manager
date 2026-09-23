@@ -6,6 +6,8 @@ transações e acompanhe seus próprios saldos e resumos financeiros.
 
 [![CI](https://github.com/0064558/finance-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/0064558/finance-manager/actions/workflows/ci.yml)
 
+![Tela de acesso do DinDim](docs/images/login.png)
+
 ## Aplicação publicada
 
 | Parte | Endereço |
@@ -33,6 +35,46 @@ aplicação.
 
 O projeto não inclui, neste MVP, funcionalidades como recuperação de senha,
 integrações bancárias, recorrência automática ou múltiplas moedas.
+
+## Interface
+
+### Dashboard
+
+![Dashboard financeiro do DinDim](docs/images/dashboard.png)
+
+<details>
+<summary><strong>Ver detalhes do dashboard</strong></summary>
+
+#### Gastos por categoria
+
+![Distribuição de gastos por categoria](docs/images/dashboard-gastos-por-categoria.png)
+
+#### Fluxo de caixa e saldos por conta
+
+![Fluxo de caixa e saldos das contas](docs/images/dashboard-fluxo-de-caixa.png)
+
+</details>
+
+<details>
+<summary><strong>Ver telas de gerenciamento</strong></summary>
+
+#### Contas
+
+![Gerenciamento de contas financeiras](docs/images/contas.png)
+
+#### Transações
+
+![Listagem e gerenciamento de transações](docs/images/transacoes.png)
+
+#### Categorias
+
+![Gerenciamento de categorias](docs/images/categorias.png)
+
+#### Configurações
+
+![Preferências de aparência e privacidade](docs/images/configuracoes.png)
+
+</details>
 
 ## Stack
 
@@ -83,12 +125,24 @@ API. Durante carregamentos, a interface mostra estados visuais e, se uma
 requisição demorar mais de cinco segundos, informa que o servidor pode estar
 iniciando após um período de inatividade.
 
+### Diagrama da arquitetura
+
+[![Diagrama das camadas e dependências do Finance Manager](docs/images/diagrama-de-arquitetura.png)](docs/images/diagrama-de-arquitetura.png)
+
+### Modelo de domínio
+
+[![Diagrama das entidades e relacionamentos do Finance Manager](docs/images/diagrama-de-dominio.png)](docs/images/diagrama-de-dominio.png)
+
+As versões editáveis em Mermaid e a descrição dos relacionamentos estão na
+[documentação dos diagramas](docs/diagrama-classes.md).
+
 ## Estrutura do repositório
 
 ```text
 finance-manager/
 ├── finance-manager-api/       # API Spring Boot, migrations e testes
 ├── finance-manager-web/       # Aplicação Angular
+├── docs/                      # Diagramas e capturas da interface
 ├── .github/workflows/         # Pipeline de backend e frontend
 ├── LICENSE
 └── README.md
@@ -98,6 +152,7 @@ Documentação específica:
 
 - [README da API](finance-manager-api/README.md)
 - [README do frontend](finance-manager-web/README.md)
+- [Diagramas de classes e arquitetura](docs/diagrama-classes.md)
 - [Modelo de variáveis da API](finance-manager-api/.env.example)
 - [Licença MIT](LICENSE)
 
