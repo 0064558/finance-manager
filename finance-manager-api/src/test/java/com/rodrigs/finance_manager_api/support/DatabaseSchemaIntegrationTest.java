@@ -17,6 +17,14 @@ class DatabaseSchemaIntegrationTest extends PostgresIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
+    void shouldUseOnlyTheDisposableTestDatabase() {
+        assertThat(jdbcTemplate.queryForObject("SELECT current_database()", String.class))
+                .isEqualTo("finance_manager_test");
+        assertThat(jdbcTemplate.queryForObject("SELECT current_user", String.class))
+                .isEqualTo("finance_manager_test");
+    }
+
+    @Test
     void shouldApplyAllFlywayMigrationsToPostgres() {
         Integer appliedMigrations = jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = true",

@@ -239,6 +239,24 @@ proxy do Angular encaminha `/api` para a API local em `localhost:8080`.
 
 ## Testes e build
 
+Para executar **todos os testes da API e do frontend** com um comando, a partir
+da raiz do repositório:
+
+```powershell
+.\test.ps1
+```
+
+Requer Java 21+, Docker em execução e as dependências do frontend instaladas
+com `npm ci` em `finance-manager-web`. O script executa as duas suítes mesmo
+quando uma falha e termina com código 1 se houver qualquer falha. Não sobe a API
+publicada nem usa o banco de desenvolvimento ou produção.
+
+Os novos request specs usam HTTP real em `127.0.0.1` e porta aleatória, JWT real
+e PostgreSQL 17 descartável via Testcontainers. A conexão da aplicação e a do
+Flyway são fixadas no mesmo contêiner; uma verificação anterior à inicialização
+recusa outro banco ou perfis diferentes de `test`. Os cenários e decisões estão
+em [Testes de integração](docs/testes-integracao.md).
+
 Backend, a partir de `finance-manager-api`:
 
 ```powershell
