@@ -246,10 +246,13 @@ da raiz do repositório:
 .\test.ps1
 ```
 
-Requer Java 21+, Docker em execução e as dependências do frontend instaladas
-com `npm ci` em `finance-manager-web`. O script executa as duas suítes mesmo
-quando uma falha e termina com código 1 se houver qualquer falha. Não sobe a API
-publicada nem usa o banco de desenvolvimento ou produção.
+Requer Java 21+, Docker instalado e as dependências do frontend instaladas
+com `npm ci` em `finance-manager-web`. No Windows, o script abre o Docker Desktop
+se estiver fechado e aguarda até 120 segundos pelo engine Linux. Se ele não
+iniciar, mostra a causa antes de executar o Maven, mantém a API como falha e
+ainda executa os testes do frontend. Para máquinas com inicialização mais lenta,
+use `.\test.ps1 -DockerStartupTimeoutSeconds 240`. Qualquer falha termina com
+código 1. Não sobe a API publicada nem usa o banco de desenvolvimento ou produção.
 
 Os novos request specs usam HTTP real em `127.0.0.1` e porta aleatória, JWT real
 e PostgreSQL 17 descartável via Testcontainers. A conexão da aplicação e a do

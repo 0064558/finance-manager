@@ -73,10 +73,11 @@ export class TransactionApi {
     );
   }
 
-  create(transactionRequest: CreateTransactionRequest): Observable<TransactionResponse> {
+  create(transactionRequest: CreateTransactionRequest, idempotencyKey: string = crypto.randomUUID()): Observable<TransactionResponse> {
     return this.http.post<TransactionResponse>(
       this.endpoint,
       transactionRequest,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   }
 

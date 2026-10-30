@@ -1,10 +1,93 @@
 # Bugs encontrados pelos request specs
 
-Execução inicial em 28/10/2026, contra servidor HTTP local e PostgreSQL 17
-descartável. O banco de produção não foi utilizado. Os bugs abaixo não foram
-corrigidos: os testes que os detectam permanecem ativos e falhando.
+## Falha de infraestrutura em 30/10/2026
 
-## Resultado da execução do comando único
+O log enviado pelo usuário começou com `Could not find a valid Docker
+environment`. O PostgreSQL descartável não iniciou, e a falha de inicialização
+se propagou como `NoClassDefFoundError` nas classes de integração. O Maven
+registrou 214 execuções, zero falhas de asserção, 147 erros de execução e zero
+ignorados; o frontend passou nos 80 testes. Esse resultado não valida os fluxos
+da API, pois o banco necessário estava indisponível.
+
+O comando `test.ps1` agora verifica a disponibilidade do engine Linux antes do
+Maven. No Windows, inicia o Docker Desktop do caminho padrão se estiver fechado
+e aguarda até 120 segundos, com mensagens de progresso. O limite é configurável
+por `-DockerStartupTimeoutSeconds`. Se o Docker não estiver disponível, a API
+fica com código 1 e uma mensagem de correção, e o frontend continua executando.
+O contexto do Docker não é alterado; nenhum teste nem regra da aplicação foi
+modificado por essa correção, e o banco continua descartável e separado.
+
+Validação em 30/10/2026: `./test.ps1` terminou com código 0, com 226 testes da
+API e 80 do frontend aprovados, nenhum ignorado e cobertura aprovada. O log
+local está em `outputs/all-tests-docker-startup.log` (ignorado pelo Git).
+Também foi conferido, em uma cópia isolada do comando no Windows PowerShell,
+que a ausência do Docker impede o Maven, ainda executa o frontend e retorna 1.
+Os caminhos de início do Desktop e expiração do prazo foram verificados
+separadamente com chamadas de infraestrutura simuladas; a suíte da aplicação
+continuou usando PostgreSQL real em Testcontainers.
+
+## Situação após as correções em 29/10/2026
+
+Os cinco bugs foram corrigidos na aplicação, com autorização do usuário.
+O comando `./test.ps1` foi executado novamente contra PostgreSQL 17 descartável,
+com as migrações V1 a V7. O banco de produção não foi utilizado.
+
+| Suíte | Executados | Passaram | Falhas | Erros de execução | Ignorados |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| API | 226 | 226 | 0 | 0 | 0 |
+| Frontend | 80 | 80 | 0 | 0 | 0 |
+
+A verificação de cobertura da API passou: 678 de 713 linhas (95,09%), acima do
+mínimo existente de 70%, que foi mantido.
+
+| Bug | Correção |
+| --- | --- |
+| BUG-01 | Índice único da migração V6 para usuário, nome normalizado, tipo e saldo inicial; duplicação retorna 409, inclusive em concorrência. |
+| BUG-02 | Reserva e resposta por usuário/chave na tabela V7, na mesma transação do lançamento. O frontend envia a chave e a reutiliza em reenvios. |
+| BUG-03 | Bloqueios de banco compartilhados entre alteração de categoria e gravação do lançamento; validação de histórico acontece após adquirir o bloqueio. |
+| BUG-04 | Exclusão atômica por ID e usuário, usando a quantidade removida para retornar 204 ou 404. |
+| BUG-05 | Conversão de JSON decimal para inteiro desabilitada; a versão fracionária retorna 400. |
+
+Os contratos de negócio aprovados dos request specs foram preservados. Foram
+adicionados cinco testes HTTP de proteção da idempotência e cinco testes do
+frontend sobre envio/reenvio. Durante a implementação, o teste novo de resposta
+original detectou conversão do fuso horário no replay; a desserialização da
+resposta armazenada foi corrigida para preservar os horários originais.
+Nenhum teste foi removido, ignorado ou afrouxado.
+
+A migração V6 não apaga contas duplicadas existentes: se houver duplicatas,
+ela interrompe a atualização para permitir a revisão desses registros.
+Detalhes da implementação e limites da chave no formulário estão em
+`docs/testes-integracao.md`.
+
+### Correção de falso positivo aprovada em 29/10/2026
+
+Uma execução posterior do usuário teve uma única falha em
+`ReportsAndQueriesRequestSpecTest.paginationAndFilters`: a asserção buscava
+`999` no corpo JSON inteiro. A sequência apareceu no UUID de uma categoria de A
+(`7a44a236-422c-4e50-9999-e426d3a7a095`), sem indicar vazamento de dados de B.
+O frontend passou nos 80 testes nessa execução; a API teve 225 aprovações e
+esse falso positivo.
+
+Conforme a regra de consultar o responsável antes de corrigir um teste errado,
+a alteração foi interrompida para confirmação. O usuário aprovou explicitamente
+comparar os campos do JSON. O teste agora exige exatamente os sete IDs esperados
+de A e confere conta, categoria, tipo, data e valor exato de cada lançamento.
+Também rejeita explicitamente o ID do lançamento e as referências de B.
+As asserções de paginação, ordenação, filtros e acesso indevido foram mantidas.
+
+Após essa correção, `./test.ps1` foi executado em 29/10/2026: API com 226 testes
+aprovados, frontend com 80 testes aprovados, nenhuma falha, erro ou teste
+ignorado. A verificação de cobertura passou e ambas as suítes terminaram com
+código 0. O log está em `outputs/all-tests-json-fields.log` (arquivo local
+ignorado pelo Git).
+
+## Histórico da execução inicial
+
+Execução inicial em 28/10/2026, contra servidor HTTP local e PostgreSQL 17
+descartável. Naquela execução, os bugs ainda não tinham sido corrigidos e os
+testes correspondentes foram mantidos falhando. Os resultados abaixo registram
+essa situação anterior às correções.
 
 `./test.ps1` foi executado em 28/10/2026, com os seguintes resultados:
 

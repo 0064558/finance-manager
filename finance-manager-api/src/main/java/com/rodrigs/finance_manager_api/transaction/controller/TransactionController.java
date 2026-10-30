@@ -6,6 +6,7 @@ import com.rodrigs.finance_manager_api.transaction.dto.CreateTransactionRequestD
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionResponseDTO;
 import com.rodrigs.finance_manager_api.transaction.dto.UpdateTransactionRequestDTO;
 import com.rodrigs.finance_manager_api.transaction.service.TransactionService;
+import com.rodrigs.finance_manager_api.transaction.service.IdempotentTransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,15 +32,17 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class TransactionController {
     private final TransactionService transactionService;
+    private final IdempotentTransactionService idempotentTransactionService;
 
 
-    public TransactionController(TransactionService transactionService) {
+    public TransactionController(TransactionService transactionService, IdempotentTransactionService idempotentTransactionService) {
         this.transactionService = transactionService;
+        this.idempotentTransactionService = idempotentTransactionService;
     }
 
     @Operation(
             summary = "Cria uma transação",
-            description = "Registra uma receita ou despesa em uma conta e categoria pertencentes ao usuário autenticado."
+            description = "Registra uma receita ou despesa. Envie Idempotency-Key para repetir a operação com segurança; a mesma chave com outros dados retorna 409."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Transação criada com sucesso"),
@@ -52,9 +55,11 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.CREATED)
     public TransactionResponseDTO createTransaction(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @Valid @RequestBody CreateTransactionRequestDTO requestDTO
+            @Valid @RequestBody CreateTransactionRequestDTO requestDTO,
+            @Parameter(description = "Chave por operação, reutilizada em reenvios; até 200 caracteres")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
             ) {
-        return transactionService.createTransaction(authenticatedUser.id(), requestDTO);
+        return idempotentTransactionService.create(authenticatedUser.id(), requestDTO, idempotencyKey);
     }
 
     @Operation(

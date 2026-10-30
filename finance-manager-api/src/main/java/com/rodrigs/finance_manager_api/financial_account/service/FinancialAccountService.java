@@ -82,7 +82,7 @@ public class FinancialAccountService {
 
     @Transactional
     public FinancialAccountResponseDTO updateFinancialAccount(UUID accountId, UUID authenticatedUserId, UpdateFinancialAccountRequestDTO requestDTO) {
-        FinancialAccount account = financialAccountRepository.findByIdAndUserId(accountId, authenticatedUserId)
+        FinancialAccount account = financialAccountRepository.findOwnedForUpdate(accountId, authenticatedUserId)
                 .orElseThrow(FinancialAccountNotFoundException::new);
 
         boolean initialBalanceChanged = initialBalanceChanged(account, requestDTO);
@@ -99,7 +99,7 @@ public class FinancialAccountService {
 
     @Transactional
     public void deleteFinancialAccount(UUID accountId, UUID authenticatedUserId) {
-        FinancialAccount account = financialAccountRepository.findByIdAndUserId(accountId, authenticatedUserId)
+        FinancialAccount account = financialAccountRepository.findOwnedForUpdate(accountId, authenticatedUserId)
                 .orElseThrow(FinancialAccountNotFoundException::new);
 
         // se ha transacoes na conta

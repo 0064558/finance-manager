@@ -87,8 +87,8 @@ public class CategoryService {
             UUID authenticatedUserId,
             UpdateCategoryRequestDTO requestDTO) {
 
-        // busca a categoria
-        Category category = categoryRepository.findByIdAndUserId(categoryId, authenticatedUserId)
+        // Serialize with transaction creation before checking the history.
+        Category category = categoryRepository.findOwnedForUpdate(categoryId, authenticatedUserId)
                 .orElseThrow(CategoryNotFoundException::new);
 
         // normaliza o nome
@@ -122,8 +122,8 @@ public class CategoryService {
 
     @Transactional
     public void deleteCategory(UUID categoryId, UUID authenticatedUserId) {
-        // busca a categoria
-        Category category = categoryRepository.findByIdAndUserId(categoryId, authenticatedUserId)
+        // Serialize with transaction creation before checking the history.
+        Category category = categoryRepository.findOwnedForUpdate(categoryId, authenticatedUserId)
                 .orElseThrow(CategoryNotFoundException::new);
 
         // verifica se existem transações vinculadas

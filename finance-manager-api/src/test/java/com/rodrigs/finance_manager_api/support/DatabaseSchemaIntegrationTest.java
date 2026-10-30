@@ -35,11 +35,11 @@ class DatabaseSchemaIntegrationTest extends PostgresIntegrationTest {
                 SELECT count(*)
                 FROM information_schema.tables
                 WHERE table_schema = 'public'
-                  AND table_name IN ('users', 'financial_accounts', 'categories', 'transactions')
+                  AND table_name IN ('users', 'financial_accounts', 'categories', 'transactions', 'transaction_idempotency')
                 """, Integer.class);
 
-        assertThat(appliedMigrations).isEqualTo(5);
-        assertThat(applicationTables).isEqualTo(4);
+        assertThat(appliedMigrations).isEqualTo(7);
+        assertThat(applicationTables).isEqualTo(5);
     }
 
     @Test

@@ -78,6 +78,18 @@ public class GlobalExceptionHandler {
                 "TRANSACTION_TYPE_MISMATCH", request);
     }
 
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ProblemDetail handleIdempotencyConflict(IdempotencyConflictException exception, HttpServletRequest request) {
+        return problem(HttpStatus.CONFLICT, "Idempotency key already used",
+                "This key was already used with different transaction data.", "IDEMPOTENCY_CONFLICT", request);
+    }
+
+    @ExceptionHandler(InvalidIdempotencyKeyException.class)
+    public ProblemDetail handleInvalidIdempotencyKey(InvalidIdempotencyKeyException exception, HttpServletRequest request) {
+        return problem(HttpStatus.BAD_REQUEST, "Invalid idempotency key",
+                "Idempotency-Key must contain between 1 and 200 characters.", "INVALID_IDEMPOTENCY_KEY", request);
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ProblemDetail handleUserNotFound(UserNotFoundException exception, HttpServletRequest request) {
         return problem(HttpStatus.NOT_FOUND, "User not found",

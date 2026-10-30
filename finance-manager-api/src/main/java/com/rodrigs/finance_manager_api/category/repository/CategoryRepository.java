@@ -3,6 +3,10 @@ package com.rodrigs.finance_manager_api.category.repository;
 import com.rodrigs.finance_manager_api.category.entity.Category;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,6 +18,10 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     // busca uma categoria especifica, mas so se ela pertencer ao user autenticado
     Optional<Category> findByIdAndUserId(UUID categoryId, UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Category c WHERE c.id = :categoryId AND c.user.id = :userId")
+    Optional<Category> findOwnedForUpdate(@Param("categoryId") UUID categoryId, @Param("userId") UUID userId);
 
     // busca todas as categorias de um usuario, ordenadas pelo tipo de transacao e depois pelo nome (crescente)
     List<Category> findAllByUserIdOrderByTransactionTypeAscNameAsc(UUID userId);

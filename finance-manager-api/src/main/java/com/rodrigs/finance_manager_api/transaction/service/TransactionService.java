@@ -41,9 +41,11 @@ public class TransactionService {
     public TransactionResponseDTO createTransaction(UUID authenticatedUserId, CreateTransactionRequestDTO requestDTO) {
         User user = userRepository.findById(authenticatedUserId)
                 .orElseThrow(UserNotFoundException::new);
-        FinancialAccount account = financialAccountRepository.findByIdAndUserId(requestDTO.accountId(), authenticatedUserId)
+        // Every writer locks the account before the category, in this order.
+        // Category changes/deletions cannot overtake validation and insertion.
+        FinancialAccount account = financialAccountRepository.findOwnedForUpdate(requestDTO.accountId(), authenticatedUserId)
                 .orElseThrow(FinancialAccountNotFoundException::new);
-        Category category = categoryRepository.findByIdAndUserId(requestDTO.categoryId(), authenticatedUserId)
+        Category category = categoryRepository.findOwnedForUpdate(requestDTO.categoryId(), authenticatedUserId)
                 .orElseThrow(CategoryNotFoundException::new);
 
         if (requestDTO.type() != category.getTransactionType()) {
@@ -118,9 +120,9 @@ public class TransactionService {
                                                     UpdateTransactionRequestDTO requestDTO) {
         Transaction transaction = transactionRepository.findByIdAndUser_Id(transactionId, authenticatedUserId)
                 .orElseThrow(TransactionNotFoundException::new);
-        FinancialAccount account = financialAccountRepository.findByIdAndUserId(requestDTO.accountId(), authenticatedUserId)
+        FinancialAccount account = financialAccountRepository.findOwnedForUpdate(requestDTO.accountId(), authenticatedUserId)
                 .orElseThrow(FinancialAccountNotFoundException::new);
-        Category category = categoryRepository.findByIdAndUserId(requestDTO.categoryId(), authenticatedUserId)
+        Category category = categoryRepository.findOwnedForUpdate(requestDTO.categoryId(), authenticatedUserId)
                 .orElseThrow(CategoryNotFoundException::new);
 
         if (requestDTO.type() != category.getTransactionType()) {
@@ -144,10 +146,9 @@ public class TransactionService {
 
     @Transactional
     public void deleteTransaction(UUID transactionId, UUID authenticatedUserId) {
-        Transaction transaction = transactionRepository.findByIdAndUser_Id(transactionId, authenticatedUserId)
-                .orElseThrow(TransactionNotFoundException::new);
-
-        transactionRepository.delete(transaction);
+        if (transactionRepository.deleteOwned(transactionId, authenticatedUserId) == 0) {
+            throw new TransactionNotFoundException();
+        }
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

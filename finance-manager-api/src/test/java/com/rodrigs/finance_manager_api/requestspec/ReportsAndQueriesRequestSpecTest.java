@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,11 +32,19 @@ class ReportsAndQueriesRequestSpecTest extends HttpRequestSpec {
         String oldest = transaction(a, account, expense, "EXPENSE", "1.01", start);
         String middle = transaction(a, account, expense, "EXPENSE", "2.02", start.plusDays(1));
         String newest = transaction(a, account, expense, "EXPENSE", "3.03", end);
-        transaction(a, anotherAccount, expense, "EXPENSE", "4", end);
-        transaction(a, account, anotherExpense, "EXPENSE", "5", end);
-        transaction(a, account, income, "INCOME", "6", end);
-        transaction(a, account, expense, "EXPENSE", "7", start.minusDays(1));
-        transaction(b, bAccount, bCategory, "EXPENSE", "999", end);
+        String otherAccountTransaction = transaction(a, anotherAccount, expense, "EXPENSE", "4", end);
+        String otherCategoryTransaction = transaction(a, account, anotherExpense, "EXPENSE", "5", end);
+        String incomeTransaction = transaction(a, account, income, "INCOME", "6", end);
+        String outsidePeriod = transaction(a, account, expense, "EXPENSE", "7", start.minusDays(1));
+        String foreignTransaction = transaction(b, bAccount, bCategory, "EXPENSE", "999", end);
+        var expectedTransactions = Map.of(
+                oldest, transactionBody(account, expense, "EXPENSE", "1.01", start),
+                middle, transactionBody(account, expense, "EXPENSE", "2.02", start.plusDays(1)),
+                newest, transactionBody(account, expense, "EXPENSE", "3.03", end),
+                otherAccountTransaction, transactionBody(anotherAccount, expense, "EXPENSE", "4", end),
+                otherCategoryTransaction, transactionBody(account, anotherExpense, "EXPENSE", "5", end),
+                incomeTransaction, transactionBody(account, income, "INCOME", "6", end),
+                outsidePeriod, transactionBody(account, expense, "EXPENSE", "7", start.minusDays(1)));
         String filter = period(start, end) + "&accountId=" + account + "&categoryId=" + expense + "&type=EXPENSE&size=2";
         var first = request("GET", TRANSACTIONS + filter + "&page=0", a.token(), null);
         first.status(200);
@@ -55,7 +64,22 @@ class ReportsAndQueriesRequestSpecTest extends HttpRequestSpec {
         defaults.status(200);
         assertThat(defaults.value("size")).isEqualTo(20);
         assertThat(defaults.value("totalElements")).isEqualTo(7);
-        assertThat(defaults.body()).doesNotContain(bAccount, bCategory, "999");
+        assertThat(defaults.list("content")).hasSize(7);
+        var returnedIds = new ArrayList<String>();
+        for (int i = 0; i < defaults.list("content").size(); i++) {
+            String path = "content." + i + ".";
+            String id = defaults.text(path + "id");
+            returnedIds.add(id);
+            assertThat(id).isNotEqualTo(foreignTransaction);
+            assertThat(expectedTransactions).containsKey(id);
+            var expected = expectedTransactions.get(id);
+            assertThat(defaults.text(path + "accountId")).isEqualTo(expected.get("accountId")).isNotEqualTo(bAccount);
+            assertThat(defaults.text(path + "categoryId")).isEqualTo(expected.get("categoryId")).isNotEqualTo(bCategory);
+            assertThat(defaults.text(path + "type")).isEqualTo(expected.get("type"));
+            assertThat(defaults.text(path + "occurredOn")).isEqualTo(expected.get("occurredOn"));
+            defaults.money(path + "amount", expected.get("amount").toString());
+        }
+        assertThat(returnedIds).containsExactlyInAnyOrderElementsOf(expectedTransactions.keySet());
         for (String foreign : List.of("accountId=" + bAccount, "categoryId=" + bCategory)) {
             request("GET", TRANSACTIONS + "?" + foreign, a.token(), null).status(404);
         }

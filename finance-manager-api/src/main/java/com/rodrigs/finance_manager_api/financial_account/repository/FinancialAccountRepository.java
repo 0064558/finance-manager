@@ -4,6 +4,8 @@ import com.rodrigs.finance_manager_api.financial_account.entity.FinancialAccount
 import com.rodrigs.finance_manager_api.report.repository.AccountBalanceProjection;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,6 +18,10 @@ import java.util.UUID;
 public interface FinancialAccountRepository extends JpaRepository<FinancialAccount, UUID> {
     // busca uma conta especifica, mas so se ela pertencer ao user autenticado
     Optional<FinancialAccount> findByIdAndUserId(UUID id, UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM FinancialAccount a WHERE a.id = :accountId AND a.user.id = :userId")
+    Optional<FinancialAccount> findOwnedForUpdate(@Param("accountId") UUID accountId, @Param("userId") UUID userId);
 
     // busca todas as contas de um usuário, ordenadas pela data de criação (crescente)
     List<FinancialAccount> findAllByUserIdOrderByCreatedAtAsc(UUID userId);

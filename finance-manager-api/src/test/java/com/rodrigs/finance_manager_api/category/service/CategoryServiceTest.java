@@ -167,7 +167,7 @@ class CategoryServiceTest {
                 TransactionType.EXPENSE
         );
 
-        when(categoryRepository.findByIdAndUserId(category.getId(), userId))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), userId))
                 .thenReturn(Optional.of(category));
         when(categoryRepository.existsByUserIdAndTransactionTypeAndNameIgnoreCaseAndIdNot(
                 userId,
@@ -195,7 +195,7 @@ class CategoryServiceTest {
                 TransactionType.INCOME
         );
 
-        when(categoryRepository.findByIdAndUserId(category.getId(), userId))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), userId))
                 .thenReturn(Optional.of(category));
         when(categoryRepository.existsByUserIdAndTransactionTypeAndNameIgnoreCaseAndIdNot(
                 userId,
@@ -223,7 +223,7 @@ class CategoryServiceTest {
                 TransactionType.EXPENSE
         );
 
-        when(categoryRepository.findByIdAndUserId(category.getId(), userId))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), userId))
                 .thenReturn(Optional.of(category));
         when(categoryRepository.existsByUserIdAndTransactionTypeAndNameIgnoreCaseAndIdNot(
                 userId,
@@ -249,7 +249,7 @@ class CategoryServiceTest {
                 TransactionType.INCOME
         );
 
-        when(categoryRepository.findByIdAndUserId(category.getId(), userId))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), userId))
                 .thenReturn(Optional.of(category));
         when(categoryRepository.existsByUserIdAndTransactionTypeAndNameIgnoreCaseAndIdNot(
                 userId,
@@ -273,7 +273,7 @@ class CategoryServiceTest {
         User user = userWithId();
         Category category = category(user, "Transporte", TransactionType.EXPENSE);
 
-        when(categoryRepository.findByIdAndUserId(category.getId(), userId))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), userId))
                 .thenReturn(Optional.of(category));
         when(transactionRepository.existsByCategory_IdAndUser_Id(category.getId(), userId))
                 .thenReturn(false);
@@ -289,7 +289,7 @@ class CategoryServiceTest {
         User user = userWithId();
         Category category = category(user, "Transporte", TransactionType.EXPENSE);
 
-        when(categoryRepository.findByIdAndUserId(category.getId(), userId))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), userId))
                 .thenReturn(Optional.of(category));
         when(transactionRepository.existsByCategory_IdAndUser_Id(category.getId(), userId))
                 .thenReturn(true);
@@ -310,7 +310,7 @@ class CategoryServiceTest {
                 TransactionType.EXPENSE
         );
 
-        when(categoryRepository.findByIdAndUserId(categoryId, userId))
+        when(categoryRepository.findOwnedForUpdate(categoryId, userId))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> categoryService.updateCategory(
@@ -325,7 +325,7 @@ class CategoryServiceTest {
         UUID categoryId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-        when(categoryRepository.findByIdAndUserId(categoryId, userId))
+        when(categoryRepository.findOwnedForUpdate(categoryId, userId))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> categoryService.deleteCategory(categoryId, userId))

@@ -111,7 +111,7 @@ class FinancialAccountServiceTest {
                 AccountType.CHECKING,
                 new BigDecimal("150.00")
         );
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
         when(transactionRepository.existsByFinancialAccount_IdAndUser_Id(account.getId(), user.getId()))
                 .thenReturn(false);
@@ -133,7 +133,7 @@ class FinancialAccountServiceTest {
                 AccountType.CASH,
                 new BigDecimal("150.00")
         );
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
         when(transactionRepository.existsByFinancialAccount_IdAndUser_Id(account.getId(), user.getId()))
                 .thenReturn(true);
@@ -149,7 +149,7 @@ class FinancialAccountServiceTest {
     @Test
     void shouldDeleteAccountWhenItHasNoTransactions() {
         FinancialAccount account = account(user, "Conta", AccountType.CASH, "100.00");
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
         when(transactionRepository.existsByFinancialAccount_IdAndUser_Id(account.getId(), user.getId()))
                 .thenReturn(false);
@@ -162,7 +162,7 @@ class FinancialAccountServiceTest {
     @Test
     void shouldRejectDeleteWhenAccountHasTransactions() {
         FinancialAccount account = account(user, "Conta", AccountType.CASH, "100.00");
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
         when(transactionRepository.existsByFinancialAccount_IdAndUser_Id(account.getId(), user.getId()))
                 .thenReturn(true);

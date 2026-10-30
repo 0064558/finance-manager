@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { Transactions } from './transactions';
 import { TransactionApi } from '../../core/transaction';
@@ -12,21 +12,76 @@ describe('Transactions empty-state actions', () => {
   let accounts: ReturnType<typeof vi.fn>;
   let categories: ReturnType<typeof vi.fn>;
   let transactions: ReturnType<typeof vi.fn>;
+  let create: ReturnType<typeof vi.fn>;
   const page = { content: [], number: 0, totalPages: 0, totalElements: 0 };
   beforeEach(() => {
     accounts = vi.fn(() => of([{ id: 'account', name: 'Conta', type: 'CHECKING', initialBalance: 0 }]));
     categories = vi.fn(() => of([{ id: 'food', name: 'Alimentação', transactionType: 'EXPENSE' }]));
     transactions = vi.fn(() => of(page));
+    create = vi.fn();
     TestBed.configureTestingModule({
       imports: [Transactions],
       providers: [provideRouter([]),
-        { provide: TransactionApi, useValue: { getAll: transactions } },
+        { provide: TransactionApi, useValue: { getAll: transactions, create } },
         { provide: FinancialAccountApi, useValue: { getAll: accounts } },
         { provide: CategoryApi, useValue: { getAll: categories } },
       ],
     });
   });
   const render = () => { fixture = TestBed.createComponent(Transactions); fixture.detectChanges(); };
+
+  const fillTransaction = () => {
+    fixture.componentInstance['openCreateForm']();
+    fixture.componentInstance['transactionForm'].patchValue({
+      accountId: 'account', categoryId: 'food', type: 'EXPENSE', amount: 10,
+    });
+  };
+
+  it('quando a resposta se perde, então reutiliza a chave no reenvio da mesma operação', () => {
+    render();
+    fillTransaction();
+    create.mockReturnValue(throwError(() => ({ status: 0 })));
+    fixture.componentInstance['submitTransaction']();
+    fixture.componentInstance['submitTransaction']();
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(create.mock.calls[0][1]).toMatch(/^[a-f0-9-]{36}$/);
+    expect(create.mock.calls[1]).toEqual(create.mock.calls[0]);
+  });
+
+  it('quando altera o valor após falha, então envia os novos dados com uma nova chave', () => {
+    render();
+    fillTransaction();
+    create.mockReturnValue(throwError(() => ({ status: 0 })));
+    fixture.componentInstance['submitTransaction']();
+    fixture.componentInstance['transactionForm'].controls.amount.setValue(20);
+    fixture.componentInstance['submitTransaction']();
+    expect(create.mock.calls[1][0].amount).toBe(20);
+    expect(create.mock.calls[1][1]).not.toBe(create.mock.calls[0][1]);
+  });
+
+  it('quando envia duas vezes enquanto aguarda a resposta, então chama a API apenas uma vez', () => {
+    render();
+    fillTransaction();
+    const pending = new Subject();
+    create.mockReturnValue(pending);
+    fixture.componentInstance['submitTransaction']();
+    fixture.componentInstance['submitTransaction']();
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(fixture.componentInstance['isTransactionSubmitting']()).toBe(true);
+    pending.error({ status: 0 });
+    expect(fixture.componentInstance['isTransactionSubmitting']()).toBe(false);
+  });
+
+  it('quando conclui uma operação e inicia outra igual, então usa uma nova chave', () => {
+    render();
+    fillTransaction();
+    create.mockReturnValue(of({ id: 'created' }));
+    fixture.componentInstance['submitTransaction']();
+    fillTransaction();
+    fixture.componentInstance['submitTransaction']();
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(create.mock.calls[1][1]).not.toBe(create.mock.calls[0][1]);
+  });
 
   it('opens the creation form from an unfiltered empty list', () => {
     render();

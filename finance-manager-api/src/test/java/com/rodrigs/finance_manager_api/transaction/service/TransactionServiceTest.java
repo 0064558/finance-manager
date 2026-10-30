@@ -91,9 +91,9 @@ class TransactionServiceTest {
         );
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
-        when(categoryRepository.findByIdAndUserId(category.getId(), user.getId()))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), user.getId()))
                 .thenReturn(Optional.of(category));
         when(transactionRepository.saveAndFlush(any(Transaction.class)))
                 .thenAnswer(invocation -> {
@@ -137,7 +137,7 @@ class TransactionServiceTest {
         CreateTransactionRequestDTO request = createRequest(account.getId(), category.getId());
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> transactionService.createTransaction(user.getId(), request))
@@ -152,9 +152,9 @@ class TransactionServiceTest {
         CreateTransactionRequestDTO request = createRequest(account.getId(), category.getId());
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
-        when(categoryRepository.findByIdAndUserId(category.getId(), user.getId()))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), user.getId()))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> transactionService.createTransaction(user.getId(), request))
@@ -175,9 +175,9 @@ class TransactionServiceTest {
         );
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
-        when(categoryRepository.findByIdAndUserId(category.getId(), user.getId()))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), user.getId()))
                 .thenReturn(Optional.of(category));
 
         assertThatThrownBy(() -> transactionService.createTransaction(user.getId(), request))
@@ -296,9 +296,9 @@ class TransactionServiceTest {
 
         when(transactionRepository.findByIdAndUser_Id(transaction.getId(), user.getId()))
                 .thenReturn(Optional.of(transaction));
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
-        when(categoryRepository.findByIdAndUserId(category.getId(), user.getId()))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), user.getId()))
                 .thenReturn(Optional.of(category));
         when(transactionRepository.saveAndFlush(transaction)).thenReturn(transaction);
 
@@ -329,9 +329,9 @@ class TransactionServiceTest {
 
         when(transactionRepository.findByIdAndUser_Id(transaction.getId(), user.getId()))
                 .thenReturn(Optional.of(transaction));
-        when(financialAccountRepository.findByIdAndUserId(account.getId(), user.getId()))
+        when(financialAccountRepository.findOwnedForUpdate(account.getId(), user.getId()))
                 .thenReturn(Optional.of(account));
-        when(categoryRepository.findByIdAndUserId(category.getId(), user.getId()))
+        when(categoryRepository.findOwnedForUpdate(category.getId(), user.getId()))
                 .thenReturn(Optional.of(category));
 
         assertThatThrownBy(() -> transactionService.updateTransaction(
@@ -347,25 +347,23 @@ class TransactionServiceTest {
     void shouldDeleteTransactionOwnedByAuthenticatedUser() {
         Transaction transaction = transaction(user, account, category, "Mercado");
 
-        when(transactionRepository.findByIdAndUser_Id(transaction.getId(), user.getId()))
-                .thenReturn(Optional.of(transaction));
+        when(transactionRepository.deleteOwned(transaction.getId(), user.getId())).thenReturn(1);
 
         transactionService.deleteTransaction(transaction.getId(), user.getId());
 
-        verify(transactionRepository).delete(transaction);
+        verify(transactionRepository).deleteOwned(transaction.getId(), user.getId());
     }
 
     @Test
     void shouldNotDeleteTransactionOwnedByAnotherUser() {
         UUID transactionId = UUID.randomUUID();
 
-        when(transactionRepository.findByIdAndUser_Id(transactionId, user.getId()))
-                .thenReturn(Optional.empty());
+        when(transactionRepository.deleteOwned(transactionId, user.getId())).thenReturn(0);
 
         assertThatThrownBy(() -> transactionService.deleteTransaction(transactionId, user.getId()))
                 .isInstanceOf(TransactionNotFoundException.class);
 
-        verify(transactionRepository, never()).delete(any(Transaction.class));
+        verify(transactionRepository).deleteOwned(transactionId, user.getId());
     }
 
     private CreateTransactionRequestDTO createRequest(UUID accountId, UUID categoryId) {

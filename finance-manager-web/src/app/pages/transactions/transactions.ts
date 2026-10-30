@@ -99,6 +99,7 @@ function formatLocalDate(date: Date): string {
   templateUrl: './transactions.html',
 })
 export class Transactions implements OnInit {
+  private pendingCreation: { body: string; key: string } | null = null;
   private readonly route = inject(ActivatedRoute, { optional: true });
   private pendingCreate = this.route?.snapshot.queryParamMap.get('action') === 'create';
 
@@ -347,6 +348,7 @@ export class Transactions implements OnInit {
 
   // Abre o formulário de criação de transação.
   protected openCreateForm(): void {
+    this.pendingCreation = null;
     this.transactionFormError.set(null);
     this.selectedTransaction.set(null);
 
@@ -378,6 +380,7 @@ export class Transactions implements OnInit {
   }
 
   protected submitTransaction(): void {
+    if (this.isTransactionSubmitting()) return;
     if (this.transactionForm.invalid) {
       // Se o formulário de transação for inválido, não envia o formulário.
       this.transactionForm.markAllAsTouched();
@@ -421,6 +424,14 @@ export class Transactions implements OnInit {
     };
 
     const selectedTransaction = this.selectedTransaction();
+    if (!selectedTransaction) {
+      const body = JSON.stringify(transactionRequest);
+      // Keep the operation key after an uncertain response so retrying does not
+      // create a second financial effect. Changed data starts a new operation.
+      if (this.pendingCreation?.body !== body) {
+        this.pendingCreation = { body, key: crypto.randomUUID() };
+      }
+    }
 
     // Define o sinal isTransactionSubmitting como true para indicar que a transação está sendo enviada, e limpa qualquer mensagem de erro anterior.
     this.isTransactionSubmitting.set(true);
@@ -429,7 +440,7 @@ export class Transactions implements OnInit {
     // Se houver uma transação selecionada, significa que estamos editando uma transação existente, caso contrário, estamos criando uma nova transação.
     const request$ = selectedTransaction
       ? this.transactionApi.update(selectedTransaction.id, transactionRequest)
-      : this.transactionApi.create(transactionRequest);
+      : this.transactionApi.create(transactionRequest, this.pendingCreation!.key);
 
     // Define a ação como "atualizar" se houver uma transação selecionada (indicando que estamos editando), ou "criar" se não houver transação selecionada (indicando que estamos criando uma nova transação).
     const action = selectedTransaction ? 'atualizar' : 'criar';
@@ -444,6 +455,7 @@ export class Transactions implements OnInit {
       // Se houver um erro, uma mensagem de erro apropriada é definida com base no tipo de erro retornado pela API.
       .subscribe({
         next: () => {
+          this.pendingCreation = null;
           this.selectedTransaction.set(null);
           this.isTransactionFormOpen.set(false);
           this.notifications.success(selectedTransaction ? 'Transação atualizada com sucesso.' : 'Transação criada com sucesso.');
