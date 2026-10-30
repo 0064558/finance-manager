@@ -6,6 +6,10 @@ import { Transactions } from './transactions';
 import { TransactionApi } from '../../core/transaction';
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import { CategoryApi } from '../../core/categories';
+import { Auth } from '../../core/auth';
+import { ReportExportApi } from '../../core/report-export';
+import { ReportExportDialog } from './report-export-dialog/report-export-dialog';
+import { By } from '@angular/platform-browser';
 
 describe('Transactions empty-state actions', () => {
   let fixture: ComponentFixture<Transactions>;
@@ -88,6 +92,35 @@ describe('Transactions empty-state actions', () => {
     fixture.nativeElement.querySelector('app-empty-state button').click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).not.toBeNull();
+  });
+
+  it('exports applied filters while ignoring unsaved edits and keeps the list unchanged', () => {
+    for (const method of ['showModal', 'close'] as const) {
+      if (!HTMLDialogElement.prototype[method]) Object.defineProperty(HTMLDialogElement.prototype, method,
+        { value() {}, configurable: true, writable: true });
+    }
+    TestBed.configureTestingModule({ providers: [
+      { provide: ReportExportApi, useValue: {} }, { provide: Auth, useValue: { logout: vi.fn() } },
+    ] });
+    vi.spyOn(HTMLDialogElement.prototype, 'showModal').mockImplementation(function(this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    });
+    vi.spyOn(HTMLDialogElement.prototype, 'close').mockImplementation(function(this: HTMLDialogElement) {
+      this.removeAttribute('open'); this.dispatchEvent(new Event('close'));
+    });
+    render();
+    fixture.componentInstance['filterForm'].patchValue({ startDate: '2025-01-01', endDate: '2025-01-31', type: 'EXPENSE', categoryId: 'food' });
+    fixture.componentInstance['applyFilters']();
+    fixture.componentInstance['filterForm'].patchValue({ startDate: '2025-04-01', type: 'INCOME' });
+    fixture.nativeElement.querySelector('[aria-haspopup="dialog"]').click(); fixture.detectChanges();
+    const dialog = fixture.debugElement.query(By.directive(ReportExportDialog)).componentInstance as ReportExportDialog;
+    expect(dialog['form'].controls.startDate.value).toBe('2025-01-01');
+    expect(dialog['form'].controls.type.value).toBe('EXPENSE');
+    dialog['form'].controls.startDate.setValue('2024-12-01');
+    expect(fixture.componentInstance['appliedFilters']().startDate).toBe('2025-01-01');
+    expect(fixture.componentInstance['filterForm'].controls.startDate.value).toBe('2025-04-01');
+    expect(transactions).toHaveBeenCalledTimes(2);
+    fixture.destroy(); vi.restoreAllMocks();
   });
 
   it('guides users without accounts or categories to create the missing prerequisite', () => {

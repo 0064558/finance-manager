@@ -1,5 +1,6 @@
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { PrivateCurrency } from '../../shared/private-currency/private-currency';
+import { ReportExportDialog } from './report-export-dialog/report-export-dialog';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
@@ -28,6 +29,7 @@ import {
   LucidePlus,
   LucideSlidersHorizontal,
   LucideTrash2,
+  LucideDownload,
 } from '@lucide/angular';
 
 // Representa uma transação financeira, incluindo informações como conta, categoria, tipo, valor, data de ocorrência e descrição.
@@ -90,6 +92,7 @@ function formatLocalDate(date: Date): string {
 @Component({
   imports: [
     EmptyState,
+    ReportExportDialog, LucideDownload,
     PrivateCurrency, DatePipe, ReactiveFormsModule,
     LucideChevronLeft, LucideChevronRight,
     LucidePencil, LucidePlus, LucideSlidersHorizontal, LucideTrash2,
@@ -123,7 +126,8 @@ export class Transactions implements OnInit {
   protected readonly formBuilder = inject(FormBuilder);
 
   // Sinal para armazenar os filtros aplicados, permitindo que o componente rastreie e aplique filtros de transações com base nos valores do formulário de filtro.
-  private readonly appliedFilters = signal<TransactionFilters>({});
+  protected readonly appliedFilters = signal<TransactionFilters>({});
+  protected readonly isReportExportOpen = signal(false);
   protected readonly hasAppliedFilters = computed(() => Object.values(this.appliedFilters()).some(Boolean));
 
   // Sinais para controlar o estado do formulário de transação, incluindo se o formulário está aberto, se está sendo enviado e mensagens de erro relacionadas ao envio do formulário.

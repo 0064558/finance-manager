@@ -723,8 +723,9 @@ Valores ou totais que perderiam centavos na precisão numérica do Excel retorna
 `400` com `code: XLSX_PRECISION_EXCEEDED`, sem arquivo parcial. Reduza o recorte
 ou utilize CSV para preservar esses valores decimais completos.
 
-CSV, XLSX e PDF estão disponíveis na API. A interface de exportação continua
-prevista na [especificação](../docs/relatorios-exportacao-spec.md).
+CSV, XLSX e PDF estão disponíveis na API e no diálogo **Exportar relatório**
+da tela de Transações. As regras e evidências estão na
+[especificação](../docs/relatorios-exportacao-spec.md).
 
 ### Resumo financeiro por período
 

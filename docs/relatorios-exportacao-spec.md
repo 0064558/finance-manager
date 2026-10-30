@@ -1,6 +1,6 @@
 # Exportação de relatórios — mini especificação
 
-**Status:** API CSV, XLSX e PDF concluídas; interface pendente.
+**Status:** MVP implementado na API e na interface, com validação registrada abaixo.
 
 **Data:** 30/10/2026. **Primeira entrega:** relatório de movimentações em PDF, Excel (.xlsx) e CSV.
 
@@ -11,8 +11,8 @@ conferência, organização e compartilhamento fora do Finance Manager (DinDim).
 
 Antes desta funcionalidade, o projeto já possuía autenticação JWT, filtros por
 período/tipo/conta/categoria, listagem paginada e relatórios JSON de resumo,
-categorias, fluxo de caixa e saldos. A API agora exporta CSV, XLSX e PDF;
-a interface de exportação continua na etapa seguinte.
+categorias, fluxo de caixa e saldos. A API exporta CSV, XLSX e PDF, e a tela de
+Transações oferece o diálogo de exportação nos três formatos.
 
 Referências: [ReportController](../finance-manager-api/src/main/java/com/rodrigs/finance_manager_api/report/controller/ReportController.java),
 [ReportService](../finance-manager-api/src/main/java/com/rodrigs/finance_manager_api/report/service/ReportService.java),
@@ -205,7 +205,7 @@ O CSV segue a decisão sem dependência adicional registrada na seção 8.
 - [x] CSV preserva acentos, delimitadores, aspas e descrições com várias linhas,
   neutraliza fórmulas e, sem resultados, contém apenas o cabeçalho.
 - [x] PDF com várias páginas, acentos e descrições longas passa por revisão visual.
-- [ ] Interface cobre geração, sucesso, falha JSON em resposta `Blob`, sessão
+- [x] Interface cobre geração, sucesso, falha JSON em resposta `Blob`, sessão
   expirada, teclado, celular e aviso de valores completos.
 
 Testes previstos: regras de consulta/cálculo e limites; integração HTTP com JWT
@@ -232,8 +232,8 @@ renderização. Os totais usam essa mesma cópia.
 - [x] Validar CSV com testes unitários e HTTP real em PostgreSQL descartável.
 - [x] Implementar XLSX com células tipadas e validar conteúdo.
 - [x] Implementar PDF e validar conteúdo e paginação visualmente.
-- [ ] Implementar diálogo Angular, download e estados de erro/privacidade.
-- [ ] Executar verificações completas do MVP e conferir os critérios de aceite.
+- [x] Implementar diálogo Angular, download e estados de erro/privacidade.
+- [x] Executar verificações do MVP e conferir os critérios de aceite.
 
 **Evidência da etapa CSV (30/10/2026):** `mvnw.cmd -B verify` passou com 246 testes,
 sem falhas ou testes ignorados, e cobertura mínima exigida atendida. Os novos
@@ -273,8 +273,34 @@ cabeçalhos, rodapés e texto sem cortes ou sobreposições. A incorporação da
 fontes também foi verificada. As amostras ficam apenas em `target/pdf-qa` quando
 os testes são executados com `-Dpdf.preview=true`; não contêm dados reais.
 
-**Disponibilidade por etapa:** `format=CSV`, `format=XLSX` e `format=PDF` estão
-disponíveis na API.
-Não há botão de exportação na interface nesta etapa.
+**Evidência da interface (30/10/2026):** 109 testes passaram em 24 arquivos do
+frontend e `npm run build` foi aprovado. O build mantém avisos de tamanho do
+bundle inicial e de estilos de algumas telas, sem exceder os limites de erro.
+No ambiente Windows desta execução, o runner usou uma configuração temporária
+com `maxWorkers: 2` e TEMP/TMP dentro de `.angular/test-temp`; nenhuma dependência
+nova ou configuração permanente de teste foi adicionada ao frontend.
+
+[ReportExportApi](../finance-manager-web/src/app/core/report-export.spec.ts) cobre
+autenticação, parâmetros sem paginação, resposta binária, erros JSON em Blob,
+nome do arquivo, início do download e liberação da URL temporária.
+[ReportExportDialog](../finance-manager-web/src/app/pages/transactions/report-export-dialog/report-export-dialog.spec.ts)
+cobre período padrão, datas incompletas/invertidas, limite de 366 dias, tipos e
+categorias, aviso de privacidade, envio duplicado, demora, erros, sessão expirada,
+foco e cancelamento da assinatura ao sair da tela. O
+[teste de Transações](../finance-manager-web/src/app/pages/transactions/transactions.spec.ts)
+confirma a cópia dos filtros aplicados, ignorando alterações ainda não aplicadas
+e sem alterar a listagem durante os ajustes da exportação.
+
+Uma prévia local com dados fictícios e serviços substituídos foi inspecionada
+no navegador em desktop e celular de 390 px, nos temas claro e escuro. Foram
+conferidos foco inicial, correção de datas, troca de formato, geração, falha,
+preservação dos filtros, Escape, restauração do foco e rolagem interna sem
+rolagem horizontal ou movimentação do fundo. Os testes HTTP da API são os
+registrados na etapa PDF (274 testes); o fluxo completo navegador + API real
+não foi repetido nesta etapa, que alterou apenas frontend e documentação.
+
+**Disponibilidade:** `format=CSV`, `format=XLSX` e `format=PDF` estão disponíveis
+na API. Na tela de Transações, usar **Exportar relatório**, ajustar o período e
+os filtros e escolher **Baixar PDF**, **Baixar Excel** ou **Baixar CSV**.
 Uma futura entrada no dashboard poderá preencher o período do mês selecionado,
 reutilizando o mesmo fluxo de exportação.
