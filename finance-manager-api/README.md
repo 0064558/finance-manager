@@ -671,8 +671,37 @@ Authorization: Bearer seu_access_token
 
 | Método | Endpoint | Status de sucesso | Finalidade |
 | --- | --- | --- | --- |
+| `GET` | `/api/v1/reports/export` | `200 OK` | Exporta todas as movimentações filtradas em CSV. |
 | `GET` | `/api/v1/reports/summary` | `200 OK` | Retorna receitas, despesas e saldo líquido de um período. |
 | `GET` | `/api/v1/reports/balances` | `200 OK` | Retorna o saldo atual de cada conta e o total consolidado. |
+
+### Exportação CSV
+
+```http
+GET /api/v1/reports/export?format=CSV&startDate=2026-10-01&endDate=2026-10-31
+Authorization: Bearer seu_access_token
+```
+
+`format`, `startDate` e `endDate` são obrigatórios. Os filtros opcionais são
+`type` (`INCOME`/`EXPENSE`), `accountId` e `categoryId`. O período é inclusivo,
+com máximo de 366 dias e 5.000 transações. Exporta todos os resultados filtrados,
+ordenados por data e ID, independentemente da paginação da listagem.
+
+A resposta `200` contém um arquivo `.csv` (`text/csv; charset=UTF-8`), com
+`Content-Disposition: attachment` e `Cache-Control: no-store`. O nome inclui o
+período. O cabeçalho de download é exposto pelo CORS para leitura no frontend.
+O arquivo usa UTF-8 com BOM, separador `;`, datas ISO e vírgula decimal; contém
+apenas o cabeçalho e as movimentações, sem linhas extras de resumo. Textos que
+podem ser interpretados como fórmulas recebem um apóstrofo de proteção.
+
+Datas/parâmetros inválidos retornam `400`; limites excedidos retornam `400` com
+`code: REPORT_EXPORT_LIMIT_EXCEEDED`. Sem autenticação, retorna `401`. Conta ou
+categoria inexistente ou de outro usuário retorna `404`. Erros seguem
+`application/problem+json`, sem arquivo parcial. Um recorte vazio gera CSV
+apenas com cabeçalho.
+
+Nesta etapa, somente CSV está disponível na API. PDF, XLSX e a interface de
+exportação estão previstos na [especificação](../docs/relatorios-exportacao-spec.md).
 
 ### Resumo financeiro por período
 

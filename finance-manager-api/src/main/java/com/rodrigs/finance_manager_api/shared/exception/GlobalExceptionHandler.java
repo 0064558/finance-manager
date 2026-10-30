@@ -103,6 +103,12 @@ public class GlobalExceptionHandler {
                 "INVALID_TRANSACTION_DATE_RANGE", request);
     }
 
+    @ExceptionHandler(ReportExportLimitExceededException.class)
+    public ProblemDetail handleReportExportLimit(ReportExportLimitExceededException exception, HttpServletRequest request) {
+        return problem(HttpStatus.BAD_REQUEST, "Report export limit exceeded",
+                exception.getMessage(), "REPORT_EXPORT_LIMIT_EXCEEDED", request);
+    }
+
     @ExceptionHandler(TransactionNotFoundException.class)
     public ProblemDetail handleTransactionNotFound(TransactionNotFoundException exception, HttpServletRequest request) {
         return problem(HttpStatus.NOT_FOUND, "Transaction not found",

@@ -1,0 +1,80 @@
+package com.rodrigs.finance_manager_api.report.controller;
+
+import com.rodrigs.finance_manager_api.auth.AuthenticatedUser;
+import com.rodrigs.finance_manager_api.report.dto.ReportExportFilter;
+import com.rodrigs.finance_manager_api.report.service.CsvReportRenderer;
+import com.rodrigs.finance_manager_api.report.service.ReportExportQueryService;
+import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import java.time.LocalDate;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/reports")
+@Tag(name = "Reports")
+@SecurityRequirement(name = "bearerAuth")
+public class ReportExportController {
+    // Other formats will be added only when their renderers are available.
+    public enum ExportFormat { CSV }
+
+    private final ReportExportQueryService queryService;
+    private final CsvReportRenderer csvRenderer;
+
+    public ReportExportController(ReportExportQueryService queryService, CsvReportRenderer csvRenderer) {
+        this.queryService = queryService;
+        this.csvRenderer = csvRenderer;
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Exporta movimentações em CSV",
+            description = "Exporta todos os resultados filtrados do usuário autenticado, em ordem de data e ID. "
+                    + "Datas inclusivas; máximo de 366 dias e 5000 transações. CSV UTF-8 com BOM e separador ponto e vírgula. "
+                    + "Não inclui linhas de resumo. Apenas CSV está disponível nesta etapa.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Arquivo CSV para download",
+                    content = @Content(mediaType = "text/csv", schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "400", description = "Parâmetro inválido ou limite excedido",
+                    content = @Content(mediaType = "application/problem+json")),
+            @ApiResponse(responseCode = "401", description = "Token ausente ou inválido",
+                    content = @Content(mediaType = "application/problem+json")),
+            @ApiResponse(responseCode = "404", description = "Conta ou categoria não encontrada para o usuário",
+                    content = @Content(mediaType = "application/problem+json")),
+            @ApiResponse(responseCode = "500", description = "Falha inesperada na geração",
+                    content = @Content(mediaType = "application/problem+json"))
+    })
+    public ResponseEntity<byte[]> export(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam("format") ExportFormat format,
+            @RequestParam("startDate") LocalDate startDate,
+            @RequestParam("endDate") LocalDate endDate,
+            @RequestParam(value = "type", required = false) TransactionType type,
+            @RequestParam(value = "accountId", required = false) UUID accountId,
+            @RequestParam(value = "categoryId", required = false) UUID categoryId) {
+        var data = queryService.load(user.id(), new ReportExportFilter(startDate, endDate, type, accountId, categoryId));
+        // Rendering happens after the transactional query service returns a detached snapshot.
+        byte[] body = switch (format) {
+            case CSV -> csvRenderer.render(data);
+        };
+        String filename = "finance-manager_%s_%s.csv".formatted(startDate, endDate);
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(filename).build().toString())
+                .body(body);
+    }
+}

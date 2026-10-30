@@ -153,6 +153,7 @@ Documentação específica:
 - [README da API](finance-manager-api/README.md)
 - [README do frontend](finance-manager-web/README.md)
 - [Diagramas de classes e arquitetura](docs/diagrama-classes.md)
+- [Mini especificação: exportação de relatórios PDF, Excel e CSV](docs/relatorios-exportacao-spec.md)
 - [Modelo de variáveis da API](finance-manager-api/.env.example)
 - [Licença MIT](LICENSE)
 

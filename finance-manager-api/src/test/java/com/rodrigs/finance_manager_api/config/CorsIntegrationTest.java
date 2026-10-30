@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,6 +28,15 @@ class CorsIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Test
+    void shouldExposeDownloadFilenameToConfiguredFrontend() throws Exception {
+        mockMvc.perform(get("/api/v1/reports/export")
+                        .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ALLOWED_ORIGIN))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "Content-Disposition"));
+    }
 
     // Teste para verificar se uma requisição preflight (OPTIONS) de um domínio permitido é aceita e retorna os cabeçalhos CORS corretos
     @Test

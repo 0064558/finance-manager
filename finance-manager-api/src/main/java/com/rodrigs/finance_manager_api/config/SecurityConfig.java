@@ -128,6 +128,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(corsProperties.allowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Content-Type", "Authorization", "Idempotency-Key"));
+        configuration.setExposedHeaders(List.of("Content-Disposition"));
 
         // Cria uma fonte de configuração CORS baseada em URL e registra a configuração para os endpoints da API
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
