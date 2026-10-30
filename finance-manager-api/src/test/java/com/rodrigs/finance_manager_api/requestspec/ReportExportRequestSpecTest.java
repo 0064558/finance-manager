@@ -5,10 +5,16 @@ import com.rodrigs.finance_manager_api.report.service.ReportExportQueryService;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.support.HttpRequestSpec;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import java.net.URI;
+import java.io.ByteArrayInputStream;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -86,16 +92,18 @@ class ReportExportRequestSpecTest extends HttpRequestSpec {
         assertThat(data.netBalance()).isEqualByComparingTo("-10");
     }
 
-    @Test
-    void shouldHideForeignAndMissingFilterResources() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"CSV", "XLSX"})
+    void shouldHideForeignAndMissingFilterResources(String format) throws Exception {
         var owner = user();
         var other = user();
         String foreignAccount = account(other, "Privada", "0");
         String foreignCategory = category(other, "Privada", "EXPENSE");
-        request("GET", PATH + "&accountId=" + foreignAccount, owner.token(), null).status(404);
-        request("GET", PATH + "&categoryId=" + foreignCategory, owner.token(), null).status(404);
-        request("GET", PATH + "&accountId=" + UUID.randomUUID(), owner.token(), null).status(404);
-        request("GET", PATH + "&categoryId=" + UUID.randomUUID(), owner.token(), null).status(404);
+        String path = PATH.replace("format=CSV", "format=" + format);
+        request("GET", path + "&accountId=" + foreignAccount, owner.token(), null).status(404);
+        request("GET", path + "&categoryId=" + foreignCategory, owner.token(), null).status(404);
+        request("GET", path + "&accountId=" + UUID.randomUUID(), owner.token(), null).status(404);
+        request("GET", path + "&categoryId=" + UUID.randomUUID(), owner.token(), null).status(404);
     }
 
     @Test
@@ -104,25 +112,29 @@ class ReportExportRequestSpecTest extends HttpRequestSpec {
         assertThat(download(owner.token(), PATH).body()).isEqualTo(HEADER);
         request("GET", PATH, null, null).status(401);
         request("GET", PATH, "invalid-token", null).status(401);
+        request("GET", PATH.replace("format=CSV", "format=XLSX"), null, null).status(401);
+        request("GET", PATH.replace("format=CSV", "format=XLSX"), "invalid-token", null).status(401);
     }
 
-    @Test
-    void shouldRejectInvalidParametersAndAcceptExactly366Days() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"CSV", "XLSX"})
+    void shouldRejectInvalidParametersAndAcceptExactly366Days(String format) throws Exception {
         var owner = user();
         for (String query : new String[]{
                 "format=CSV&startDate=2025-01-01", "startDate=2025-01-01&endDate=2025-01-31",
                 "format=CSV&startDate=invalid&endDate=2025-01-31",
                 "format=PDF&startDate=2025-01-01&endDate=2025-01-31",
                 "format=INVALID&startDate=2025-01-01&endDate=2025-01-31"}) {
-            request("GET", REPORTS + "/export?" + query, owner.token(), null).status(400);
+            request("GET", REPORTS + "/export?" + query.replace("format=CSV", "format=" + format), owner.token(), null).status(400);
         }
-        request("GET", PATH + "&type=INVALID", owner.token(), null).status(400);
-        request("GET", PATH + "&accountId=invalid", owner.token(), null).status(400);
-        var inverted = request("GET", REPORTS + "/export?format=CSV&startDate=" + END + "&endDate=" + START, owner.token(), null);
+        String path = PATH.replace("format=CSV", "format=" + format);
+        request("GET", path + "&type=INVALID", owner.token(), null).status(400);
+        request("GET", path + "&accountId=invalid", owner.token(), null).status(400);
+        var inverted = request("GET", REPORTS + "/export?format=" + format + "&startDate=" + END + "&endDate=" + START, owner.token(), null);
         inverted.status(400);
         assertThat(inverted.text("code")).isEqualTo("INVALID_TRANSACTION_DATE_RANGE");
-        request("GET", REPORTS + "/export?format=CSV&startDate=" + START + "&endDate=" + START.plusDays(365), owner.token(), null).status(200);
-        var excess = request("GET", REPORTS + "/export?format=CSV&startDate=" + START + "&endDate=" + START.plusDays(366), owner.token(), null);
+        request("GET", REPORTS + "/export?format=" + format + "&startDate=" + START + "&endDate=" + START.plusDays(365), owner.token(), null).status(200);
+        var excess = request("GET", REPORTS + "/export?format=" + format + "&startDate=" + START + "&endDate=" + START.plusDays(366), owner.token(), null);
         excess.status(400);
         assertThat(excess.text("code")).isEqualTo("REPORT_EXPORT_LIMIT_EXCEEDED");
     }
@@ -139,12 +151,22 @@ class ReportExportRequestSpecTest extends HttpRequestSpec {
         var response = download(owner.token(), PATH);
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().lines().count()).isEqualTo(5001);
+        var xlsx = downloadXlsx(owner.token(), "");
+        assertThat(xlsx.statusCode()).isEqualTo(200);
+        try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(xlsx.body()))) {
+            assertThat(workbook.getSheet("Transações").getLastRowNum()).isEqualTo(5000);
+            assertThat(workbook.getSheet("Resumo").getRow(10).getCell(1).getNumericCellValue()).isEqualTo(5000);
+        }
         transaction(owner, account, category, "INCOME", "1", START);
         var excess = download(owner.token(), PATH);
         assertThat(excess.statusCode()).isEqualTo(400);
         assertThat(excess.headers().firstValue("Content-Type").orElseThrow()).contains("application/problem+json");
         assertThat(excess.headers().firstValue("Content-Disposition")).isEmpty();
         assertThat(excess.body()).contains("REPORT_EXPORT_LIMIT_EXCEEDED").doesNotContain(HEADER);
+        var xlsxExcess = downloadXlsx(owner.token(), "");
+        assertThat(xlsxExcess.statusCode()).isEqualTo(400);
+        assertThat(xlsxExcess.headers().firstValue("Content-Disposition")).isEmpty();
+        assertThat(new String(xlsxExcess.body(), StandardCharsets.UTF_8)).contains("REPORT_EXPORT_LIMIT_EXCEEDED");
     }
 
     @Test
@@ -161,6 +183,98 @@ class ReportExportRequestSpecTest extends HttpRequestSpec {
         assertThat(body).contains("\"Café; \"\"especial\"\"\nlinha 2\"", "'  +SUM(A1)", "\"Conta; principal\"", "'=1+1");
         assertThat(body.indexOf(";" + expectedAmounts.get(0).toPlainString().replace('.', ',') + "\r\n"))
                 .isLessThan(body.indexOf(";" + expectedAmounts.get(1).toPlainString().replace('.', ',') + "\r\n"));
+    }
+
+    @Test
+    void shouldDownloadTypedXlsxWithTheSameRowsTotalsAndFiltersAsCsv() throws Exception {
+        var owner = user();
+        String account = account(owner, "Conta principal", "999.00");
+        String income = category(owner, "Salário", "INCOME");
+        String expense = category(owner, "Alimentação", "EXPENSE");
+        transaction(owner, account, income, "INCOME", "1000", START);
+        String expenseId = transaction(owner, account, expense, "EXPENSE", "250.50", END);
+        transaction(owner, account, expense, "EXPENSE", "20", START.minusDays(1));
+        jdbc.update("UPDATE transactions SET description = ? WHERE id = ?", "=1+1", UUID.fromString(expenseId));
+        var other = user();
+        transaction(other, account(other, "Conta privada", "0"), category(other, "Privada", "INCOME"), "INCOME", "999", START);
+
+        var response = downloadXlsx(owner.token(), "");
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.headers().firstValue("Content-Type"))
+                .hasValue("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        assertThat(response.headers().firstValue("Content-Disposition"))
+                .hasValue("attachment; filename=\"finance-manager_2025-01-01_2025-01-31.xlsx\"");
+        assertThat(response.headers().firstValue("Cache-Control")).hasValue("no-store");
+        try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(response.body()))) {
+            var summary = workbook.getSheet("Resumo");
+            assertThat(summary.getRow(10).getCell(1).getNumericCellValue()).isEqualTo(2);
+            assertThat(summary.getRow(11).getCell(1).getNumericCellValue()).isEqualTo(1000);
+            assertThat(summary.getRow(12).getCell(1).getNumericCellValue()).isEqualTo(250.5);
+            assertThat(summary.getRow(13).getCell(1).getNumericCellValue()).isEqualTo(749.5);
+            var details = workbook.getSheet("Transações");
+            assertThat(details.getLastRowNum()).isEqualTo(2);
+            assertThat(DateUtil.isCellDateFormatted(details.getRow(1).getCell(0))).isTrue();
+            assertThat(details.getRow(1).getCell(0).getLocalDateTimeCellValue().toLocalDate()).isEqualTo(START);
+            assertThat(details.getRow(2).getCell(0).getLocalDateTimeCellValue().toLocalDate()).isEqualTo(END);
+            assertThat(details.getRow(2).getCell(1).getCellType()).isEqualTo(CellType.STRING);
+            assertThat(details.getRow(2).getCell(1).getStringCellValue()).isEqualTo("=1+1");
+            assertThat(details.getRow(2).getCell(3).getStringCellValue()).isEqualTo("Conta principal");
+            assertThat(details.getRow(2).getCell(4).getStringCellValue()).isEqualTo("Alimentação");
+            assertThat(details.getRow(2).getCell(5).getNumericCellValue()).isEqualTo(250.5);
+        }
+        assertThat(download(owner.token(), PATH).body()).isEqualTo(HEADER
+                + "2025-01-01;;Receita;Conta principal;Salário;1000,00\r\n"
+                + "2025-01-31;'=1+1;Despesa;Conta principal;Alimentação;250,50\r\n");
+        var filtered = downloadXlsx(owner.token(), "&type=EXPENSE&accountId=" + account + "&categoryId=" + expense);
+        assertThat(filtered.statusCode()).isEqualTo(200);
+        try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(filtered.body()))) {
+            var summary = workbook.getSheet("Resumo");
+            assertThat(summary.getRow(4).getCell(1).getStringCellValue()).isEqualTo("Despesa");
+            assertThat(summary.getRow(5).getCell(1).getStringCellValue()).isEqualTo("Conta principal");
+            assertThat(summary.getRow(6).getCell(1).getStringCellValue()).isEqualTo("Alimentação");
+            assertThat(summary.getRow(11).getCell(1).getNumericCellValue()).isZero();
+            assertThat(summary.getRow(13).getCell(1).getNumericCellValue()).isEqualTo(-250.5);
+            assertThat(workbook.getSheet("Transações").getLastRowNum()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldKeepSelectedNamesInEmptyXlsx() throws Exception {
+        var owner = user();
+        String account = account(owner, "@Conta", "0");
+        String category = category(owner, "=Categoria", "INCOME");
+        var response = downloadXlsx(owner.token(), "&accountId=" + account + "&categoryId=" + category);
+        assertThat(response.statusCode()).isEqualTo(200);
+        try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(response.body()))) {
+            assertThat(workbook.getSheet("Resumo").getRow(5).getCell(1).getStringCellValue()).isEqualTo("@Conta");
+            assertThat(workbook.getSheet("Resumo").getRow(6).getCell(1).getStringCellValue()).isEqualTo("=Categoria");
+            assertThat(workbook.getSheet("Resumo").getRow(13).getCell(1).getNumericCellValue()).isZero();
+            assertThat(workbook.getSheet("Resumo").getRow(15).getCell(1).getStringCellValue()).contains("Sem movimentações");
+            assertThat(workbook.getSheet("Transações").getPhysicalNumberOfRows()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void shouldRejectXlsxPrecisionLossWithoutAttachmentAndKeepCsvAvailable() throws Exception {
+        var owner = user();
+        transaction(owner, account(owner, "Conta", "0"), category(owner, "Salário", "INCOME"),
+                "INCOME", "10000000000000.01", START);
+        var response = downloadXlsx(owner.token(), "");
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.headers().firstValue("Content-Type").orElseThrow()).contains("application/problem+json");
+        assertThat(response.headers().firstValue("Content-Disposition")).isEmpty();
+        assertThat(new String(response.body(), StandardCharsets.UTF_8)).contains("XLSX_PRECISION_EXCEEDED");
+        var csv = download(owner.token(), PATH);
+        assertThat(csv.statusCode()).isEqualTo(200);
+        assertThat(csv.body()).contains("10000000000000,01");
+    }
+
+    private HttpResponse<byte[]> downloadXlsx(String token, String filters) throws Exception {
+        var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + exportPort
+                        + PATH.replace("format=CSV", "format=XLSX") + filters))
+                .timeout(Duration.ofSeconds(30)).header("Authorization", "Bearer " + token)
+                .header("Accept", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").GET().build();
+        return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofByteArray());
     }
 
     private HttpResponse<String> download(String token, String path) throws Exception {

@@ -5,7 +5,12 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /** Detached snapshot shared by all export formats. Totals always come from the exported rows. */
-public record ReportExportData(ReportExportFilter filter, List<ReportExportRow> rows) {
+public record ReportExportData(ReportExportFilter filter, List<ReportExportRow> rows,
+                               String accountName, String categoryName) {
+    public ReportExportData(ReportExportFilter filter, List<ReportExportRow> rows) {
+        this(filter, rows, null, null);
+    }
+
     public ReportExportData {
         rows = List.copyOf(rows);
     }

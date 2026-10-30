@@ -38,18 +38,16 @@ public class ReportExportQueryService {
         if (ChronoUnit.DAYS.between(filter.startDate(), filter.endDate()) + 1 > MAX_DAYS) {
             throw new ReportExportLimitExceededException();
         }
-        if (filter.accountId() != null) {
-            accounts.findByIdAndUserId(filter.accountId(), userId).orElseThrow(FinancialAccountNotFoundException::new);
-        }
-        if (filter.categoryId() != null) {
-            categories.findByIdAndUserId(filter.categoryId(), userId).orElseThrow(CategoryNotFoundException::new);
-        }
+        String accountName = filter.accountId() == null ? null : accounts.findByIdAndUserId(filter.accountId(), userId)
+                .orElseThrow(FinancialAccountNotFoundException::new).getName();
+        String categoryName = filter.categoryId() == null ? null : categories.findByIdAndUserId(filter.categoryId(), userId)
+                .orElseThrow(CategoryNotFoundException::new).getName();
         var transactions = repository.findRows(userId, filter, MAX_ROWS + 1);
         if (transactions.size() > MAX_ROWS) {
             throw new ReportExportLimitExceededException();
         }
         var rows = transactions.stream().map(t -> new ReportExportRow(t.getOccurredOn(), t.getDescription(),
                 t.getType(), t.getFinancialAccount().getName(), t.getCategory().getName(), t.getAmount())).toList();
-        return new ReportExportData(filter, rows);
+        return new ReportExportData(filter, rows, accountName, categoryName);
     }
 }

@@ -30,6 +30,7 @@ aplicação.
 - Registro, consulta, atualização e exclusão de transações.
 - Paginação e filtros de transações por período, tipo, conta e categoria.
 - Resumo financeiro por período e saldos consolidados.
+- Exportação de movimentações em CSV e Excel (.xlsx) pela API.
 - Isolamento completo dos dados por usuário autenticado.
 - Guia inicial pelas principais telas, com conclusão registrada por versão para cada usuário.
 

@@ -4,6 +4,7 @@ import com.rodrigs.finance_manager_api.auth.AuthenticatedUser;
 import com.rodrigs.finance_manager_api.report.dto.ReportExportFilter;
 import com.rodrigs.finance_manager_api.report.service.CsvReportRenderer;
 import com.rodrigs.finance_manager_api.report.service.ReportExportQueryService;
+import com.rodrigs.finance_manager_api.report.service.XlsxReportRenderer;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
+import java.io.IOException;
+import java.util.Locale;
 import java.util.UUID;
 
 @RestController
@@ -31,24 +34,31 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class ReportExportController {
     // Other formats will be added only when their renderers are available.
-    public enum ExportFormat { CSV }
+    public enum ExportFormat { CSV, XLSX }
 
     private final ReportExportQueryService queryService;
     private final CsvReportRenderer csvRenderer;
+    private final XlsxReportRenderer xlsxRenderer;
 
-    public ReportExportController(ReportExportQueryService queryService, CsvReportRenderer csvRenderer) {
+    public ReportExportController(ReportExportQueryService queryService, CsvReportRenderer csvRenderer,
+                                  XlsxReportRenderer xlsxRenderer) {
         this.queryService = queryService;
         this.csvRenderer = csvRenderer;
+        this.xlsxRenderer = xlsxRenderer;
     }
 
     @GetMapping("/export")
-    @Operation(summary = "Exporta movimentações em CSV",
+    @Operation(summary = "Exporta movimentações em CSV ou Excel",
             description = "Exporta todos os resultados filtrados do usuário autenticado, em ordem de data e ID. "
                     + "Datas inclusivas; máximo de 366 dias e 5000 transações. CSV UTF-8 com BOM e separador ponto e vírgula. "
-                    + "Não inclui linhas de resumo. Apenas CSV está disponível nesta etapa.")
+                    + "CSV não inclui resumo; XLSX contém abas Resumo e Transações, com datas e valores tipados. "
+                    + "XLSX rejeita valores ou totais que perderiam centavos no Excel (XLSX_PRECISION_EXCEEDED).")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Arquivo CSV para download",
-                    content = @Content(mediaType = "text/csv", schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "200", description = "Arquivo CSV ou XLSX para download",
+                    content = {
+                            @Content(mediaType = "text/csv", schema = @Schema(type = "string", format = "binary")),
+                            @Content(mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                    schema = @Schema(type = "string", format = "binary"))}),
             @ApiResponse(responseCode = "400", description = "Parâmetro inválido ou limite excedido",
                     content = @Content(mediaType = "application/problem+json")),
             @ApiResponse(responseCode = "401", description = "Token ausente ou inválido",
@@ -65,14 +75,19 @@ public class ReportExportController {
             @RequestParam("endDate") LocalDate endDate,
             @RequestParam(value = "type", required = false) TransactionType type,
             @RequestParam(value = "accountId", required = false) UUID accountId,
-            @RequestParam(value = "categoryId", required = false) UUID categoryId) {
+            @RequestParam(value = "categoryId", required = false) UUID categoryId) throws IOException {
         var data = queryService.load(user.id(), new ReportExportFilter(startDate, endDate, type, accountId, categoryId));
         // Rendering happens after the transactional query service returns a detached snapshot.
         byte[] body = switch (format) {
             case CSV -> csvRenderer.render(data);
+            case XLSX -> xlsxRenderer.render(data);
         };
-        String filename = "finance-manager_%s_%s.csv".formatted(startDate, endDate);
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+        String contentType = switch (format) {
+            case CSV -> "text/csv; charset=UTF-8";
+            case XLSX -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        };
+        String filename = "finance-manager_%s_%s.%s".formatted(startDate, endDate, format.name().toLowerCase(Locale.ROOT));
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType))
                 .cacheControl(CacheControl.noStore())
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(filename).build().toString())
                 .body(body);

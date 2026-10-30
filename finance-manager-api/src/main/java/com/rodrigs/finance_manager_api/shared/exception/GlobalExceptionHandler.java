@@ -103,6 +103,12 @@ public class GlobalExceptionHandler {
                 "INVALID_TRANSACTION_DATE_RANGE", request);
     }
 
+    @ExceptionHandler(XlsxPrecisionExceededException.class)
+    public ProblemDetail handleXlsxPrecision(XlsxPrecisionExceededException exception, HttpServletRequest request) {
+        return problem(HttpStatus.BAD_REQUEST, "XLSX precision exceeded",
+                exception.getMessage(), "XLSX_PRECISION_EXCEEDED", request);
+    }
+
     @ExceptionHandler(ReportExportLimitExceededException.class)
     public ProblemDetail handleReportExportLimit(ReportExportLimitExceededException exception, HttpServletRequest request) {
         return problem(HttpStatus.BAD_REQUEST, "Report export limit exceeded",
