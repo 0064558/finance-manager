@@ -671,24 +671,25 @@ Authorization: Bearer seu_access_token
 
 | Método | Endpoint | Status de sucesso | Finalidade |
 | --- | --- | --- | --- |
-| `GET` | `/api/v1/reports/export` | `200 OK` | Exporta todas as movimentações filtradas em CSV ou Excel (.xlsx). |
+| `GET` | `/api/v1/reports/export` | `200 OK` | Exporta todas as movimentações filtradas em CSV, Excel (.xlsx) ou PDF. |
 | `GET` | `/api/v1/reports/summary` | `200 OK` | Retorna receitas, despesas e saldo líquido de um período. |
 | `GET` | `/api/v1/reports/balances` | `200 OK` | Retorna o saldo atual de cada conta e o total consolidado. |
 
-### Exportação CSV e Excel (XLSX)
+### Exportação CSV, Excel (XLSX) e PDF
 
 ```http
 GET /api/v1/reports/export?format=CSV&startDate=2026-10-01&endDate=2026-10-31
 Authorization: Bearer seu_access_token
 ```
 
-`format` (`CSV` ou `XLSX`), `startDate` e `endDate` são obrigatórios. Os filtros opcionais são
+`format` (`CSV`, `XLSX` ou `PDF`), `startDate` e `endDate` são obrigatórios. Os filtros opcionais são
 `type` (`INCOME`/`EXPENSE`), `accountId` e `categoryId`. O período é inclusivo,
 com máximo de 366 dias e 5.000 transações. Exporta todos os resultados filtrados,
 ordenados por data e ID, independentemente da paginação da listagem.
 
-A resposta `200` contém um arquivo `.csv` (`text/csv; charset=UTF-8`) ou `.xlsx`
-(`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`), com
+A resposta `200` contém um arquivo `.csv` (`text/csv; charset=UTF-8`), `.xlsx`
+(`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`) ou `.pdf`
+(`application/pdf`), com
 `Content-Disposition: attachment` e `Cache-Control: no-store`. O nome inclui o
 período. O cabeçalho de download é exposto pelo CORS para leitura no frontend.
 O CSV usa UTF-8 com BOM, separador `;`, datas ISO e vírgula decimal; contém
@@ -700,6 +701,15 @@ Para Excel, use `format=XLSX` com os mesmos filtros. O arquivo inclui as abas
 `Transações` (datas e valores tipados, cabeçalho congelado e autofiltro).
 Textos são preservados como células de texto e não viram fórmulas. A geração
 usa Apache POI em memória, sem arquivos persistidos no servidor.
+
+Para PDF, use `format=PDF` com os mesmos filtros. O relatório contém período,
+filtros por nome, geração em UTC, quantidade, receitas, despesas, saldo líquido
+e todas as movimentações. Usa A4 paisagem, fontes incorporadas, cabeçalhos
+repetidos e rodapé com página atual/total. Descrições longas podem continuar
+na página seguinte. OpenPDF gera o arquivo em memória e apresenta textos
+literalmente, sem interpretar HTML ou criar links. O recorte vazio exibe
+totais zerados e a indicação de ausência de movimentações. Valores são
+formatados diretamente de `BigDecimal`, sem a restrição de precisão do XLSX.
 
 Datas/parâmetros inválidos retornam `400`; limites excedidos retornam `400` com
 `code: REPORT_EXPORT_LIMIT_EXCEEDED`. Sem autenticação, retorna `401`. Conta ou
@@ -713,8 +723,8 @@ Valores ou totais que perderiam centavos na precisão numérica do Excel retorna
 `400` com `code: XLSX_PRECISION_EXCEEDED`, sem arquivo parcial. Reduza o recorte
 ou utilize CSV para preservar esses valores decimais completos.
 
-Nesta etapa, CSV e XLSX estão disponíveis na API. PDF e a interface de
-exportação estão previstos na [especificação](../docs/relatorios-exportacao-spec.md).
+CSV, XLSX e PDF estão disponíveis na API. A interface de exportação continua
+prevista na [especificação](../docs/relatorios-exportacao-spec.md).
 
 ### Resumo financeiro por período
 

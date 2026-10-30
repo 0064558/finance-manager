@@ -10,6 +10,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openpdf.text.pdf.PdfReader;
+import org.openpdf.text.pdf.parser.PdfTextExtractor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -93,7 +95,7 @@ class ReportExportRequestSpecTest extends HttpRequestSpec {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"CSV", "XLSX"})
+    @ValueSource(strings = {"CSV", "XLSX", "PDF"})
     void shouldHideForeignAndMissingFilterResources(String format) throws Exception {
         var owner = user();
         var other = user();
@@ -114,16 +116,17 @@ class ReportExportRequestSpecTest extends HttpRequestSpec {
         request("GET", PATH, "invalid-token", null).status(401);
         request("GET", PATH.replace("format=CSV", "format=XLSX"), null, null).status(401);
         request("GET", PATH.replace("format=CSV", "format=XLSX"), "invalid-token", null).status(401);
+        request("GET", PATH.replace("format=CSV", "format=PDF"), null, null).status(401);
+        request("GET", PATH.replace("format=CSV", "format=PDF"), "invalid-token", null).status(401);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"CSV", "XLSX"})
+    @ValueSource(strings = {"CSV", "XLSX", "PDF"})
     void shouldRejectInvalidParametersAndAcceptExactly366Days(String format) throws Exception {
         var owner = user();
         for (String query : new String[]{
                 "format=CSV&startDate=2025-01-01", "startDate=2025-01-01&endDate=2025-01-31",
                 "format=CSV&startDate=invalid&endDate=2025-01-31",
-                "format=PDF&startDate=2025-01-01&endDate=2025-01-31",
                 "format=INVALID&startDate=2025-01-01&endDate=2025-01-31"}) {
             request("GET", REPORTS + "/export?" + query.replace("format=CSV", "format=" + format), owner.token(), null).status(400);
         }
@@ -157,6 +160,12 @@ class ReportExportRequestSpecTest extends HttpRequestSpec {
             assertThat(workbook.getSheet("Transações").getLastRowNum()).isEqualTo(5000);
             assertThat(workbook.getSheet("Resumo").getRow(10).getCell(1).getNumericCellValue()).isEqualTo(5000);
         }
+        var pdf = downloadPdf(owner.token(), "");
+        assertThat(pdf.statusCode()).isEqualTo(200);
+        try (var reader = new PdfReader(pdf.body())) {
+            assertThat(reader.getNumberOfPages()).isGreaterThan(1);
+            assertThat(new PdfTextExtractor(reader).getTextFromPage(1)).contains("5000", "R$ 5.000,00");
+        }
         transaction(owner, account, category, "INCOME", "1", START);
         var excess = download(owner.token(), PATH);
         assertThat(excess.statusCode()).isEqualTo(400);
@@ -167,6 +176,10 @@ class ReportExportRequestSpecTest extends HttpRequestSpec {
         assertThat(xlsxExcess.statusCode()).isEqualTo(400);
         assertThat(xlsxExcess.headers().firstValue("Content-Disposition")).isEmpty();
         assertThat(new String(xlsxExcess.body(), StandardCharsets.UTF_8)).contains("REPORT_EXPORT_LIMIT_EXCEEDED");
+        var pdfExcess = downloadPdf(owner.token(), "");
+        assertThat(pdfExcess.statusCode()).isEqualTo(400);
+        assertThat(pdfExcess.headers().firstValue("Content-Disposition")).isEmpty();
+        assertThat(new String(pdfExcess.body(), StandardCharsets.UTF_8)).contains("REPORT_EXPORT_LIMIT_EXCEEDED");
     }
 
     @Test
@@ -267,6 +280,64 @@ class ReportExportRequestSpecTest extends HttpRequestSpec {
         var csv = download(owner.token(), PATH);
         assertThat(csv.statusCode()).isEqualTo(200);
         assertThat(csv.body()).contains("10000000000000,01");
+        var pdf = downloadPdf(owner.token(), "");
+        assertThat(pdf.statusCode()).isEqualTo(200);
+        try (var reader = new PdfReader(pdf.body())) {
+            assertThat(new PdfTextExtractor(reader).getTextFromPage(1)).contains("R$ 10.000.000.000.000,01");
+        }
+    }
+
+    @Test
+    void shouldDownloadPdfWithSummaryFiltersAndOnlyOwnedMovements() throws Exception {
+        var owner = user();
+        String account = account(owner, "Conta principal", "999");
+        String income = category(owner, "Salário", "INCOME");
+        String expense = category(owner, "Alimentação", "EXPENSE");
+        String first = transaction(owner, account, income, "INCOME", "1000", START);
+        String last = transaction(owner, account, expense, "EXPENSE", "250.50", END);
+        jdbc.update("UPDATE transactions SET description = 'PUBLICAINCOME' WHERE id = ?", UUID.fromString(first));
+        jdbc.update("UPDATE transactions SET description = 'PUBLICAEXPENSE' WHERE id = ?", UUID.fromString(last));
+        transaction(owner, account, expense, "EXPENSE", "9999", START.minusDays(1));
+        var other = user();
+        transaction(other, account(other, "Conta privada", "0"), category(other, "Privada", "INCOME"), "INCOME", "12345", START);
+        var response = downloadPdf(owner.token(), "");
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.headers().firstValue("Content-Type")).hasValue("application/pdf");
+        assertThat(response.headers().firstValue("Cache-Control")).hasValue("no-store");
+        assertThat(response.headers().firstValue("Content-Disposition"))
+                .hasValue("attachment; filename=\"finance-manager_2025-01-01_2025-01-31.pdf\"");
+        try (var reader = new PdfReader(response.body())) {
+            assertThat(new PdfTextExtractor(reader).getTextFromPage(1)).contains("01/01/2025", "31/01/2025",
+                    "R$ 1.000,00", "R$ 250,50", "R$ 749,50", "PUBLICAINCOME", "PUBLICAEXPENSE", "Página 1 de 1")
+                    .doesNotContain("Conta privada", "Privada", "12.345,00", "9.999,00");
+        }
+        var filtered = downloadPdf(owner.token(), "&type=EXPENSE&accountId=" + account + "&categoryId=" + expense);
+        assertThat(filtered.statusCode()).isEqualTo(200);
+        try (var reader = new PdfReader(filtered.body())) {
+            assertThat(new PdfTextExtractor(reader).getTextFromPage(1)).contains("Tipo: Despesa", "Conta: Conta principal",
+                    "Categoria: Alimentação", "R$ 0,00", "-R$ 250,50", "PUBLICAEXPENSE").doesNotContain("PUBLICAINCOME");
+        }
+    }
+
+    @Test
+    void shouldPreserveSelectedNamesInEmptyPdf() throws Exception {
+        var owner = user();
+        String account = account(owner, "Conta selecionada", "0");
+        String category = category(owner, "Alimentação", "EXPENSE");
+        var response = downloadPdf(owner.token(), "&accountId=" + account + "&categoryId=" + category);
+        assertThat(response.statusCode()).isEqualTo(200);
+        try (var reader = new PdfReader(response.body())) {
+            assertThat(new PdfTextExtractor(reader).getTextFromPage(1)).contains("Conta: Conta selecionada",
+                    "Categoria: Alimentação", "R$ 0,00", "Sem movimentações no período.");
+        }
+    }
+
+    private HttpResponse<byte[]> downloadPdf(String token, String filters) throws Exception {
+        var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + exportPort
+                        + PATH.replace("format=CSV", "format=PDF") + filters))
+                .timeout(Duration.ofSeconds(30)).header("Authorization", "Bearer " + token)
+                .header("Accept", "application/pdf").GET().build();
+        return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofByteArray());
     }
 
     private HttpResponse<byte[]> downloadXlsx(String token, String filters) throws Exception {

@@ -5,6 +5,7 @@ import com.rodrigs.finance_manager_api.report.dto.ReportExportFilter;
 import com.rodrigs.finance_manager_api.report.service.CsvReportRenderer;
 import com.rodrigs.finance_manager_api.report.service.ReportExportQueryService;
 import com.rodrigs.finance_manager_api.report.service.XlsxReportRenderer;
+import com.rodrigs.finance_manager_api.report.service.PdfReportRenderer;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,29 +34,32 @@ import java.util.UUID;
 @Tag(name = "Reports")
 @SecurityRequirement(name = "bearerAuth")
 public class ReportExportController {
-    // Other formats will be added only when their renderers are available.
-    public enum ExportFormat { CSV, XLSX }
+    public enum ExportFormat { CSV, XLSX, PDF }
 
     private final ReportExportQueryService queryService;
     private final CsvReportRenderer csvRenderer;
     private final XlsxReportRenderer xlsxRenderer;
+    private final PdfReportRenderer pdfRenderer;
 
     public ReportExportController(ReportExportQueryService queryService, CsvReportRenderer csvRenderer,
-                                  XlsxReportRenderer xlsxRenderer) {
+                                  XlsxReportRenderer xlsxRenderer, PdfReportRenderer pdfRenderer) {
         this.queryService = queryService;
         this.csvRenderer = csvRenderer;
         this.xlsxRenderer = xlsxRenderer;
+        this.pdfRenderer = pdfRenderer;
     }
 
     @GetMapping("/export")
-    @Operation(summary = "Exporta movimentações em CSV ou Excel",
+    @Operation(summary = "Exporta movimentações em CSV, Excel ou PDF",
             description = "Exporta todos os resultados filtrados do usuário autenticado, em ordem de data e ID. "
                     + "Datas inclusivas; máximo de 366 dias e 5000 transações. CSV UTF-8 com BOM e separador ponto e vírgula. "
                     + "CSV não inclui resumo; XLSX contém abas Resumo e Transações, com datas e valores tipados. "
+                    + "PDF contém resumo e tabela em A4 paisagem, com páginas numeradas. "
                     + "XLSX rejeita valores ou totais que perderiam centavos no Excel (XLSX_PRECISION_EXCEEDED).")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Arquivo CSV ou XLSX para download",
+            @ApiResponse(responseCode = "200", description = "Arquivo CSV, XLSX ou PDF para download",
                     content = {
+                            @Content(mediaType = "application/pdf", schema = @Schema(type = "string", format = "binary")),
                             @Content(mediaType = "text/csv", schema = @Schema(type = "string", format = "binary")),
                             @Content(mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                     schema = @Schema(type = "string", format = "binary"))}),
@@ -81,10 +85,12 @@ public class ReportExportController {
         byte[] body = switch (format) {
             case CSV -> csvRenderer.render(data);
             case XLSX -> xlsxRenderer.render(data);
+            case PDF -> pdfRenderer.render(data);
         };
         String contentType = switch (format) {
             case CSV -> "text/csv; charset=UTF-8";
             case XLSX -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            case PDF -> "application/pdf";
         };
         String filename = "finance-manager_%s_%s.%s".formatted(startDate, endDate, format.name().toLowerCase(Locale.ROOT));
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType))

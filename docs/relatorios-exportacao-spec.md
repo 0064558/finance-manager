@@ -1,6 +1,6 @@
 # Exportação de relatórios — mini especificação
 
-**Status:** API CSV e XLSX concluídas; PDF e interface pendentes.
+**Status:** API CSV, XLSX e PDF concluídas; interface pendente.
 
 **Data:** 30/10/2026. **Primeira entrega:** relatório de movimentações em PDF, Excel (.xlsx) e CSV.
 
@@ -11,8 +11,8 @@ conferência, organização e compartilhamento fora do Finance Manager (DinDim).
 
 Antes desta funcionalidade, o projeto já possuía autenticação JWT, filtros por
 período/tipo/conta/categoria, listagem paginada e relatórios JSON de resumo,
-categorias, fluxo de caixa e saldos. A API agora exporta CSV e XLSX; PDF e a
-interface de exportação continuam nas etapas seguintes.
+categorias, fluxo de caixa e saldos. A API agora exporta CSV, XLSX e PDF;
+a interface de exportação continua na etapa seguinte.
 
 Referências: [ReportController](../finance-manager-api/src/main/java/com/rodrigs/finance_manager_api/report/controller/ReportController.java),
 [ReportService](../finance-manager-api/src/main/java/com/rodrigs/finance_manager_api/report/service/ReportService.java),
@@ -78,6 +78,9 @@ ativa, informar isso no próprio diálogo antes do download.
 
 **PDF:** A4 paisagem, valores em BRL e datas em `dd/MM/yyyy`, cabeçalhos de tabela
 repetidos, páginas numeradas, texto com acentos e descrições longas sem cortes.
+Identificar filtros por nome e geração em UTC; formatar valores diretamente
+de `BigDecimal`, preservando os centavos inclusive em montantes grandes.
+Textos do usuário são literais, sem interpretar HTML, links ou fórmulas.
 **XLSX:** abas `Resumo` e `Transações`, cabeçalho congelado e autofiltro na lista;
 datas e valores como células tipadas, com formato de data e duas casas decimais.
 Campos de texto devem ser gravados como texto, inclusive quando começam com
@@ -171,7 +174,13 @@ leitura do nome do arquivo quando API e frontend estiverem em origens diferentes
 Os limites ainda precisam ser medidos no ambiente de hospedagem. Antes de
 adicionar dependências, escolher bibliotecas PDF/XLSX verificando licença,
 compatibilidade com Java 21/Spring Boot 4, consumo de memória e suporte a fontes.
-A biblioteca PDF e a meta de tempo de geração ainda não estão definidas.
+A meta de tempo de geração ainda não está definida.
+Para PDF, usar OpenPDF 3.0.5 (Java 21+, licença dual LGPL/MPL), com fontes
+Liberation incorporadas de `openpdf-fonts-extra`, distribuídas com a licença
+própria no pacote. Usar tabelas com repetição de cabeçalho e divisão de linhas
+longas entre páginas. Geração e numeração em memória, sem arquivos persistidos.
+Referências: [biblioteca, requisitos e licença](https://github.com/LibrePDF/OpenPDF)
+e [fontes Liberation](https://github.com/LibrePDF/OpenPDF/tree/master/openpdf-fonts-extra).
 Para XLSX, usar Apache POI 6.0.0 (`poi-ooxml`), licença Apache 2.0 e Java 17+,
 compatível com o Java 21 do projeto. Usar `XSSFWorkbook` em memória para o
 limite atual de 5.000 linhas, sem arquivos temporários e com estilos reutilizados;
@@ -183,19 +192,19 @@ O CSV segue a decisão sem dependência adicional registrada na seção 8.
 
 ## 7. Critérios de aceite e validação
 
-- [ ] PDF, XLSX e CSV abrem corretamente e apresentam as mesmas movimentações;
+- [x] PDF, XLSX e CSV abrem corretamente e apresentam as mesmas movimentações;
   totais calculados do CSV coincidem com os resumos do PDF e XLSX.
-- [ ] Exportar uma lista com várias páginas inclui todos os resultados do recorte.
-- [ ] Datas de borda, filtros isolados/combinados e recorte vazio são respeitados.
-- [ ] Com receita de R$ 1.000,00 e despesa de R$ 250,50, saldo líquido é
+- [x] Exportar uma lista com várias páginas inclui todos os resultados do recorte.
+- [x] Datas de borda, filtros isolados/combinados e recorte vazio são respeitados.
+- [x] Com receita de R$ 1.000,00 e despesa de R$ 250,50, saldo líquido é
   R$ 749,50; ao filtrar despesas, receita é zero e saldo líquido é −R$ 250,50.
-- [ ] Requisições sem autenticação e filtros de outro usuário não expõem dados.
-- [ ] Exatamente 366 dias e 5.000 linhas são aceitos; exceder qualquer limite
+- [x] Requisições sem autenticação e filtros de outro usuário não expõem dados.
+- [x] Exatamente 366 dias e 5.000 linhas são aceitos; exceder qualquer limite
   retorna erro e não baixa arquivo parcial.
 - [x] XLSX preserva células numéricas/datas e textos parecidos com fórmulas.
 - [x] CSV preserva acentos, delimitadores, aspas e descrições com várias linhas,
   neutraliza fórmulas e, sem resultados, contém apenas o cabeçalho.
-- [ ] PDF com várias páginas, acentos e descrições longas passa por revisão visual.
+- [x] PDF com várias páginas, acentos e descrições longas passa por revisão visual.
 - [ ] Interface cobre geração, sucesso, falha JSON em resposta `Blob`, sessão
   expirada, teclado, celular e aviso de valores completos.
 
@@ -212,8 +221,8 @@ hospedagem. Para permitir validação incremental, a primeira etapa é consulta
 comum + CSV pela API; o restante do MVP vem nas tarefas seguintes.
 
 O CSV usa um renderizador pequeno sem dependência adicional, com tratamento
-explícito de escape e fórmulas e testes de conteúdo. O PDF ainda exige
-seleção de biblioteca. Os dados exportados vêm de uma única consulta com joins
+explícito de escape e fórmulas e testes de conteúdo. PDF usa OpenPDF e XLSX usa
+Apache POI. Os dados exportados vêm de uma única consulta com joins
 de conta/categoria, limite no banco e cópia para um modelo imutável antes da
 renderização. Os totais usam essa mesma cópia.
 
@@ -222,7 +231,7 @@ renderização. Os totais usam essa mesma cópia.
 - [x] Entregar API CSV: arquivo, erros padronizados, download e CORS.
 - [x] Validar CSV com testes unitários e HTTP real em PostgreSQL descartável.
 - [x] Implementar XLSX com células tipadas e validar conteúdo.
-- [ ] Implementar PDF e validar conteúdo e paginação visualmente.
+- [x] Implementar PDF e validar conteúdo e paginação visualmente.
 - [ ] Implementar diálogo Angular, download e estados de erro/privacidade.
 - [ ] Executar verificações completas do MVP e conferir os critérios de aceite.
 
@@ -247,8 +256,25 @@ arquivo parcial. O CSV continua coberto e disponível para valores que o Excel
 não consegue representar sem perda de centavos. A validação do XLSX foi feita
 por leitura automatizada com Apache POI; não houve revisão visual no Excel.
 
-**Disponibilidade por etapa:** `format=CSV` e `format=XLSX` estão disponíveis
-na API. `PDF` passará a ser aceito quando seu renderizador for implementado.
+**Evidência da etapa PDF (30/10/2026):** `mvnw.cmd -B verify` passou com 274
+testes, sem falhas ou testes ignorados, e cobertura mínima exigida atendida.
+[PdfReportRendererTest](../finance-manager-api/src/test/java/com/rodrigs/finance_manager_api/report/service/PdfReportRendererTest.java)
+confere orientação A4 paisagem, acentos, valores e totais exatos, filtros,
+recorte vazio, textos literais, divisão de descrições longas, repetição dos
+cabeçalhos, numeração de todas as páginas e presença das 5.000 linhas.
+Os request specs conferem download, filtros, isolamento, autenticação, limites
+e erro sem arquivo parcial nos três formatos; montantes grandes continuam
+disponíveis em CSV e PDF quando o XLSX não consegue preservar os centavos.
+
+Foram renderizadas com Poppler e inspecionadas três amostras fictícias: recorte
+vazio (1 página), 100 movimentações (8 páginas) e descrição com muitas quebras
+de linha e palavra longa (3 páginas). A revisão confirmou acentos, margens,
+cabeçalhos, rodapés e texto sem cortes ou sobreposições. A incorporação das
+fontes também foi verificada. As amostras ficam apenas em `target/pdf-qa` quando
+os testes são executados com `-Dpdf.preview=true`; não contêm dados reais.
+
+**Disponibilidade por etapa:** `format=CSV`, `format=XLSX` e `format=PDF` estão
+disponíveis na API.
 Não há botão de exportação na interface nesta etapa.
 Uma futura entrada no dashboard poderá preencher o período do mês selecionado,
 reutilizando o mesmo fluxo de exportação.
