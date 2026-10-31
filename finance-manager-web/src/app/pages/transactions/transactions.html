@@ -7,9 +7,15 @@
         Acompanhe suas receitas e despesas, encontre movimentações e mantenha tudo organizado.
       </p>
     </div>
-    <button class="primary-button fm-button" type="button" (click)="openCreateForm()">
-      <svg lucidePlus aria-hidden="true"></svg> Nova transação
-    </button>
+    <div class="page-heading-actions">
+      <button class="secondary-button fm-button" type="button" [disabled]="isLoading() || !!errorMessage()"
+        (click)="isReportExportOpen.set(true)" aria-haspopup="dialog">
+        <svg lucideDownload aria-hidden="true"></svg> Exportar relatório
+      </button>
+      <button class="primary-button fm-button" type="button" (click)="openCreateForm()">
+        <svg lucidePlus aria-hidden="true"></svg> Nova transação
+      </button>
+    </div>
   </header>
 
   <form
@@ -332,6 +338,11 @@
       </nav>
     }
   </section>
+
+  @if (isReportExportOpen()) {
+    <app-report-export-dialog [filters]="appliedFilters()" [accounts]="accounts()" [categories]="categories()"
+      (closed)="isReportExportOpen.set(false)" />
+  }
 
   @if (isTransactionFormOpen()) {
     <div class="transaction-modal-backdrop fm-modal-backdrop">

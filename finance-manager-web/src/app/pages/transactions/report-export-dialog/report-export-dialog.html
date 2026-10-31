@@ -1,0 +1,78 @@
+<dialog #dialog aria-labelledby="export-title" aria-describedby="export-description" (cancel)="cancel($event)" (close)="onClosed()">
+  <header>
+    <div>
+      <p class="eyebrow">SEUS DADOS, COM VOCÊ</p>
+      <h2 id="export-title">Exportar relatório</h2>
+    </div>
+    <button class="close" type="button" aria-label="Fechar exportação" [disabled]="submitting()" (click)="close()">×</button>
+  </header>
+  <p id="export-description" class="description">Inclua todas as movimentações dos filtros escolhidos, independentemente da página da listagem.</p>
+  <form [formGroup]="form" (ngSubmit)="submit()" [attr.aria-busy]="submitting()">
+    <fieldset [disabled]="submitting()">
+      <legend class="sr-only">Formato e filtros do relatório</legend>
+      <div class="field full">
+        <label for="export-format">Formato</label>
+        <select id="export-format" formControlName="format" autofocus aria-describedby="export-format-description">
+          <option value="PDF">PDF</option>
+          <option value="XLSX">Excel (.xlsx)</option>
+          <option value="CSV">CSV</option>
+        </select>
+        <p id="export-format-description" class="hint">
+          @switch (selectedFormat()) {
+            @case ('PDF') { Resumo e movimentações, pronto para ler ou imprimir. }
+            @case ('XLSX') { Abas de resumo e movimentações, para analisar em uma planilha. }
+            @case ('CSV') { Movimentações para importar em outros programas. }
+          }
+        </p>
+      </div>
+      <div class="field">
+        <label for="export-start">Data inicial</label>
+        <input id="export-start" type="date" formControlName="startDate" required aria-describedby="export-dates-help export-date-error"
+          [attr.aria-invalid]="dateError() ? 'true' : null" />
+      </div>
+      <div class="field">
+        <label for="export-end">Data final</label>
+        <input id="export-end" type="date" formControlName="endDate" required aria-describedby="export-dates-help export-date-error"
+          [attr.aria-invalid]="dateError() ? 'true' : null" />
+      </div>
+      <p id="export-dates-help" class="hint full">Até 366 dias e 5.000 movimentações por arquivo.</p>
+      @if (dateError()) { <p id="export-date-error" class="error full" role="alert">{{ dateError() }}</p> }
+      <div class="field">
+        <label for="export-type">Tipo</label>
+        <select id="export-type" formControlName="type" (change)="resetCategory()">
+          <option value="">Todos</option><option value="INCOME">Receita</option><option value="EXPENSE">Despesa</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="export-account">Conta</label>
+        <select id="export-account" formControlName="accountId">
+          <option value="">Todas as contas</option>
+          @for (account of accounts(); track account.id) { <option [value]="account.id">{{ account.name }}</option> }
+        </select>
+      </div>
+      <div class="field full">
+        <label for="export-category">Categoria</label>
+        <select id="export-category" formControlName="categoryId">
+          <option value="">Todas as categorias</option>
+          @for (category of availableCategories(); track category.id) { <option [value]="category.id">{{ category.name }}</option> }
+        </select>
+      </div>
+    </fieldset>
+    @if (privacy.hidden()) {
+      <p class="privacy" role="note">Os valores estão ocultos na tela. O arquivo terá os valores completos.</p>
+    }
+    @if (errorMessage()) { <p class="error" role="alert">{{ errorMessage() }}</p> }
+    @if (submitting()) {
+      <p class="status" role="status"><span class="spinner" aria-hidden="true"></span>Gerando seu relatório…</p>
+      @if (slowLoading.isSlow()) {
+        <p class="hint" role="status">O servidor pode estar iniciando após um período de inatividade. Aguarde um pouco.</p>
+      }
+    }
+    <footer>
+      <button class="secondary" type="button" [disabled]="submitting()" (click)="close()">Cancelar</button>
+      <button class="primary" type="submit" [disabled]="submitting()">
+        @if (submitting()) { Gerando… } @else { Baixar {{ selectedFormat() === 'XLSX' ? 'Excel' : selectedFormat() }} }
+      </button>
+    </footer>
+  </form>
+</dialog>

@@ -31,6 +31,24 @@ senhas ou credenciais de banco.
 - CRUD de transações com filtros e paginação.
 - Telas de configurações e feedback visual para estados de carregamento e erro.
 
+## Exportação de relatórios
+
+Na tela **Transações**, clique em **Exportar relatório** e escolha PDF, Excel
+(.xlsx) ou CSV. O diálogo copia os filtros aplicados à listagem; alterações
+ainda não aplicadas são ignoradas. Ajustar o relatório não altera a listagem.
+Se não houver datas, o período sugerido é o mês atual. Se apenas uma data
+estiver definida, a outra precisa ser preenchida.
+
+O arquivo inclui todos os resultados filtrados, com limite de 366 dias e
+5.000 movimentações, independentemente da página aberta. A interface informa
+geração, demora do servidor e erros, mantendo os filtros para nova tentativa.
+Se os valores estiverem ocultos na tela, o diálogo avisa que o arquivo conterá
+os valores completos. Ao expirar a sessão, o usuário retorna ao login.
+
+O download usa o cliente HTTP autenticado, recebe `Blob`, aproveita o nome do
+arquivo retornado pela API e libera a URL temporária. A especificação e as
+evidências de validação estão na [mini especificação](../docs/relatorios-exportacao-spec.md).
+
 ## Guia inicial e estados de carregamento
 
 Após autenticar, a aplicação consulta `GET /api/v1/auth/me`. Quando
