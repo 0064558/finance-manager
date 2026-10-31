@@ -76,6 +76,7 @@ export class AppShell implements OnInit {
       case '/accounts': return { label: 'SUAS CONTAS', caption: 'Cada saldo no seu lugar' };
       case '/transactions': return { label: 'TRANSAÇÕES', caption: 'Clareza em cada movimentação' };
       case '/categories': return { label: 'CATEGORIAS', caption: 'Mais organização para suas finanças' };
+      case '/reports': return { label: 'RELATÓRIOS', caption: 'Seus dados, do seu jeito' };
       case '/settings': return { label: 'CONFIGURAÇÕES', caption: 'Preferências do seu espaço' };
       default: return { label: 'VISÃO GERAL', caption: 'Acompanhe sua saúde financeira' };
     }

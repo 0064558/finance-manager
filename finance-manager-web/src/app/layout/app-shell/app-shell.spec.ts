@@ -77,12 +77,27 @@ describe('AppShell mobile navigation', () => {
     TestBed.configureTestingModule({
       imports: [AppShell],
       providers: [
-        provideRouter(['dashboard', 'accounts', 'transactions', 'categories'].map(path => ({ path, component: NavigationPage }))),
+        provideRouter(['dashboard', 'accounts', 'transactions', 'categories', 'reports'].map(path => ({ path, component: NavigationPage }))),
         { provide: Auth, useValue: { getCurrentUser: () => of({ name: 'Maria' }) } },
       ],
     });
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it('opens reports from the sidebar, closes the mobile menu and updates page context', async () => {
+    const fixture = TestBed.createComponent(AppShell);
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.menu-button').click();
+    fixture.detectChanges();
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.sidebar-link[href="/reports"]');
+    link.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(TestBed.inject(Router).url).toBe('/reports');
+    expect(link.getAttribute('aria-current')).toBe('page');
+    expect(fixture.nativeElement.querySelector('.app-shell--mobile-open')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.topbar-label').textContent).toBe('RELATÓRIOS');
+  });
 
   it('navigates through all shortcuts and marks only the current page', async () => {
     const fixture = TestBed.createComponent(AppShell);

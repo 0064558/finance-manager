@@ -304,3 +304,22 @@ na API. Na tela de Transações, usar **Exportar relatório**, ajustar o períod
 os filtros e escolher **Baixar PDF**, **Baixar Excel** ou **Baixar CSV**.
 Uma futura entrada no dashboard poderá preencher o período do mês selecionado,
 reutilizando o mesmo fluxo de exportação.
+
+### Tela de Relatórios
+
+- Entrada ativa no menu lateral, inclusive no menu móvel, na rota protegida `/reports`.
+- Tela com opções PDF, Excel e CSV e explicação do conteúdo de cada formato.
+- Cada opção abre o diálogo existente com o formato selecionado e o mês atual sugerido.
+- Período, tipo, conta e categoria continuam ajustáveis antes do download.
+- Carregar contas e categorias antes de habilitar a exportação; permitir nova tentativa em caso de falha.
+- Contas e categorias vazias não impedem gerar um relatório sem movimentações.
+- Manter validações, limites, privacidade e tratamento de erros do fluxo de Transações.
+- Layout responsivo com cores dos temas claro e escuro.
+
+Validação: 117 testes do frontend passaram em 25 arquivos e o build de produção
+foi concluído, mantendo os avisos existentes de tamanho. Os novos testes cobrem
+seleção dos três formatos, envio dos filtros, carregamento, falha e nova tentativa,
+opções vazias, sessão expirada, cancelamento de requisições e navegação pelo menu
+móvel. Uma prévia local com serviços substituídos foi revisada nos temas claro e
+escuro e em largura de celular, incluindo abertura do Excel e retorno do foco ao
+cancelar. Não houve nova execução do fluxo com a API real nesta etapa.

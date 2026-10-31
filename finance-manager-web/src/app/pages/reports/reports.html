@@ -1,0 +1,63 @@
+<section class="reports-page" aria-labelledby="reports-title">
+  <header class="page-heading">
+    <p class="eyebrow">SEUS DADOS, COM VOCÊ</p>
+    <h1 id="reports-title">Relatórios</h1>
+    <p>Escolha como quer visualizar suas finanças. Defina o período e os filtros e baixe seu relatório.</p>
+  </header>
+
+  <section class="format-section" aria-labelledby="format-title" [attr.aria-busy]="loading()">
+    <div class="section-heading">
+      <h2 id="format-title">Um formato para cada necessidade</h2>
+      <span>PDF, Excel ou CSV</span>
+    </div>
+    @if (loading()) {
+      <p class="status" role="status">Carregando contas e categorias…</p>
+      <app-slow-api-notice />
+    }
+    @if (error(); as message) {
+      <div class="error" role="alert">
+        <p>{{ message }}</p>
+        <button type="button" class="retry" (click)="loadOptions()">Tentar novamente</button>
+      </div>
+    }
+    <div class="format-grid">
+      @for (format of formats; track format.id) {
+        <article class="format-card">
+          <div class="format-icon" aria-hidden="true">
+            @switch (format.id) {
+              @case ('PDF') { <svg lucideFileText></svg> }
+              @case ('XLSX') { <svg lucideSheet></svg> }
+              @case ('CSV') { <svg lucideTable2></svg> }
+            }
+          </div>
+          <p class="eyebrow">{{ format.tag }}</p>
+          <h3>{{ format.title }}</h3>
+          <p class="description">{{ format.description }}</p>
+          <p class="detail">{{ format.detail }}</p>
+          <button type="button" class="export-button" [disabled]="loading() || !!error()"
+            aria-haspopup="dialog" (click)="openExport(format.id)">
+            {{ format.action }} <svg lucideArrowRight aria-hidden="true"></svg>
+          </button>
+        </article>
+      }
+    </div>
+  </section>
+
+  <aside class="guide" aria-labelledby="guide-title">
+    <div>
+      <p class="eyebrow">DO SEU JEITO</p>
+      <h2 id="guide-title">Só o que você precisa</h2>
+      <p>Filtre por período, receita ou despesa, conta e categoria. Todas as movimentações que atendem aos filtros entram no arquivo.</p>
+    </div>
+    <div class="limits">
+      <strong>Até 366 dias por relatório</strong>
+      <span>Máximo de 5.000 movimentações por arquivo.</span>
+      <span>O período inicial sugerido é o mês atual.</span>
+    </div>
+  </aside>
+
+  @if (selectedFormat(); as format) {
+    <app-report-export-dialog [initialFormat]="format" [filters]="filters" [accounts]="accounts()"
+      [categories]="categories()" (closed)="selectedFormat.set(null)" />
+  }
+</section>

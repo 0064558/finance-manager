@@ -33,6 +33,7 @@ function localDate(date: Date): string {
   styleUrl: './report-export-dialog.css',
 })
 export class ReportExportDialog implements OnInit, AfterViewInit, OnDestroy {
+  readonly initialFormat = input<ReportExportFormat>('PDF');
   readonly filters = input.required<TransactionFilters>();
   readonly accounts = input.required<FinancialAccount[]>();
   readonly categories = input.required<Category[]>();
@@ -67,6 +68,7 @@ export class ReportExportDialog implements OnInit, AfterViewInit, OnDestroy {
     const today = new Date();
     const defaultMonth = !filters.startDate && !filters.endDate;
     this.form.patchValue({
+      format: this.initialFormat(),
       startDate: filters.startDate || (defaultMonth ? localDate(new Date(today.getFullYear(), today.getMonth(), 1)) : ''),
       endDate: filters.endDate || (defaultMonth ? localDate(new Date(today.getFullYear(), today.getMonth() + 1, 0)) : ''),
       type: filters.type ?? '', accountId: filters.accountId ?? '', categoryId: filters.categoryId ?? '',

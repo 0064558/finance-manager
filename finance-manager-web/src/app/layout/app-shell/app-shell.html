@@ -49,10 +49,11 @@
 
         <span class="sidebar-copy">Categorias</span>
       </a>
-      <span class="sidebar-link sidebar-link--disabled" aria-disabled="true" title="Relatórios — em breve">
+      <a class="sidebar-link" routerLink="/reports" routerLinkActive="sidebar-link--active"
+        ariaCurrentWhenActive="page" title="Relatórios" (click)="closeMobileNavigation()">
         <svg lucideChartNoAxesCombined class="sidebar-icon" aria-hidden="true"></svg>
-        <span class="sidebar-copy">Relatórios — em breve</span>
-      </span>
+        <span class="sidebar-copy">Relatórios</span>
+      </a>
     </nav>
 
     <div class="sidebar-section-label sidebar-section-label--secondary sidebar-copy">GERAL</div>
