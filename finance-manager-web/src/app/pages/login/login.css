@@ -133,6 +133,10 @@ app-gradient-wave {
   position: relative;
   width: min(100%, 28rem);
   perspective: 40rem;
+}
+
+.login-card-motion {
+  position: relative;
   transform: rotateX(var(--card-rotate-x)) rotateY(var(--card-rotate-y));
   transform-style: preserve-3d;
   transition: transform 180ms ease-out;
@@ -610,16 +614,20 @@ app-gradient-wave {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-card-stage,
+  .login-card-motion,
   .login-card,
   .card-brand-mark,
   .spinner {
     animation: none;
   }
 
-  .login-card-stage,
+  .login-card-motion,
   .input-wrap,
   .submit-button {
     transition: none;
+  }
+
+  .login-card-motion {
+    transform: none;
   }
 }

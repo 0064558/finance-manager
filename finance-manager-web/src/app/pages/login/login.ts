@@ -86,11 +86,16 @@ export class Login {
 
     const card = event.currentTarget as HTMLElement;
     const bounds = card.getBoundingClientRect();
-    const x = (event.clientX - bounds.left) / bounds.width - 0.5;
-    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+    if (!bounds.width || !bounds.height) {
+      return;
+    }
 
-    card.style.setProperty('--card-rotate-x', `${y * -18}deg`);
-    card.style.setProperty('--card-rotate-y', `${x * 22}deg`);
+    // A área de referência permanece fixa enquanto a camada interna gira.
+    const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)) - 0.5;
+    const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height)) - 0.5;
+
+    card.style.setProperty('--card-rotate-x', `${y * -12}deg`);
+    card.style.setProperty('--card-rotate-y', `${x * 16}deg`);
     card.style.setProperty('--card-glow-x', `${(x + 0.5) * 100}%`);
     card.style.setProperty('--card-glow-y', `${(y + 0.5) * 100}%`);
   }
