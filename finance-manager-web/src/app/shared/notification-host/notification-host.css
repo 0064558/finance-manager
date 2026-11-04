@@ -42,7 +42,7 @@
 }
 .notification p {
   margin: 0;
-  color: #354c40;
+  color: var(--fm-text, #354c40);
   font-size: 0.8rem;
   line-height: 1.5;
   overflow-wrap: anywhere;

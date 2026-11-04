@@ -250,7 +250,6 @@ html[data-theme='dark'] ::selection { color: #e0ffed; background: #375a46; }
 
 /* Notifications live outside the application shell. */
 html[data-theme='dark'] .notification { background: var(--fm-raised); border-color: var(--fm-line); border-left-color: var(--fm-green); box-shadow: var(--fm-shadow); }
-html[data-theme='dark'] .notification p { color: var(--fm-text); }
 html[data-theme='dark'] :is(.notification__icon, .notification__close) { color: var(--fm-green); background: var(--fm-green-soft); }
 html[data-theme='dark'] .notification .notification__close:hover { color: #a0edcb; background: #294b3b; }
 html[data-theme='dark'] .notification--error { border-left-color: var(--fm-danger); }
