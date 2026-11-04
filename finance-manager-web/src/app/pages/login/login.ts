@@ -94,8 +94,8 @@ export class Login {
     const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)) - 0.5;
     const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height)) - 0.5;
 
-    card.style.setProperty('--card-rotate-x', `${y * -12}deg`);
-    card.style.setProperty('--card-rotate-y', `${x * 16}deg`);
+    card.style.setProperty('--card-rotate-x', `${y * -6.75}deg`);
+    card.style.setProperty('--card-rotate-y', `${x * 9}deg`);
     card.style.setProperty('--card-glow-x', `${(x + 0.5) * 100}%`);
     card.style.setProperty('--card-glow-y', `${(y + 0.5) * 100}%`);
   }
