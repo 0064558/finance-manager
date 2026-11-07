@@ -661,6 +661,35 @@ propriedade, valor, tipo, datas, filtros, atualização e exclusão. Os testes d
 integração cobrem o CRUD protegido, paginação, filtros, validações e isolamento
 entre dois usuários usando tokens JWT reais.
 
+### Sugestão de transação com Gemini
+
+A prévia é opcional. Para habilitar, defina `TRANSACTION_SUGGESTION_PROVIDER=google-genai`
+e `GEMINI_API_KEY` no ambiente da API (ou no `.env` local para Docker Compose).
+Use uma chave do Google AI Studio e teste com dados fictícios.
+
+Com a API reiniciada, faça uma requisição autenticada pelo Swagger ou envie
+`POST /api/v1/transactions/suggestions` com `Content-Type: application/json`,
+o token JWT e este corpo:
+
+```json
+{"description":"Gastei 47,90 no almoço."}
+```
+
+A resposta é um JSON para revisão. Por exemplo:
+
+```json
+{"status":"SUGESTAO","descricao":"Almoço","valor":47.90,"tipo":"DESPESA","categoriaSugerida":"ALIMENTACAO"}
+```
+
+Se a descrição não informar um valor, a resposta esperada é:
+
+```json
+{"status":"ESCLARECIMENTO","mensagem":"O valor está faltando. Repita seu prompt informando também o valor."}
+```
+
+Para registrar o lançamento após a revisão, use `POST /api/v1/transactions`
+com os dados confirmados, incluindo os identificadores da conta e da categoria.
+
 ## Dashboard e relatórios
 
 Os endpoints de relatório exigem autenticação JWT:
