@@ -1,5 +1,20 @@
 export type TransactionType = 'INCOME' | 'EXPENSE'; // union type
 
+export interface TransactionSuggestion {
+  status: 'SUGESTAO';
+  descricao: string;
+  valor: number;
+  tipo: 'DESPESA' | 'RECEITA';
+  categoriaSugerida?: string;
+  categoriaId?: string;
+}
+
+export type TransactionSuggestionResponse = TransactionSuggestion | {
+  status: 'ESCLARECIMENTO';
+  motivo: 'VALOR_AUSENTE' | 'MULTIPLAS_TRANSACOES' | 'FORA_DE_CONTEXTO' | 'DADOS_AMBIGUOS';
+  mensagem: string;
+};
+
 // Representa uma transação financeira, incluindo informações como conta, categoria, tipo, valor, data de ocorrência e descrição.
 export interface TransactionResponse {
   id: string;
