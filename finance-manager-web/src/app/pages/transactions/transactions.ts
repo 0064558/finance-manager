@@ -17,7 +17,8 @@ import { ValuePrivacy } from '../../core/value-privacy';
 import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
 import {
-  CreateTransactionRequest, TransactionFilters, TransactionResponse, TransactionSuggestionResponse, TransactionType,
+  CreateTransactionRequest, TransactionChatEntry, TransactionFilters, TransactionResponse,
+  TransactionSuggestionResponse, TransactionType,
 } from '../../core/transaction.models';
 import { DatePipe } from '@angular/common';
 import {
@@ -46,6 +47,7 @@ interface TransactionViewModel extends TransactionResponse {
 }
 
 interface ChatExchange {
+  id?: string;
   prompt: string;
   response?: TransactionSuggestionResponse;
   error?: string;
@@ -120,7 +122,7 @@ function formatLocalDate(date: Date): string {
   templateUrl: './transactions.html',
 })
 export class Transactions implements OnInit {
-  private readonly pendingCreations: Partial<Record<'manual' | 'chat', { body: string; key: string }>> = {};
+  private pendingCreation: { body: string; key: string } | null = null;
   private reviewDraft: ReturnType<Transactions['transactionForm']['getRawValue']> | null = null;
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
@@ -153,6 +155,9 @@ export class Transactions implements OnInit {
   protected readonly valuePrivacy = inject(ValuePrivacy);
   protected readonly transactionTab = signal<'list' | 'chat'>('list');
   protected readonly chatExchanges = signal<ChatExchange[]>([]);
+  protected readonly chatHistoryReady = signal(false);
+  protected readonly isLoadingChatHistory = signal(false);
+  protected readonly chatHistoryFailed = signal(false);
   protected readonly isRequestingSuggestion = signal(false);
   protected readonly isSuggestionReview = signal(false);
   protected readonly chatPromptControl = this.formBuilder.nonNullable.control('', [
@@ -386,7 +391,27 @@ export class Transactions implements OnInit {
 
   protected selectTransactionTab(tab: 'list' | 'chat'): void {
     this.transactionTab.set(tab);
-    if (tab === 'chat') this.scrollChatToLatest();
+    if (tab === 'chat') {
+      this.loadChatHistory();
+      this.scrollChatToLatest();
+    }
+  }
+
+  protected loadChatHistory(): void {
+    if (this.chatHistoryReady() || this.isLoadingChatHistory()) return;
+
+    this.isLoadingChatHistory.set(true);
+    this.chatHistoryFailed.set(false);
+    this.transactionApi.getChatHistory()
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isLoadingChatHistory.set(false)))
+      .subscribe({
+        next: entries => {
+          this.chatExchanges.set(entries.map(entry => this.toChatExchange(entry)));
+          this.chatHistoryReady.set(true);
+          this.scrollChatToLatest();
+        },
+        error: () => this.chatHistoryFailed.set(true),
+      });
   }
 
   protected onTabKeyDown(event: KeyboardEvent, listTab: HTMLButtonElement, chatTab: HTMLButtonElement): void {
@@ -399,32 +424,36 @@ export class Transactions implements OnInit {
   }
 
   protected requestSuggestion(): void {
-    if (this.chatPromptControl.invalid || this.isRequestingSuggestion() || this.isTransactionFormOpen()) return;
+    if (!this.chatHistoryReady() || this.chatPromptControl.invalid || this.isRequestingSuggestion()
+        || this.isTransactionFormOpen()) return;
 
     const prompt = this.chatPromptControl.value.trim();
     this.chatExchanges.update(exchanges => [...exchanges, { prompt }]);
     this.reviewDraft = null;
-    delete this.pendingCreations.chat;
     this.isRequestingSuggestion.set(true);
     this.scrollChatToLatest();
 
-    this.transactionApi.suggest(prompt)
+    this.transactionApi.sendChatMessage(prompt)
       .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isRequestingSuggestion.set(false)))
       .subscribe({
-        next: response => {
-          if (response.status === 'SUGESTAO' && response.valor >= chatAmountPrecisionLimit) {
-            this.updateLatestExchange({ error: chatAmountPrecisionMessage });
-            return;
-          }
-          this.chatPromptControl.reset('');
-          this.updateLatestExchange({ response });
+        next: entry => {
+          const exchange = this.toChatExchange(entry);
+          if (!exchange.error) this.chatPromptControl.reset('');
+          this.updateLatestExchange(exchange);
         },
         error: (error: HttpErrorResponse) => this.updateLatestExchange({
-          error: error.status === 404 || error.status === 405
+          error: error.status === 404 || error.status === 405 || error.status === 503
             ? 'O chat com IA está indisponível. Você pode registrar a transação pela lista.'
             : 'Não foi possível gerar a sugestão. Tente novamente.',
         }),
       });
+  }
+
+  private toChatExchange(entry: TransactionChatEntry): ChatExchange {
+    if (entry.response.status === 'SUGESTAO' && entry.response.valor >= chatAmountPrecisionLimit) {
+      return { id: entry.id, prompt: entry.prompt, error: chatAmountPrecisionMessage };
+    }
+    return entry;
   }
 
   private updateLatestExchange(patch: Partial<ChatExchange>): void {
@@ -462,7 +491,7 @@ export class Transactions implements OnInit {
   }
 
   protected openCreateForm(): void {
-    delete this.pendingCreations.manual;
+    this.pendingCreation = null;
     this.openNewTransactionForm();
   }
 
@@ -556,14 +585,17 @@ export class Transactions implements OnInit {
     };
 
     const selectedTransaction = this.selectedTransaction();
-    if (!selectedTransaction) {
+    let creationKey = this.chatExchanges().at(-1)?.id;
+    if (!selectedTransaction && source === 'manual') {
       const body = JSON.stringify(transactionRequest);
       // Keep the operation key after an uncertain response so retrying does not
       // create a second financial effect. Changed data starts a new operation.
-      if (this.pendingCreations[source]?.body !== body) {
-        this.pendingCreations[source] = { body, key: crypto.randomUUID() };
+      if (this.pendingCreation?.body !== body) {
+        this.pendingCreation = { body, key: crypto.randomUUID() };
       }
+      creationKey = this.pendingCreation.key;
     }
+    if (source === 'chat' && !creationKey) return;
 
     // Define o sinal isTransactionSubmitting como true para indicar que a transação está sendo enviada, e limpa qualquer mensagem de erro anterior.
     this.isTransactionSubmitting.set(true);
@@ -572,7 +604,7 @@ export class Transactions implements OnInit {
     // Se houver uma transação selecionada, significa que estamos editando uma transação existente, caso contrário, estamos criando uma nova transação.
     const request$ = selectedTransaction
       ? this.transactionApi.update(selectedTransaction.id, transactionRequest)
-      : this.transactionApi.create(transactionRequest, this.pendingCreations[source]!.key);
+      : this.transactionApi.create(transactionRequest, creationKey);
 
     // Define a ação como "atualizar" se houver uma transação selecionada (indicando que estamos editando), ou "criar" se não houver transação selecionada (indicando que estamos criando uma nova transação).
     const action = selectedTransaction ? 'atualizar' : 'criar';
@@ -587,7 +619,8 @@ export class Transactions implements OnInit {
       // Se houver um erro, uma mensagem de erro apropriada é definida com base no tipo de erro retornado pela API.
       .subscribe({
         next: () => {
-          delete this.pendingCreations[source];
+          if (this.destroyRef.destroyed) return;
+          if (source === 'manual') this.pendingCreation = null;
           if (source === 'chat') {
             this.reviewDraft = null;
             this.isSuggestionReview.set(false);
@@ -602,6 +635,8 @@ export class Transactions implements OnInit {
         error: (error: HttpErrorResponse) => {
           if (error.status === 409 && error.error?.code === 'TRANSACTION_TYPE_MISMATCH') {
             this.transactionFormError.set('O tipo da transação deve ser igual ao tipo da categoria.');
+          } else if (source === 'chat' && error.status === 409 && error.error?.code === 'IDEMPOTENCY_CONFLICT') {
+            this.transactionFormError.set('Esta sugestão já foi confirmada. Confira a transação na aba Lista.');
           } else {
             this.transactionFormError.set(`Erro ao ${action} a transação.`);
           }

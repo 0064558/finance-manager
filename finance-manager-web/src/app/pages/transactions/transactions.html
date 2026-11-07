@@ -366,6 +366,13 @@
       </div>
     </header>
 
+    @if (isLoadingChatHistory()) {
+      <p role="status">Carregando histórico do chat...</p>
+    } @else if (chatHistoryFailed()) {
+      <p role="alert">Não foi possível carregar o histórico do chat.</p>
+      <button class="secondary-button fm-button" type="button" (click)="loadChatHistory()">Tentar novamente</button>
+    }
+
     <div #chatLog class="chat-log" role="log" aria-label="Conversa com a IA" aria-relevant="additions text">
       @for (exchange of chatExchanges(); track $index) {
         <div class="chat-message chat-message--user">
@@ -413,7 +420,7 @@
         placeholder="Ex.: Gastei 47,90 no almoço." [formControl]="chatPromptControl"
         [readOnly]="isRequestingSuggestion()"></textarea>
       <button class="primary-button fm-button" type="submit"
-        [disabled]="chatPromptControl.invalid || isRequestingSuggestion()">
+        [disabled]="!chatHistoryReady() || chatPromptControl.invalid || isRequestingSuggestion()">
         {{ isRequestingSuggestion() ? 'Enviando...' : 'Enviar' }}
       </button>
     </form>

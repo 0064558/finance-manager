@@ -70,6 +70,8 @@ integrações bancárias, recorrência automática ou múltiplas moedas.
 Na aba **Chat com IA**, descreva uma receita ou despesa, como “Gastei 47,90 no
 almoço.”. Ao receber a sugestão, revise os dados, complete os campos do formulário
 e confirme para registrar a transação. O chat requer [Gemini habilitado na API](finance-manager-api/README.md#sugestão-de-transação-com-gemini).
+As mensagens com resposta ficam no histórico da sua conta e reaparecem ao
+voltar à tela ou entrar novamente.
 
 #### Categorias
 

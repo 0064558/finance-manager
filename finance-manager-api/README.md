@@ -705,6 +705,11 @@ O endpoint de sugestões só prepara o rascunho. Para registrar o lançamento ap
 a confirmação, use `POST /api/v1/transactions` com os dados revisados, incluindo
 os identificadores da conta e da categoria.
 
+A aba Chat com IA envia as mensagens para `POST /api/v1/transactions/chat` e
+recupera o histórico da conta com `GET /api/v1/transactions/chat`. Cada entrada
+com resposta fica salva no PostgreSQL. A confirmação usa o ID da entrada
+como `Idempotency-Key` na criação da transação.
+
 ## Dashboard e relatórios
 
 Os endpoints de relatório exigem autenticação JWT:

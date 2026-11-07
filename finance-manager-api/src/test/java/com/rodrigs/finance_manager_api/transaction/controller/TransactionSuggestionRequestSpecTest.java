@@ -13,6 +13,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
 
     private static final String SUGGESTIONS = TRANSACTIONS + "/suggestions";
+    private static final String CHAT = TRANSACTIONS + "/chat";
     private static final Map<String, String> LUNCH = Map.of("description", "Gastei R$ 47,90 no almoço.");
 
     @MockitoBean(enforceOverride = true)
@@ -38,12 +40,7 @@ class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
         var other = user();
         String expenseCategory = category(owner, "Alimentação", "EXPENSE");
         category(other, "Alimentação", "INCOME");
-        when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
-        when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(new Generation(
-                new AssistantMessage("""
-                        {"status":"SUGESTAO","descricao":"Almoço","valor":47.90,
-                         "tipo":"DESPESA","categoriaSugerida":"ALIMENTACAO"}
-                        """)))));
+        mockLunchSuggestion();
 
         Reply owned = request("POST", SUGGESTIONS, owner.token(), LUNCH);
         owned.status(200);
@@ -64,8 +61,52 @@ class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
     @Test
     void requiresAuthenticationBeforeCallingTheProvider() throws Exception {
         request("POST", SUGGESTIONS, null, LUNCH).status(401);
+        request("GET", CHAT, null, null).status(401);
+        request("POST", CHAT, null, LUNCH).status(401);
 
         verify(chatModel, never()).call(any(Prompt.class));
+    }
+
+    @Test
+    void restoresOnlyTheUsersChatAfterLoginAndPreservesConfirmation() throws Exception {
+        var owner = user();
+        var other = user();
+        String accountId = account(owner, "Conta de teste", "100");
+        String categoryId = category(owner, "Alimentação", "EXPENSE");
+        mockLunchSuggestion();
+
+        Reply clarification = request("POST", CHAT, owner.token(),
+                Map.of("description", "Gastei R$ 20 no almoço e R$ 8 no ônibus."));
+        clarification.status(200);
+        assertThat(clarification.text("response.motivo")).isEqualTo("MULTIPLAS_TRANSACOES");
+        Reply suggestion = request("POST", CHAT, owner.token(), LUNCH);
+        suggestion.status(200);
+        assertThat(suggestion.value("saved")).isEqualTo(false);
+        assertNoTransactions(owner);
+
+        var body = transactionBody(accountId, categoryId, "EXPENSE", "49.90", LocalDate.now().minusDays(1));
+        Reply created = requestWithKey("POST", TRANSACTIONS, owner.token(), body, suggestion.text("id"));
+        created.status(201);
+
+        Reply login = request("POST", AUTH + "/login", null, credentials(owner.email(), PASSWORD));
+        login.status(200);
+        String newToken = login.text("accessToken");
+        Reply history = request("GET", CHAT, newToken, null);
+        history.status(200);
+        assertThat(history.list("")).hasSize(2);
+        assertThat(history.text("0.id")).isEqualTo(clarification.text("id"));
+        assertThat(history.text("1.prompt")).isEqualTo(LUNCH.get("description"));
+        assertThat(history.text("1.response.descricao")).isEqualTo("Almoço");
+        assertThat(history.value("1.saved")).isEqualTo(true);
+
+        Reply retry = requestWithKey("POST", TRANSACTIONS, newToken, body, suggestion.text("id"));
+        retry.status(201);
+        assertThat(retry.text("id")).isEqualTo(created.text("id"));
+        assertThat(request("GET", TRANSACTIONS, newToken, null).list("content")).hasSize(1);
+
+        Reply otherHistory = request("GET", CHAT, other.token(), null);
+        otherHistory.status(200);
+        assertThat(otherHistory.list("")).isEmpty();
     }
 
     @Test
@@ -102,5 +143,14 @@ class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
         Reply transactions = request("GET", TRANSACTIONS, user.token(), null);
         transactions.status(200);
         assertThat(transactions.value("totalElements")).isEqualTo(0);
+    }
+
+    private void mockLunchSuggestion() {
+        when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
+        when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(new Generation(
+                new AssistantMessage("""
+                        {"status":"SUGESTAO","descricao":"Almoço","valor":47.90,
+                         "tipo":"DESPESA","categoriaSugerida":"ALIMENTACAO"}
+                        """)))));
     }
 }

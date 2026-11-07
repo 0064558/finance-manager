@@ -2,8 +2,8 @@ import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
-import { vi } from 'vitest';
+import { map, of, Subject, throwError, type Observable } from 'rxjs';
+import { vi, type Mock } from 'vitest';
 import { Transactions } from './transactions';
 import { TransactionApi } from '../../core/transaction';
 import { TransactionResponse, TransactionSuggestion, TransactionSuggestionResponse } from '../../core/transaction.models';
@@ -23,7 +23,8 @@ describe('Transactions', () => {
   let categories: ReturnType<typeof vi.fn>;
   let transactions: ReturnType<typeof vi.fn>;
   let create: ReturnType<typeof vi.fn>;
-  let suggest: ReturnType<typeof vi.fn>;
+  let suggest: Mock<(prompt: string) => Observable<TransactionSuggestionResponse>>;
+  let getChatHistory: ReturnType<typeof vi.fn>;
   const page = { content: [], number: 0, totalPages: 0, totalElements: 0 };
   beforeEach(() => {
     accounts = vi.fn(() => of([{ id: 'account', name: 'Conta', type: 'CHECKING', initialBalance: 0 }]));
@@ -31,10 +32,16 @@ describe('Transactions', () => {
     transactions = vi.fn(() => of(page));
     create = vi.fn();
     suggest = vi.fn();
+    getChatHistory = vi.fn(() => of([]));
     TestBed.configureTestingModule({
       imports: [Transactions],
       providers: [provideRouter([]),
-        { provide: TransactionApi, useValue: { getAll: transactions, create, suggest } },
+        { provide: TransactionApi, useValue: {
+          getAll: transactions, create, getChatHistory,
+          sendChatMessage: (prompt: string) => suggest(prompt).pipe(map((response: TransactionSuggestionResponse) => ({
+            id: crypto.randomUUID(), prompt, response, saved: false,
+          }))),
+        } },
         { provide: FinancialAccountApi, useValue: { getAll: accounts } },
         { provide: CategoryApi, useValue: { getAll: categories } },
       ],
@@ -60,6 +67,26 @@ describe('Transactions', () => {
     status: 'SUGESTAO', descricao: 'Almoço', valor: 47.90, tipo: 'DESPESA',
     categoriaSugerida: 'Alimentação', categoriaId: 'food',
   };
+
+  it('restaura mensagens e confirmação ao reabrir Transações e preserva o histórico entre abas', () => {
+    const prompt = 'Gastei 47,90 no almoço.';
+    getChatHistory.mockReturnValue(of([{ id: 'lunch', prompt, response: lunchSuggestion, saved: true }]));
+    render();
+    click('#transaction-chat-tab');
+    expect(element('.chat-log').textContent).toContain(prompt);
+    click('#transaction-list-tab');
+    click('#transaction-chat-tab');
+    expect(getChatHistory).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+
+    render();
+    click('#transaction-chat-tab');
+    expect(getChatHistory).toHaveBeenCalledTimes(2);
+    expect(element('.chat-log').textContent).toContain(prompt);
+    expect(element('.chat-log').textContent).toContain('Transação registrada');
+    expect(element('#review-transaction-suggestion')).toBeNull();
+    expect(create).not.toHaveBeenCalled();
+  });
 
   it('só cria após confirmar os dados revisados e atualiza a lista uma única vez', async () => {
     const pending = new Subject<TransactionResponse>();
