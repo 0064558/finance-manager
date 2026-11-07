@@ -78,6 +78,14 @@ public class GlobalExceptionHandler {
                 "TRANSACTION_TYPE_MISMATCH", request);
     }
 
+    @ExceptionHandler(TransactionSuggestionUnavailableException.class)
+    public ProblemDetail handleTransactionSuggestionUnavailable(TransactionSuggestionUnavailableException exception,
+                                                                 HttpServletRequest request) {
+        return problem(HttpStatus.BAD_GATEWAY, "Sugestão indisponível",
+                "Não foi possível obter uma sugestão agora. Tente novamente ou cadastre a transação manualmente.",
+                "TRANSACTION_SUGGESTION_UNAVAILABLE", request);
+    }
+
     @ExceptionHandler(IdempotencyConflictException.class)
     public ProblemDetail handleIdempotencyConflict(IdempotencyConflictException exception, HttpServletRequest request) {
         return problem(HttpStatus.CONFLICT, "Idempotency key already used",
