@@ -40,6 +40,7 @@ public abstract class HttpRequestSpec extends PostgresIntegrationTest {
     protected static final String PASSWORD = "senha1234";
     protected static final ObjectMapper JSON = JsonMapper.builder()
             .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS).build();
+    private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(20);
     private static final HttpClient CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10)).build();
 
@@ -47,7 +48,11 @@ public abstract class HttpRequestSpec extends PostgresIntegrationTest {
     private int port;
 
     protected Reply request(String method, String path, String token, Object payload) throws Exception {
-        return rawRequest(method, path, token, payload == null ? null : JSON.writeValueAsString(payload));
+        return request(method, path, token, payload, DEFAULT_REQUEST_TIMEOUT);
+    }
+
+    protected Reply request(String method, String path, String token, Object payload, Duration timeout) throws Exception {
+        return rawRequest(method, path, token, payload == null ? null : JSON.writeValueAsString(payload), Map.of(), timeout);
     }
 
     protected Reply rawRequest(String method, String path, String token, String body) throws Exception {
@@ -60,8 +65,13 @@ public abstract class HttpRequestSpec extends PostgresIntegrationTest {
 
     protected Reply rawRequest(String method, String path, String token, String body,
                                Map<String, String> headers) throws Exception {
+        return rawRequest(method, path, token, body, headers, DEFAULT_REQUEST_TIMEOUT);
+    }
+
+    private Reply rawRequest(String method, String path, String token, String body,
+                             Map<String, String> headers, Duration timeout) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
-                .timeout(Duration.ofSeconds(20)).header("Accept", "application/json");
+                .timeout(timeout).header("Accept", "application/json");
         if (token != null) builder.header("Authorization", "Bearer " + token);
         if (body != null) builder.header("Content-Type", "application/json");
         headers.forEach(builder::header);

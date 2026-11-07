@@ -675,20 +675,35 @@ o token JWT e este corpo:
 {"description":"Gastei 47,90 no almoço."}
 ```
 
-A resposta é um JSON para revisão. Por exemplo:
+A resposta é um JSON para revisão. Se o usuário tiver uma categoria de despesa
+chamada `Alimentação`, a resposta será semelhante a esta:
 
 ```json
-{"status":"SUGESTAO","descricao":"Almoço","valor":47.90,"tipo":"DESPESA","categoriaSugerida":"ALIMENTACAO"}
+{"status":"SUGESTAO","descricao":"Almoço","valor":47.90,"tipo":"DESPESA","categoriaSugerida":"ALIMENTACAO","categoriaId":"6e95f378-4b1e-4bb4-be15-5cf2bf619812"}
 ```
 
 Se a descrição não informar um valor, a resposta esperada é:
 
 ```json
-{"status":"ESCLARECIMENTO","mensagem":"O valor está faltando. Repita seu prompt informando também o valor."}
+{"status":"ESCLARECIMENTO","motivo":"VALOR_AUSENTE","mensagem":"O valor está faltando. Repita seu prompt informando também o valor."}
 ```
 
-Para registrar o lançamento após a revisão, use `POST /api/v1/transactions`
-com os dados confirmados, incluindo os identificadores da conta e da categoria.
+Os outros motivos de esclarecimento são `MULTIPLAS_TRANSACOES`, `FORA_DE_CONTEXTO`
+e `DADOS_AMBIGUOS`. A API usa as mesmas regras de valor e descrição da criação
+de transações. Ela também confere se o valor sugerido aparece em números na
+mensagem, em formatos como `47,90`, `47.90`, `R$ 1.250,50` e `89 reais e 90
+centavos`. A interpretação do lançamento e a escolha do valor entre quantias
+e números de contexto continuam sujeitas à revisão pelo usuário.
+
+`categoriaSugerida` e `categoriaId` só são retornados quando o rótulo corresponde
+a uma categoria única do usuário autenticado com o mesmo tipo do lançamento.
+Se a categoria estiver em branco, selecione uma durante a revisão. Falhas do
+provedor ou respostas fora do contrato retornam `502` com o código
+`TRANSACTION_SUGGESTION_UNAVAILABLE`.
+
+O endpoint de sugestões só prepara o rascunho. Para registrar o lançamento após
+a confirmação, use `POST /api/v1/transactions` com os dados revisados, incluindo
+os identificadores da conta e da categoria.
 
 ## Dashboard e relatórios
 

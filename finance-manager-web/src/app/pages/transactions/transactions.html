@@ -7,7 +7,7 @@
         Acompanhe suas receitas e despesas, encontre movimentações e mantenha tudo organizado.
       </p>
     </div>
-    <div class="page-heading-actions">
+    <div class="page-heading-actions" [hidden]="transactionTab() !== 'list'">
       <button class="secondary-button fm-button" type="button" [disabled]="isLoading() || !!errorMessage()"
         (click)="isReportExportOpen.set(true)" aria-haspopup="dialog">
         <svg lucideDownload aria-hidden="true"></svg> Exportar relatório
@@ -18,6 +18,22 @@
     </div>
   </header>
 
+  <div class="transaction-tabs" role="tablist" aria-label="Visualizações de transações"
+    (keydown)="onTabKeyDown($event, listTab, chatTab)">
+    <button #listTab id="transaction-list-tab" class="fm-button" type="button" role="tab"
+      aria-controls="transaction-list-panel" [attr.aria-selected]="transactionTab() === 'list'"
+      [attr.tabindex]="transactionTab() === 'list' ? 0 : -1" (click)="selectTransactionTab('list')">
+      Lista
+    </button>
+    <button #chatTab id="transaction-chat-tab" class="fm-button" type="button" role="tab"
+      aria-controls="transaction-chat-panel" [attr.aria-selected]="transactionTab() === 'chat'"
+      [attr.tabindex]="transactionTab() === 'chat' ? 0 : -1" (click)="selectTransactionTab('chat')">
+      <svg lucideMessageCircle aria-hidden="true"></svg> Chat com IA
+    </button>
+  </div>
+
+  <div id="transaction-list-panel" role="tabpanel" aria-labelledby="transaction-list-tab"
+    [hidden]="transactionTab() !== 'list'">
   <form
     class="filter-panel"
     [formGroup]="filterForm"
@@ -338,6 +354,70 @@
       </nav>
     }
   </section>
+  </div>
+
+  <section id="transaction-chat-panel" class="transaction-chat" role="tabpanel"
+    aria-labelledby="transaction-chat-tab" [hidden]="transactionTab() !== 'chat'">
+    <header class="filter-panel__heading">
+      <span class="panel-icon" aria-hidden="true"><svg lucideMessageCircle></svg></span>
+      <div>
+        <h2>Registre uma transação pelo chat</h2>
+        <p>Descreva uma receita ou despesa. Você poderá revisar os dados antes de salvar.</p>
+      </div>
+    </header>
+
+    <div #chatLog class="chat-log" role="log" aria-label="Conversa com a IA" aria-relevant="additions text">
+      @for (exchange of chatExchanges(); track $index) {
+        <div class="chat-message chat-message--user">
+          <strong>Você</strong>
+          <p>{{ valuePrivacy.hidden() ? 'Mensagem oculta pelo modo de privacidade.' : exchange.prompt }}</p>
+        </div>
+        @if (exchange.response; as response) {
+          <div class="chat-message">
+            <strong>Assistente</strong>
+            @if (response.status === 'ESCLARECIMENTO') {
+              <p>{{ response.mensagem }}</p>
+            } @else {
+              <p>
+                {{ response.tipo === 'DESPESA' ? 'Despesa' : 'Receita' }} · {{ response.descricao }} ·
+                {{ response.valor | privateCurrency: 'BRL' : 'symbol' }}
+              </p>
+              @if (response.categoriaSugerida) {
+                <p>Categoria sugerida: {{ response.categoriaSugerida }}</p>
+              }
+              @if (exchange.saved) {
+                <p>Transação registrada. Você pode consultá-la na aba Lista.</p>
+              } @else if ($last) {
+                @if (errorMessage()) {
+                  <p>Recarregue os dados na aba Lista para poder revisar a sugestão.</p>
+                }
+                <button id="review-transaction-suggestion" class="secondary-button fm-button" type="button"
+                  [disabled]="isLoading() || !!errorMessage()" aria-haspopup="dialog" (click)="openSuggestionReview()"
+                  #reviewButton>
+                  Revisar sugestão
+                </button>
+              }
+            }
+          </div>
+        } @else if (exchange.error) {
+          <div class="chat-message chat-message--error"><p>{{ exchange.error }}</p></div>
+        } @else if ($last && isRequestingSuggestion()) {
+          <div class="chat-message"><p>Gerando sugestão...</p></div>
+        }
+      }
+    </div>
+
+    <form class="chat-composer form-field" (submit)="$event.preventDefault(); requestSuggestion()">
+      <label for="transaction-prompt">Descrição da transação</label>
+      <textarea #chatPrompt id="transaction-prompt" rows="2" maxlength="500" required
+        placeholder="Ex.: Gastei 47,90 no almoço." [formControl]="chatPromptControl"
+        [readOnly]="isRequestingSuggestion()"></textarea>
+      <button class="primary-button fm-button" type="submit"
+        [disabled]="chatPromptControl.invalid || isRequestingSuggestion()">
+        {{ isRequestingSuggestion() ? 'Enviando...' : 'Enviar' }}
+      </button>
+    </form>
+  </section>
 
   @if (isReportExportOpen()) {
     <app-report-export-dialog [filters]="appliedFilters()" [accounts]="accounts()" [categories]="categories()"
@@ -351,17 +431,20 @@
         role="dialog"
         aria-modal="true"
         aria-labelledby="transaction-dialog-title"
+        (keydown.escape)="closeTransactionForm()"
       >
         <header class="transaction-modal__header">
           <div>
             <h2 id="transaction-dialog-title">
-              {{ selectedTransaction() ? 'Editar transação' : 'Nova transação' }}
+              {{ isSuggestionReview() ? 'Revisar sugestão' : selectedTransaction() ? 'Editar transação' : 'Nova transação' }}
             </h2>
             <p>
               {{
-                selectedTransaction()
-                  ? 'Atualize os dados da movimentação financeira.'
-                  : 'Preencha os dados da movimentação financeira.'
+                isSuggestionReview()
+                  ? 'Confira a sugestão, complete os campos e confirme para registrar a transação.'
+                  : selectedTransaction()
+                    ? 'Atualize os dados da movimentação financeira.'
+                    : 'Preencha os dados da movimentação financeira.'
               }}
             </p>
           </div>
@@ -386,6 +469,7 @@
           <div class="transaction-form__field">
             <label for="transaction-account">Conta</label>
             <select
+              #transactionAccount
               id="transaction-account"
               formControlName="accountId"
               required
@@ -576,9 +660,11 @@
               {{
                 isTransactionSubmitting()
                   ? 'Salvando...'
-                  : selectedTransaction()
-                    ? 'Salvar alterações'
-                    : 'Salvar transação'
+                  : isSuggestionReview()
+                    ? 'Confirmar transação'
+                    : selectedTransaction()
+                      ? 'Salvar alterações'
+                      : 'Salvar transação'
               }}
             </button>
           </div>

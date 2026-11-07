@@ -29,6 +29,7 @@
   margin-bottom: 1.5rem;
 }
 .page-heading-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+.page-heading-actions[hidden] { display: none; }
 @media (max-width: 700px) { .page-heading-actions { width: 100%; } .page-heading-actions button { flex: 1; } }
 .eyebrow {
   display: flex;

@@ -1,7 +1,10 @@
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { PrivateCurrency } from '../../shared/private-currency/private-currency';
 import { ReportExportDialog } from './report-export-dialog/report-export-dialog';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  afterNextRender, Component, computed, DestroyRef, ElementRef, inject, Injector, OnInit, signal, viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
 
@@ -9,10 +12,13 @@ import { CategoryApi } from '../../core/categories';
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import { TransactionApi } from '../../core/transaction';
 import { Notifications } from '../../core/notifications';
+import { ValuePrivacy } from '../../core/value-privacy';
 
 import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
-import { CreateTransactionRequest, TransactionFilters, TransactionResponse, TransactionType } from '../../core/transaction.models';
+import {
+  CreateTransactionRequest, TransactionFilters, TransactionResponse, TransactionSuggestionResponse, TransactionType,
+} from '../../core/transaction.models';
 import { DatePipe } from '@angular/common';
 import {
   AbstractControl,
@@ -25,6 +31,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   LucideChevronLeft,
   LucideChevronRight,
+  LucideMessageCircle,
   LucidePencil,
   LucidePlus,
   LucideSlidersHorizontal,
@@ -37,6 +44,17 @@ interface TransactionViewModel extends TransactionResponse {
   accountName: string;
   categoryName: string;
 }
+
+interface ChatExchange {
+  prompt: string;
+  response?: TransactionSuggestionResponse;
+  error?: string;
+  saved?: boolean;
+}
+
+// At this magnitude, adjacent JavaScript numbers are more than one cent apart.
+const chatAmountPrecisionLimit = 2 ** 46;
+const chatAmountPrecisionMessage = 'Este valor excede a precisão do chat. Confira o valor original antes de registrar manualmente pela aba Lista.';
 
 function dateRangeValidator(
   control: AbstractControl,
@@ -94,15 +112,22 @@ function formatLocalDate(date: Date): string {
     EmptyState,
     ReportExportDialog, LucideDownload,
     PrivateCurrency, DatePipe, ReactiveFormsModule,
-    LucideChevronLeft, LucideChevronRight,
+    LucideChevronLeft, LucideChevronRight, LucideMessageCircle,
     LucidePencil, LucidePlus, LucideSlidersHorizontal, LucideTrash2,
   ],
   selector: 'app-transactions',
-  styleUrl: './transactions.css',
+  styleUrls: ['./transactions.css', './transaction-chat.css'],
   templateUrl: './transactions.html',
 })
 export class Transactions implements OnInit {
-  private pendingCreation: { body: string; key: string } | null = null;
+  private readonly pendingCreations: Partial<Record<'manual' | 'chat', { body: string; key: string }>> = {};
+  private reviewDraft: ReturnType<Transactions['transactionForm']['getRawValue']> | null = null;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
+  private readonly reviewButton = viewChild<ElementRef<HTMLButtonElement>>('reviewButton');
+  private readonly transactionAccount = viewChild<ElementRef<HTMLSelectElement>>('transactionAccount');
+  private readonly chatPrompt = viewChild<ElementRef<HTMLTextAreaElement>>('chatPrompt');
+  private readonly chatLog = viewChild<ElementRef<HTMLElement>>('chatLog');
   private readonly route = inject(ActivatedRoute, { optional: true });
   private pendingCreate = this.route?.snapshot.queryParamMap.get('action') === 'create';
 
@@ -124,6 +149,15 @@ export class Transactions implements OnInit {
 
   // FormBuilder é injetado para criar formulários reativos, permitindo a criação e validação de formulários de maneira mais fácil e estruturada.
   protected readonly formBuilder = inject(FormBuilder);
+
+  protected readonly valuePrivacy = inject(ValuePrivacy);
+  protected readonly transactionTab = signal<'list' | 'chat'>('list');
+  protected readonly chatExchanges = signal<ChatExchange[]>([]);
+  protected readonly isRequestingSuggestion = signal(false);
+  protected readonly isSuggestionReview = signal(false);
+  protected readonly chatPromptControl = this.formBuilder.nonNullable.control('', [
+    Validators.required, Validators.maxLength(500), Validators.pattern(/\S/),
+  ]);
 
   // Sinal para armazenar os filtros aplicados, permitindo que o componente rastreie e aplique filtros de transações com base nos valores do formulário de filtro.
   protected readonly appliedFilters = signal<TransactionFilters>({});
@@ -350,9 +384,89 @@ export class Transactions implements OnInit {
     this.loadTransactions();
   }
 
-  // Abre o formulário de criação de transação.
+  protected selectTransactionTab(tab: 'list' | 'chat'): void {
+    this.transactionTab.set(tab);
+    if (tab === 'chat') this.scrollChatToLatest();
+  }
+
+  protected onTabKeyDown(event: KeyboardEvent, listTab: HTMLButtonElement, chatTab: HTMLButtonElement): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+
+    event.preventDefault();
+    const showChat = event.key === 'End' || (event.key !== 'Home' && this.transactionTab() === 'list');
+    this.selectTransactionTab(showChat ? 'chat' : 'list');
+    (showChat ? chatTab : listTab).focus();
+  }
+
+  protected requestSuggestion(): void {
+    if (this.chatPromptControl.invalid || this.isRequestingSuggestion() || this.isTransactionFormOpen()) return;
+
+    const prompt = this.chatPromptControl.value.trim();
+    this.chatExchanges.update(exchanges => [...exchanges, { prompt }]);
+    this.reviewDraft = null;
+    delete this.pendingCreations.chat;
+    this.isRequestingSuggestion.set(true);
+    this.scrollChatToLatest();
+
+    this.transactionApi.suggest(prompt)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isRequestingSuggestion.set(false)))
+      .subscribe({
+        next: response => {
+          if (response.status === 'SUGESTAO' && response.valor >= chatAmountPrecisionLimit) {
+            this.updateLatestExchange({ error: chatAmountPrecisionMessage });
+            return;
+          }
+          this.chatPromptControl.reset('');
+          this.updateLatestExchange({ response });
+        },
+        error: (error: HttpErrorResponse) => this.updateLatestExchange({
+          error: error.status === 404 || error.status === 405
+            ? 'O chat com IA está indisponível. Você pode registrar a transação pela lista.'
+            : 'Não foi possível gerar a sugestão. Tente novamente.',
+        }),
+      });
+  }
+
+  private updateLatestExchange(patch: Partial<ChatExchange>): void {
+    this.chatExchanges.update(exchanges => [
+      ...exchanges.slice(0, -1),
+      { ...exchanges[exchanges.length - 1], ...patch },
+    ]);
+    this.scrollChatToLatest();
+  }
+
+  private scrollChatToLatest(): void {
+    afterNextRender(() => {
+      const log = this.chatLog()?.nativeElement;
+      if (log) log.scrollTop = log.scrollHeight;
+    }, { injector: this.injector });
+  }
+
+  protected openSuggestionReview(): void {
+    const exchange = this.chatExchanges().at(-1);
+    const suggestion = exchange?.response;
+    if (suggestion?.status !== 'SUGESTAO' || exchange?.saved || this.isTransactionFormOpen()) return;
+
+    const type = suggestion.tipo === 'DESPESA' ? 'EXPENSE' : 'INCOME';
+    const category = this.categories().find(({ id, transactionType }) =>
+      id === suggestion.categoriaId && transactionType === type,
+    );
+    this.openNewTransactionForm(this.reviewDraft ?? {
+      type,
+      categoryId: category?.id ?? '',
+      amount: suggestion.valor,
+      description: suggestion.descricao,
+    });
+    this.isSuggestionReview.set(true);
+    afterNextRender(() => this.transactionAccount()?.nativeElement.focus(), { injector: this.injector });
+  }
+
   protected openCreateForm(): void {
-    this.pendingCreation = null;
+    delete this.pendingCreations.manual;
+    this.openNewTransactionForm();
+  }
+
+  private openNewTransactionForm(initialValues: Transactions['transactionForm']['value'] = {}): void {
     this.transactionFormError.set(null);
     this.selectedTransaction.set(null);
 
@@ -364,10 +478,14 @@ export class Transactions implements OnInit {
       amount: null,
       occurredOn: formatLocalDate(new Date()),
       description: '',
+      ...initialValues,
     });
 
-    // Desabilita o campo de categoria no formulário de transação, garantindo que o usuário não possa selecionar uma categoria até que um tipo de transação seja selecionado.
-    this.transactionForm.controls.categoryId.disable();
+    if (this.transactionForm.controls.type.value) {
+      this.transactionForm.controls.categoryId.enable();
+    } else {
+      this.transactionForm.controls.categoryId.disable();
+    }
 
     this.isTransactionFormOpen.set(true);
   }
@@ -378,13 +496,18 @@ export class Transactions implements OnInit {
       return; // Impede o fechamento do formulário enquanto a transação está sendo enviada.
     }
 
+    if (this.isSuggestionReview()) {
+      this.reviewDraft = this.transactionForm.getRawValue();
+      this.isSuggestionReview.set(false);
+      afterNextRender(() => this.reviewButton()?.nativeElement.focus(), { injector: this.injector });
+    }
     this.isTransactionFormOpen.set(false);
     this.transactionFormError.set(null);
     this.selectedTransaction.set(null);
   }
 
   protected submitTransaction(): void {
-    if (this.isTransactionSubmitting()) return;
+    if (!this.isTransactionFormOpen() || this.isTransactionSubmitting()) return;
     if (this.transactionForm.invalid) {
       // Se o formulário de transação for inválido, não envia o formulário.
       this.transactionForm.markAllAsTouched();
@@ -415,6 +538,11 @@ export class Transactions implements OnInit {
     }
 
     const descriptionTrimmed = description.trim();
+    const source = this.isSuggestionReview() ? 'chat' : 'manual';
+    if (source === 'chat' && amount >= chatAmountPrecisionLimit) {
+      this.transactionFormError.set(chatAmountPrecisionMessage);
+      return;
+    }
 
     // Cria um objeto CreateTransactionRequest com os valores do formulário de transação, incluindo accountId, categoryId, type, amount, occurredOn e description (se não estiver vazia).
     const transactionRequest: CreateTransactionRequest = {
@@ -432,8 +560,8 @@ export class Transactions implements OnInit {
       const body = JSON.stringify(transactionRequest);
       // Keep the operation key after an uncertain response so retrying does not
       // create a second financial effect. Changed data starts a new operation.
-      if (this.pendingCreation?.body !== body) {
-        this.pendingCreation = { body, key: crypto.randomUUID() };
+      if (this.pendingCreations[source]?.body !== body) {
+        this.pendingCreations[source] = { body, key: crypto.randomUUID() };
       }
     }
 
@@ -444,7 +572,7 @@ export class Transactions implements OnInit {
     // Se houver uma transação selecionada, significa que estamos editando uma transação existente, caso contrário, estamos criando uma nova transação.
     const request$ = selectedTransaction
       ? this.transactionApi.update(selectedTransaction.id, transactionRequest)
-      : this.transactionApi.create(transactionRequest, this.pendingCreation!.key);
+      : this.transactionApi.create(transactionRequest, this.pendingCreations[source]!.key);
 
     // Define a ação como "atualizar" se houver uma transação selecionada (indicando que estamos editando), ou "criar" se não houver transação selecionada (indicando que estamos criando uma nova transação).
     const action = selectedTransaction ? 'atualizar' : 'criar';
@@ -459,7 +587,13 @@ export class Transactions implements OnInit {
       // Se houver um erro, uma mensagem de erro apropriada é definida com base no tipo de erro retornado pela API.
       .subscribe({
         next: () => {
-          this.pendingCreation = null;
+          delete this.pendingCreations[source];
+          if (source === 'chat') {
+            this.reviewDraft = null;
+            this.isSuggestionReview.set(false);
+            this.updateLatestExchange({ saved: true });
+            afterNextRender(() => this.chatPrompt()?.nativeElement.focus(), { injector: this.injector });
+          }
           this.selectedTransaction.set(null);
           this.isTransactionFormOpen.set(false);
           this.notifications.success(selectedTransaction ? 'Transação atualizada com sucesso.' : 'Transação criada com sucesso.');
