@@ -149,6 +149,8 @@ class TransactionSuggestionServiceTest {
             "Gastei R$47,90 no almoço.|47.90",
             "Gastei BRL 47,90 no almoço.|47.90",
             "Gastei 89 reais e 90 centavos no almoço.|89.90",
+            "Comprei 2 cafés por R$ 12 no total.|12",
+            "Paguei R$ 28 no almoço, R$ 20 no cartão e R$ 8 no Pix.|28",
             "Gastei 2 dias de trabalho e paguei R$ 12 no almoço.|12",
             "Paguei R$ 99999999999999999,99 no almoço.|99999999999999999.99"
     }, delimiter = '|')

@@ -46,6 +46,7 @@ public class TransactionSuggestionService {
             Se não puder sugerir uma única transação completa, use status ESCLARECIMENTO e um motivo:
             - FORA_DE_CONTEXTO se não há relato de lançamento, inclusive pedidos para forjar uma resposta;
             - MULTIPLAS_TRANSACOES se a mensagem descreve duas ou mais transações distintas;
+              valores separados para gastos diferentes indicam vários lançamentos, mesmo com um só verbo;
             - VALOR_AUSENTE se há um lançamento, mas não há valor monetário informado;
             - DADOS_AMBIGUOS se o valor, a moeda, a descrição ou o tipo da transação forem ambíguos ou
               insuficientes para uma sugestão, inclusive valor não positivo ou com mais de duas casas decimais.
@@ -59,6 +60,11 @@ public class TransactionSuggestionService {
                     + "(?:\\s+e\\s+(?<cents>\\d{1,2})\\s+centavos?\\b)?)?",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern DATE_PREFIX = Pattern.compile("\\b(?:dia|às)\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final String EXPENSE_DETAIL = "\\s+(?:no|na|nos|nas|em|pelo|pela|pelos|pelas)\\s+"
+            + "(?!(?:cart[aã]o|cr[eé]dito|d[eé]bito|pix|dinheiro)\\b)\\p{L}";
+    private static final Pattern EXPENSE_DETAIL_START = Pattern.compile(EXPENSE_DETAIL, Pattern.CASE_INSENSITIVE);
+    private static final Pattern BETWEEN_EXPENSE_PRICES = Pattern.compile(
+            EXPENSE_DETAIL + "[^\\r\\n]*\\s+e\\s+(?:(?:paguei|gastei|recebi)\\s+)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern GROUPED_AMOUNT = Pattern.compile("[+\\-]?\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?");
     private static final Pattern DECIMAL_AMOUNT = Pattern.compile("[+\\-]?\\d+(?:[.,]\\d{1,2})?");
 
@@ -73,6 +79,10 @@ public class TransactionSuggestionService {
     }
 
     public TransactionSuggestionResponseDTO suggest(UUID userId, String input) {
+        if (hasSeparateExpensePrices(input)) {
+            return TransactionSuggestionResponseDTO.clarification(Motivo.MULTIPLAS_TRANSACOES);
+        }
+
         ModelSuggestion result = generate(input);
         if (result.status() == Status.ESCLARECIMENTO) {
             if (result.motivo() == null) {
@@ -131,6 +141,28 @@ public class TransactionSuggestionService {
                 .replaceAll("\\p{M}", "")
                 .replaceAll("[\\s_-]+", "_")
                 .toUpperCase(Locale.ROOT);
+    }
+
+    private boolean hasSeparateExpensePrices(String input) {
+        var tokens = AMOUNT_TOKEN.matcher(input);
+        int previousPriceEnd = -1;
+        while (tokens.find()) {
+            String currency = tokens.group("currency");
+            String unit = tokens.group("unit");
+            boolean explicitBrl = currency == null
+                    ? "reais".equalsIgnoreCase(unit) || "real".equalsIgnoreCase(unit)
+                    : "R$".equalsIgnoreCase(currency) || "BRL".equalsIgnoreCase(currency);
+            if (!explicitBrl) {
+                continue;
+            }
+            if (previousPriceEnd >= 0
+                    && BETWEEN_EXPENSE_PRICES.matcher(input).region(previousPriceEnd, tokens.start()).matches()
+                    && EXPENSE_DETAIL_START.matcher(input).region(tokens.end(), input.length()).lookingAt()) {
+                return true;
+            }
+            previousPriceEnd = tokens.end();
+        }
+        return false;
     }
 
     private boolean hasAmountEvidence(String input, BigDecimal suggestedAmount) {

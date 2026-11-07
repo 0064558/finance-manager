@@ -69,6 +69,22 @@ class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
     }
 
     @Test
+    void asksForOneTransactionAtATimeWhenTwoExpensesHaveTheirOwnPrices() throws Exception {
+        var user = user();
+
+        Reply reply = request("POST", SUGGESTIONS, user.token(),
+                Map.of("description", "Gastei R$ 20 no almoço e R$ 8 no ônibus."));
+
+        reply.status(200);
+        assertThat(reply.text("status")).isEqualTo("ESCLARECIMENTO");
+        assertThat(reply.text("motivo")).isEqualTo("MULTIPLAS_TRANSACOES");
+        assertThat(reply.text("mensagem")).isEqualTo("Envie um lançamento por vez para que eu possa sugerir os dados.");
+        assertThat(reply.value("valor")).isNull();
+        verify(chatModel, never()).call(any(Prompt.class));
+        assertNoTransactions(user);
+    }
+
+    @Test
     void providerFailureReturnsSanitizedProblemWithoutCreatingTransactions() throws Exception {
         var user = user();
         when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
