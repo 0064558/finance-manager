@@ -21,11 +21,14 @@ public class IdempotentTransactionService {
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
     private final TransactionService transactions;
+    private final TransactionChatHistory chatHistory;
 
-    public IdempotentTransactionService(JdbcTemplate jdbc, ObjectMapper json, TransactionService transactions) {
+    public IdempotentTransactionService(JdbcTemplate jdbc, ObjectMapper json, TransactionService transactions,
+                                        TransactionChatHistory chatHistory) {
         this.jdbc = jdbc;
         this.json = json;
         this.transactions = transactions;
+        this.chatHistory = chatHistory;
     }
 
     @Transactional
@@ -34,6 +37,7 @@ public class IdempotentTransactionService {
         if (key == null) return transactions.createTransaction(userId, request);
         if (key.isBlank() || key.length() > 200) throw new InvalidIdempotencyKeyException();
 
+        chatHistory.lockForConfirmation(userId, key);
         String hash = fingerprint(request);
         // The unique key waits for any competing uncommitted insert. Both the
         // claim and financial write commit together, or both roll back.

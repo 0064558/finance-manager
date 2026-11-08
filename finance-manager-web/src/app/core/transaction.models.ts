@@ -3,8 +3,25 @@ export type TransactionType = 'INCOME' | 'EXPENSE'; // union type
 export interface TransactionChatEntry {
   id: string;
   prompt: string;
-  response: TransactionSuggestionResponse;
+  response?: TransactionSuggestionResponse;
   saved: boolean;
+  drafts?: TransactionChatDraft[];
+  replyTo?: string;
+  superseded?: boolean;
+}
+
+export interface TransactionChatMessage {
+  description: string;
+  requestId: string;
+  replyTo?: string;
+  timeZone?: string;
+}
+
+export interface TransactionChatDraft {
+  id: string;
+  response: TransactionSuggestion;
+  saved: boolean;
+  discarded: boolean;
 }
 
 export interface TransactionSuggestion {
@@ -14,11 +31,12 @@ export interface TransactionSuggestion {
   tipo: 'DESPESA' | 'RECEITA';
   categoriaSugerida?: string;
   categoriaId?: string;
+  data?: string;
 }
 
 export type TransactionSuggestionResponse = TransactionSuggestion | {
   status: 'ESCLARECIMENTO';
-  motivo: 'VALOR_AUSENTE' | 'MULTIPLAS_TRANSACOES' | 'FORA_DE_CONTEXTO' | 'DADOS_AMBIGUOS';
+  motivo: string;
   mensagem: string;
 };
 

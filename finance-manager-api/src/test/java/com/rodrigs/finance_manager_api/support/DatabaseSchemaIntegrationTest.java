@@ -36,11 +36,11 @@ class DatabaseSchemaIntegrationTest extends PostgresIntegrationTest {
                 FROM information_schema.tables
                 WHERE table_schema = 'public'
                   AND table_name IN ('users', 'financial_accounts', 'categories', 'transactions',
-                                     'transaction_idempotency', 'transaction_chat_history')
+                                     'transaction_idempotency', 'transaction_chat_history', 'transaction_chat_drafts')
                 """, Integer.class);
 
-        assertThat(appliedMigrations).isEqualTo(8);
-        assertThat(applicationTables).isEqualTo(6);
+        assertThat(appliedMigrations).isEqualTo(9);
+        assertThat(applicationTables).isEqualTo(7);
     }
 
     @Test

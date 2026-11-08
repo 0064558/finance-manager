@@ -33,11 +33,14 @@ it('sends a message and reads history through the chat endpoint', () => {
   };
   const received = vi.fn();
 
-  api.sendChatMessage(entry.prompt).subscribe(received);
+  const message = {
+    description: entry.prompt, replyTo: 'previous-id', requestId: 'new-id', timeZone: 'America/Sao_Paulo',
+  };
+  api.sendChatMessage(message).subscribe(received);
 
   const request = http.expectOne('/api/v1/transactions/chat');
   expect(request.request.method).toBe('POST');
-  expect(request.request.body).toEqual({ description: 'Gastei 47,90 no almoço.' });
+  expect(request.request.body).toEqual(message);
   expect(request.request.headers.has('Idempotency-Key')).toBe(false);
   request.flush(entry);
   expect(received).toHaveBeenCalledWith(entry);
@@ -47,5 +50,10 @@ it('sends a message and reads history through the chat endpoint', () => {
   expect(history.request.method).toBe('GET');
   history.flush([entry]);
   expect(received).toHaveBeenLastCalledWith([entry]);
+
+  api.discardChatDraft('draft-id').subscribe();
+  const discard = http.expectOne('/api/v1/transactions/chat/drafts/draft-id');
+  expect(discard.request.method).toBe('DELETE');
+  discard.flush(null, { status: 204, statusText: 'No Content' });
   http.verify();
 });

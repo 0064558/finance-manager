@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CreateTransactionRequest, PageResponse, TransactionChatEntry, TransactionFilters, TransactionResponse, UpdateTransactionRequest } from './transaction.models';
+import { CreateTransactionRequest, PageResponse, TransactionChatEntry, TransactionChatMessage, TransactionFilters, TransactionResponse, UpdateTransactionRequest } from './transaction.models';
 
 @Service()
 export class TransactionApi {
@@ -77,8 +77,12 @@ export class TransactionApi {
     return this.http.get<TransactionChatEntry[]>(`${this.endpoint}/chat`);
   }
 
-  sendChatMessage(description: string): Observable<TransactionChatEntry> {
-    return this.http.post<TransactionChatEntry>(`${this.endpoint}/chat`, { description });
+  sendChatMessage(message: TransactionChatMessage): Observable<TransactionChatEntry> {
+    return this.http.post<TransactionChatEntry>(`${this.endpoint}/chat`, message);
+  }
+
+  discardChatDraft(draftId: string): Observable<void> {
+    return this.http.delete<void>(`${this.endpoint}/chat/drafts/${draftId}`);
   }
 
   create(transactionRequest: CreateTransactionRequest, idempotencyKey: string = crypto.randomUUID()): Observable<TransactionResponse> {

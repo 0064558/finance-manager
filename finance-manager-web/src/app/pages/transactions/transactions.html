@@ -361,8 +361,8 @@
     <header class="filter-panel__heading">
       <span class="panel-icon" aria-hidden="true"><svg lucideMessageCircle></svg></span>
       <div>
-        <h2>Registre uma transação pelo chat</h2>
-        <p>Descreva uma receita ou despesa. Você poderá revisar os dados antes de salvar.</p>
+        <h2>Registre transações pelo chat</h2>
+        <p>Descreva receitas ou despesas. Revise cada sugestão antes de salvar.</p>
       </div>
     </header>
 
@@ -370,57 +370,129 @@
       <p role="status">Carregando histórico do chat...</p>
     } @else if (chatHistoryFailed()) {
       <p role="alert">Não foi possível carregar o histórico do chat.</p>
-      <button class="secondary-button fm-button" type="button" (click)="loadChatHistory()">Tentar novamente</button>
+      <div class="chat-actions">
+        <button class="secondary-button fm-button" type="button" (click)="loadChatHistory(true)">Tentar novamente</button>
+        <button #manualHistory class="secondary-button fm-button" type="button"
+          [disabled]="isLoading() || !!errorMessage()" aria-haspopup="dialog"
+          (click)="openManualFromChat(manualHistory)">Abrir formulário manual</button>
+      </div>
     }
 
     <div #chatLog class="chat-log" role="log" aria-label="Conversa com a IA" aria-relevant="additions text">
-      @for (exchange of chatExchanges(); track $index) {
+      @for (exchange of chatExchanges(); track exchange.id) {
         <div class="chat-message chat-message--user">
           <strong>Você</strong>
           <p>{{ valuePrivacy.hidden() ? 'Mensagem oculta pelo modo de privacidade.' : exchange.prompt }}</p>
         </div>
-        @if (exchange.response; as response) {
+        @if (exchange.error) {
+          <div class="chat-message chat-message--error">
+            <p role="alert">{{ exchange.error }}</p>
+            <div class="chat-actions">
+              @if (exchange.retryable) {
+                <button class="secondary-button fm-button" type="button" [disabled]="chatBusy()"
+                  (click)="retryChatMessage(exchange)">Tentar novamente</button>
+              }
+              <button #manualError class="secondary-button fm-button" type="button"
+                [disabled]="isLoading() || !!errorMessage()" aria-haspopup="dialog"
+                (click)="openManualFromChat(manualError, exchange)">Abrir formulário manual</button>
+            </div>
+          </div>
+        } @else if (exchange.request) {
+          <div class="chat-message">
+            <p>Gerando sugestão...</p>
+            <button #manualWhileWaiting class="secondary-button fm-button" type="button"
+              [disabled]="isLoading() || !!errorMessage()" aria-haspopup="dialog"
+              (click)="openManualFromChat(manualWhileWaiting, exchange)">Abrir formulário manual</button>
+          </div>
+        } @else if (exchange.response?.status === 'ESCLARECIMENTO') {
           <div class="chat-message">
             <strong>Assistente</strong>
-            @if (response.status === 'ESCLARECIMENTO') {
-              <p>{{ response.mensagem }}</p>
-            } @else {
-              <p>
-                {{ response.tipo === 'DESPESA' ? 'Despesa' : 'Receita' }} · {{ response.descricao }} ·
-                {{ response.valor | privateCurrency: 'BRL' : 'symbol' }}
-              </p>
-              @if (response.categoriaSugerida) {
-                <p>Categoria sugerida: {{ response.categoriaSugerida }}</p>
-              }
-              @if (exchange.saved) {
-                <p>Transação registrada. Você pode consultá-la na aba Lista.</p>
-              } @else if ($last) {
-                @if (errorMessage()) {
-                  <p>Recarregue os dados na aba Lista para poder revisar a sugestão.</p>
-                }
-                <button id="review-transaction-suggestion" class="secondary-button fm-button" type="button"
-                  [disabled]="isLoading() || !!errorMessage()" aria-haspopup="dialog" (click)="openSuggestionReview()"
-                  #reviewButton>
-                  Revisar sugestão
-                </button>
-              }
+            <p>{{ exchange.response.mensagem }}</p>
+            @if (canReplyTo(exchange)) {
+              <button class="secondary-button fm-button" type="button" [disabled]="chatBusy()"
+                (click)="replyToChatExchange(exchange)">Responder</button>
             }
           </div>
-        } @else if (exchange.error) {
-          <div class="chat-message chat-message--error"><p>{{ exchange.error }}</p></div>
-        } @else if ($last && isRequestingSuggestion()) {
-          <div class="chat-message"><p>Gerando sugestão...</p></div>
+        } @else if (exchange.drafts.length) {
+          <div class="chat-message">
+            <strong>Assistente</strong>
+            <ul class="chat-drafts" aria-label="Sugestões de transações">
+              @for (draft of exchange.drafts; track draft.id) {
+                <li class="chat-draft">
+                  @if (valuePrivacy.hidden()) {
+                    <p>Sugestão oculta pelo modo de privacidade.</p>
+                  } @else if (draft.response.valor < chatAmountPrecisionLimit) {
+                    <p>
+                      {{ draft.response.tipo === 'DESPESA' ? 'Despesa' : 'Receita' }} ·
+                      {{ draft.response.descricao }} · {{ draft.response.valor | privateCurrency: 'BRL' : 'symbol' }}
+                    </p>
+                    @if (draft.response.data; as date) {
+                      <p>Data sugerida <time [attr.datetime]="date">{{ date + 'T00:00:00Z' | date: 'dd/MM/yyyy' : 'UTC' }}</time></p>
+                    }
+                    @if (draft.response.categoriaSugerida) {
+                      <p>Categoria sugerida: {{ draft.response.categoriaSugerida }}</p>
+                    }
+                  }
+                  @if (draft.saved) {
+                    <p>Transação registrada. Você pode consultá-la na aba Lista.</p>
+                  } @else if (exchange.superseded) {
+                    <p>Sugestão substituída por uma resposta mais recente.</p>
+                  } @else if (draft.discarded) {
+                    <p>Sugestão descartada.</p>
+                  } @else {
+                    @if (draft.response.valor >= chatAmountPrecisionLimit) {
+                      <p>{{ chatAmountPrecisionMessage }}</p>
+                    } @else if (errorMessage()) {
+                      <p>Recarregue os dados na aba Lista para poder revisar a sugestão.</p>
+                    }
+                    <div class="chat-actions">
+                      @if (draft.response.valor < chatAmountPrecisionLimit) {
+                        <button #reviewButton class="secondary-button fm-button chat-draft-review" type="button"
+                          [disabled]="chatBusy() || isLoading() || !!errorMessage()" aria-haspopup="dialog"
+                          (click)="openSuggestionReview(exchange, draft, reviewButton)">Revisar sugestão</button>
+                      } @else {
+                        <button #manualPrecision class="secondary-button fm-button" type="button"
+                          [disabled]="isLoading() || !!errorMessage()" aria-haspopup="dialog"
+                          (click)="openManualFromChat(manualPrecision, exchange)">Abrir formulário manual</button>
+                      }
+                      @if (canReplyTo(exchange)) {
+                        <button class="secondary-button fm-button" type="button" [disabled]="chatBusy()"
+                          (click)="replyToChatExchange(exchange)">Corrigir no chat</button>
+                      }
+                      <button class="secondary-button fm-button chat-draft-discard" type="button"
+                        [disabled]="chatBusy()" (click)="discardChatDraft(exchange, draft)">
+                        {{ discardingDraftId() === draft.id ? 'Descartando...' : 'Descartar' }}
+                      </button>
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
         }
       }
     </div>
 
     <form class="chat-composer form-field" (submit)="$event.preventDefault(); requestSuggestion()">
-      <label for="transaction-prompt">Descrição da transação</label>
+      @if (chatReplyTo(); as target) {
+        <div class="chat-composer__context">
+          <p id="chat-reply-context">
+            {{ target.response?.status === 'ESCLARECIMENTO' ? 'Respondendo ao pedido de esclarecimento' : 'Corrigindo uma sugestão' }}
+            @if (!valuePrivacy.hidden()) {
+              <span>“{{ target.prompt }}”</span>
+            }
+          </p>
+          <button class="secondary-button fm-button" type="button" [disabled]="chatBusy()"
+            (click)="replyToChatExchange(null)">Novo lançamento</button>
+        </div>
+      }
+      <label for="transaction-prompt">{{ chatReplyTo() ? 'Sua resposta' : 'Descrição das transações' }}</label>
       <textarea #chatPrompt id="transaction-prompt" rows="2" maxlength="500" required
-        placeholder="Ex.: Gastei 47,90 no almoço." [formControl]="chatPromptControl"
+        [placeholder]="chatReplyTo() ? 'Ex.: R$ 47,90' : 'Ex.: Gastei R$ 47,90 no almoço ontem.'"
+        [attr.aria-describedby]="chatReplyTo() ? 'chat-reply-context' : null" [formControl]="chatPromptControl"
         [readOnly]="isRequestingSuggestion()"></textarea>
       <button class="primary-button fm-button" type="submit"
-        [disabled]="!chatHistoryReady() || chatPromptControl.invalid || isRequestingSuggestion()">
+        [disabled]="!chatHistoryReady() || chatPromptControl.invalid || chatBusy()">
         {{ isRequestingSuggestion() ? 'Enviando...' : 'Enviar' }}
       </button>
     </form>
