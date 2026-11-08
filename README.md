@@ -67,11 +67,16 @@ integrações bancárias, recorrência automática ou múltiplas moedas.
 
 ![Listagem e gerenciamento de transações](docs/images/transacoes.png)
 
-Na aba **Chat com IA**, descreva uma receita ou despesa, como “Gastei R$ 47,90
-no almoço ontem”. O chat sugere os dados do lançamento, incluindo a data quando
-informada. Se faltar algo, você pode responder à pergunta na mesma conversa.
+Em qualquer página após entrar na sua conta, abra **Chat com IA** pelo ícone
+flutuante no canto inferior direito. Descreva uma receita ou despesa, como “Gastei
+R$ 47,90 no almoço ontem”. O chat sugere os dados do lançamento, incluindo a data
+quando informada. Se faltar algo, você pode responder à pergunta na mesma conversa.
 Por exemplo, depois de “Paguei o almoço ontem”, basta responder “47,90” quando o
 chat perguntar o valor.
+
+O ditado em português usa o serviço de reconhecimento de voz do navegador.
+Clique no microfone do chat, permita o acesso e revise a transcrição antes de
+enviar. Em navegadores sem reconhecimento de voz, você pode digitar a mensagem.
 
 Para vários gastos em uma mensagem, como “Gastei R$ 20 no almoço e R$ 8 no
 ônibus”, revise e confirme cada rascunho separadamente. Você pode enviar até

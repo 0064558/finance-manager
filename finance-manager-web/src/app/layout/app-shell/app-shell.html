@@ -147,6 +147,8 @@
     </a>
   </nav>
 
+  <app-transaction-chat [suspended]="mobileMenuOpen()" />
+
   @if (activeOnboardingStep(); as step) {
     <section class="onboarding-guide" role="region"
       aria-labelledby="onboarding-title" aria-describedby="onboarding-description onboarding-detail">

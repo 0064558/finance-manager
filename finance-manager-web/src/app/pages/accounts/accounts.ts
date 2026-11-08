@@ -1,9 +1,10 @@
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { PrivateCurrency } from '../../shared/private-currency/private-currency';
 import { AnimatedNumber } from '../../shared/animated-number/animated-number';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { forkJoin, finalize } from 'rxjs';
+import { forkJoin, finalize, Subscription } from 'rxjs';
 
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -15,6 +16,7 @@ import {
 import { Report } from '../../core/report';
 import { ActivatedRoute } from '@angular/router';
 import { Notifications } from '../../core/notifications';
+import { TransactionChanges } from '../../core/transaction-changes';
 
 import {
   LucideAlertCircle,
@@ -63,6 +65,9 @@ export class Accounts implements OnInit {
   // Injeção de dependências para interagir com a API de contas financeiras e gerar relatórios.
   private readonly accountApi = inject(FinancialAccountApi);
   private readonly report = inject(Report);
+  private readonly transactionChanges = inject(TransactionChanges);
+  private readonly destroyRef = inject(DestroyRef);
+  private accountsSubscription?: Subscription;
 
   // Sinais para gerenciar o estado do componente, incluindo a lista de contas, o estado de carregamento e mensagens de erro.
   protected readonly accounts = signal<AccountViewModel[]>([]);
@@ -88,6 +93,9 @@ export class Accounts implements OnInit {
 
   // O método ngOnInit é chamado quando o componente é inicializado, e aqui ele chama o método para carregar as contas financeiras.
   ngOnInit(): void {
+    this.transactionChanges.saved$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadAccounts());
     this.loadAccounts();
     if (this.route?.snapshot.queryParamMap.get('action') === 'create') this.openCreateForm();
   }
@@ -95,19 +103,20 @@ export class Accounts implements OnInit {
   // Método protegido para carregar as contas financeiras e seus saldos atuais, 
   // lidando com o estado de carregamento e mensagens de erro conforme necessário.
   protected loadAccounts(): void {
+    this.accountsSubscription?.unsubscribe();
     // Define o estado de carregamento como verdadeiro e limpa qualquer mensagem de erro anterior.
     this.isLoading.set(true);
     this.errorMessage.set('');
 
     // Usa forkJoin para fazer chamadas paralelas à API de contas financeiras e ao serviço de relatórios    
     // combinando os resultados em um único fluxo de dados.
-    forkJoin({
+    this.accountsSubscription = forkJoin({
       accounts: this.accountApi.getAll(),
       balances: this.report.getCurrentBalance(),
     })
       // O operador finalize é usado para garantir que o estado de carregamento seja definido como falso, 
       // independentemente de a chamada ter sido bem-sucedida ou ter falhado.
-      .pipe(finalize(() => this.isLoading.set(false)))
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isLoading.set(false)))
       // O método subscribe é usado para lidar com os resultados da chamada à API, atualizando a lista de contas ou definindo uma mensagem de erro conforme necessário.
       .subscribe({
         // Se a chamada for bem-sucedida, os saldos das contas são combinados com as informações das contas e armazenados no sinal accounts.

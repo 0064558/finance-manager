@@ -23,6 +23,7 @@ import { FinancialAccountApi } from '../../core/financial-accounts';
 import { FinancialAccount } from '../../core/financial-account.models';
 import { Auth } from '../../core/auth';
 import { TransactionApi } from '../../core/transaction';
+import { TransactionChanges } from '../../core/transaction-changes';
 import { PageResponse, TransactionResponse, TransactionType } from '../../core/transaction.models';
 import { RecentTransactions } from '../../shared/recent-transactions/recent-transactions';
 import { CashFlowChart } from '../../shared/cash-flow-chart/cash-flow-chart';
@@ -59,7 +60,9 @@ export class Dashboard implements OnInit {
   private readonly accountApi = inject(FinancialAccountApi);
   private readonly auth = inject(Auth);
   private readonly transactionApi = inject(TransactionApi);
+  private readonly transactionChanges = inject(TransactionChanges);
   private readonly destroyRef = inject(DestroyRef);
+  private dashboardSubscription?: Subscription;
   private categorySubscription?: Subscription;
   private readonly categoryCache = new Map<TransactionType, CategoryBreakdownResponse>();
   protected readonly selectedCategoryType = signal<TransactionType>('EXPENSE');
@@ -114,6 +117,9 @@ export class Dashboard implements OnInit {
         },
         error: () => this.userLoading.set(false),
       });
+    this.transactionChanges.saved$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadDashboard());
     this.loadDashboard();
   }
 
@@ -170,6 +176,7 @@ export class Dashboard implements OnInit {
   }
 
   private loadDashboard(): void {
+    this.dashboardSubscription?.unsubscribe();
     this.categoryCache.clear();
     this.loadCategoryBreakdown();
     const selectedMonth = this.selectedMonth();
@@ -181,7 +188,7 @@ export class Dashboard implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    forkJoin({
+    this.dashboardSubscription = forkJoin({
       summary: this.report.getSummary(startDate, endDate),
       currentBalance: this.report.getCurrentBalance(),
       accounts: this.accountApi.getAll().pipe(catchError(() => of([] as FinancialAccount[]))),

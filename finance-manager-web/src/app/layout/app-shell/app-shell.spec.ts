@@ -8,6 +8,7 @@ import { vi } from 'vitest';
 import { Auth } from '../../core/auth';
 import { apiUrlInterceptor } from '../../core/api-url-interceptor';
 import { authInterceptor } from '../../core/auth.interceptor';
+import { TransactionApi } from '../../core/transaction';
 import { ValuePrivacy } from '../../core/value-privacy';
 import { AppShell } from './app-shell';
 
@@ -69,6 +70,55 @@ describe('AppShell privacy control', () => {
     expect(link.getAttribute('aria-current')).toBe('page');
   });
 
+});
+
+describe('AppShell floating AI chat', () => {
+  beforeEach(() => vi.stubGlobal('matchMedia', () => ({ matches: false })));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('opens from an authenticated page and preserves the composer across navigation', async () => {
+    const getChatHistory = vi.fn(() => of([]));
+    TestBed.configureTestingModule({
+      imports: [AppShell],
+      providers: [
+        provideRouter([
+          { path: 'dashboard', component: NavigationPage },
+          { path: 'accounts', component: NavigationPage },
+        ]),
+        { provide: Auth, useValue: { getCurrentUser: () => of({ name: 'Maria', onboardingVersion: 1 }) } },
+        { provide: TransactionApi, useValue: { getChatHistory } },
+      ],
+    });
+    const fixture = TestBed.createComponent(AppShell);
+    const root: HTMLElement = fixture.nativeElement;
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/dashboard');
+    fixture.detectChanges();
+
+    const launcher = root.querySelector<HTMLButtonElement>('.chat-launcher')!;
+    const panel = root.querySelector<HTMLElement>('#transaction-chat-panel')!;
+    expect(panel.hidden).toBe(true);
+    expect(getChatHistory).not.toHaveBeenCalled();
+
+    launcher.click();
+    fixture.detectChanges();
+    expect(launcher.getAttribute('aria-expanded')).toBe('true');
+    expect(panel.hidden).toBe(false);
+    const composer = panel.querySelector('textarea')!;
+    composer.value = 'Gastei R$ 30 no almoço';
+    composer.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+
+    await router.navigateByUrl('/accounts');
+    fixture.detectChanges();
+    launcher.click();
+    fixture.detectChanges();
+    expect(panel.hidden).toBe(true);
+    launcher.click();
+    fixture.detectChanges();
+    expect(panel.querySelector('textarea')?.value).toBe('Gastei R$ 30 no almoço');
+    expect(getChatHistory).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('AppShell mobile navigation', () => {
