@@ -23,20 +23,37 @@ describe('TransactionApi Idempotency-Key', () => {
   });
 });
 
-it('requests a suggestion without calling the transaction creation endpoint', () => {
+it('sends a message and reads history through the chat endpoint', () => {
   TestBed.configureTestingModule({ providers: [TransactionApi, provideHttpClient(), provideHttpClientTesting()] });
   const api = TestBed.inject(TransactionApi);
   const http = TestBed.inject(HttpTestingController);
-  const suggestion = { status: 'SUGESTAO', descricao: 'Almoço', valor: 47.90, tipo: 'DESPESA' };
+  const entry = {
+    id: 'chat-id', prompt: 'Gastei 47,90 no almoço.', saved: false,
+    response: { status: 'SUGESTAO', descricao: 'Almoço', valor: 47.90, tipo: 'DESPESA' },
+  };
   const received = vi.fn();
 
-  api.suggest('Gastei 47,90 no almoço.').subscribe(received);
+  const message = {
+    description: entry.prompt, replyTo: 'previous-id', requestId: 'new-id', timeZone: 'America/Sao_Paulo',
+  };
+  api.sendChatMessage(message).subscribe(received);
 
-  const request = http.expectOne('/api/v1/transactions/suggestions');
+  const request = http.expectOne('/api/v1/transactions/chat');
   expect(request.request.method).toBe('POST');
-  expect(request.request.body).toEqual({ description: 'Gastei 47,90 no almoço.' });
+  expect(request.request.body).toEqual(message);
   expect(request.request.headers.has('Idempotency-Key')).toBe(false);
-  request.flush(suggestion);
-  expect(received).toHaveBeenCalledWith(suggestion);
+  request.flush(entry);
+  expect(received).toHaveBeenCalledWith(entry);
+
+  api.getChatHistory().subscribe(received);
+  const history = http.expectOne('/api/v1/transactions/chat');
+  expect(history.request.method).toBe('GET');
+  history.flush([entry]);
+  expect(received).toHaveBeenLastCalledWith([entry]);
+
+  api.discardChatDraft('draft-id').subscribe();
+  const discard = http.expectOne('/api/v1/transactions/chat/drafts/draft-id');
+  expect(discard.request.method).toBe('DELETE');
+  discard.flush(null, { status: 204, statusText: 'No Content' });
   http.verify();
 });

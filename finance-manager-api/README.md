@@ -705,6 +705,26 @@ O endpoint de sugestões só prepara o rascunho. Para registrar o lançamento ap
 a confirmação, use `POST /api/v1/transactions` com os dados revisados, incluindo
 os identificadores da conta e da categoria.
 
+### Histórico e rascunhos do chat
+
+A aba **Chat com IA** usa `POST /api/v1/transactions/chat`. Envie `description`
+com o texto da mensagem. Os demais campos são opcionais.
+
+- `timeZone` recebe um fuso IANA, como `America/Sao_Paulo`, para interpretar datas
+  relativas. O servidor guarda a data de referência de cada mensagem.
+- `replyTo` recebe o ID de uma entrada da própria conta para responder a um
+  esclarecimento ou corrigir uma sugestão individual ainda pendente.
+- `requestId` recebe um UUID gerado pelo cliente. Repita o UUID e os mesmos dados
+  após uma falha de comunicação para recuperar o resultado de um envio já aceito.
+
+`GET /api/v1/transactions/chat` lista as entradas da conta autenticada. Cada
+entrada pode conter uma pergunta de esclarecimento ou rascunhos em `drafts`.
+Quando uma sugestão tem data identificada, o campo `data` usa `AAAA-MM-DD`.
+Para confirmar um rascunho, envie os dados revisados a `POST /api/v1/transactions`
+com o ID do rascunho como `Idempotency-Key`. Para descartá-lo, use
+`DELETE /api/v1/transactions/chat/drafts/{draftId}`. Cada rascunho tem seu próprio
+estado, inclusive quando uma mensagem contém vários lançamentos.
+
 ## Dashboard e relatórios
 
 Os endpoints de relatório exigem autenticação JWT:

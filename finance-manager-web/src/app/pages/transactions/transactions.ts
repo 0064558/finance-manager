@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, timeout } from 'rxjs';
 
 import { CategoryApi } from '../../core/categories';
 import { FinancialAccountApi } from '../../core/financial-accounts';
@@ -17,7 +17,8 @@ import { ValuePrivacy } from '../../core/value-privacy';
 import { Category } from '../../core/category.models';
 import { FinancialAccount } from '../../core/financial-account.models';
 import {
-  CreateTransactionRequest, TransactionFilters, TransactionResponse, TransactionSuggestionResponse, TransactionType,
+  CreateTransactionRequest, TransactionChatDraft, TransactionChatEntry, TransactionChatMessage,
+  TransactionFilters, TransactionResponse, TransactionType,
 } from '../../core/transaction.models';
 import { DatePipe } from '@angular/common';
 import {
@@ -45,16 +46,17 @@ interface TransactionViewModel extends TransactionResponse {
   categoryName: string;
 }
 
-interface ChatExchange {
-  prompt: string;
-  response?: TransactionSuggestionResponse;
+interface ChatExchange extends Omit<TransactionChatEntry, 'drafts'> {
+  drafts: TransactionChatDraft[];
+  request?: TransactionChatMessage;
   error?: string;
-  saved?: boolean;
+  retryable?: boolean;
 }
 
 // At this magnitude, adjacent JavaScript numbers are more than one cent apart.
 const chatAmountPrecisionLimit = 2 ** 46;
-const chatAmountPrecisionMessage = 'Este valor excede a precisão do chat. Confira o valor original antes de registrar manualmente pela aba Lista.';
+const chatAmountPrecisionMessage = 'Este valor excede a precisão do chat. Confira o valor original antes de registrar manualmente.';
+const chatRequestTimeoutMs = 30_000;
 
 function dateRangeValidator(
   control: AbstractControl,
@@ -120,11 +122,12 @@ function formatLocalDate(date: Date): string {
   templateUrl: './transactions.html',
 })
 export class Transactions implements OnInit {
-  private readonly pendingCreations: Partial<Record<'manual' | 'chat', { body: string; key: string }>> = {};
-  private reviewDraft: ReturnType<Transactions['transactionForm']['getRawValue']> | null = null;
+  private pendingCreation: { body: string; key: string } | null = null;
+  private readonly reviewDrafts = new Map<string, ReturnType<Transactions['transactionForm']['getRawValue']>>();
+  private readonly activeChatDraftId = signal<string | null>(null);
+  private formTrigger: HTMLButtonElement | null = null;
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
-  private readonly reviewButton = viewChild<ElementRef<HTMLButtonElement>>('reviewButton');
   private readonly transactionAccount = viewChild<ElementRef<HTMLSelectElement>>('transactionAccount');
   private readonly chatPrompt = viewChild<ElementRef<HTMLTextAreaElement>>('chatPrompt');
   private readonly chatLog = viewChild<ElementRef<HTMLElement>>('chatLog');
@@ -153,8 +156,19 @@ export class Transactions implements OnInit {
   protected readonly valuePrivacy = inject(ValuePrivacy);
   protected readonly transactionTab = signal<'list' | 'chat'>('list');
   protected readonly chatExchanges = signal<ChatExchange[]>([]);
+  protected readonly chatHistoryReady = signal(false);
+  protected readonly isLoadingChatHistory = signal(false);
+  protected readonly chatHistoryFailed = signal(false);
   protected readonly isRequestingSuggestion = signal(false);
-  protected readonly isSuggestionReview = signal(false);
+  protected readonly discardingDraftId = signal<string | null>(null);
+  protected readonly isSuggestionReview = computed(() => this.activeChatDraftId() !== null);
+  protected readonly chatReplyTo = signal<ChatExchange | null>(null);
+  protected readonly chatAmountPrecisionLimit = chatAmountPrecisionLimit;
+  protected readonly chatAmountPrecisionMessage = chatAmountPrecisionMessage;
+  protected readonly chatBusy = computed(() =>
+    this.isLoadingChatHistory() || this.isRequestingSuggestion() || this.discardingDraftId() !== null
+    || this.isTransactionFormOpen(),
+  );
   protected readonly chatPromptControl = this.formBuilder.nonNullable.control('', [
     Validators.required, Validators.maxLength(500), Validators.pattern(/\S/),
   ]);
@@ -386,7 +400,37 @@ export class Transactions implements OnInit {
 
   protected selectTransactionTab(tab: 'list' | 'chat'): void {
     this.transactionTab.set(tab);
-    if (tab === 'chat') this.scrollChatToLatest();
+    if (tab === 'chat') {
+      this.loadChatHistory();
+      this.scrollChatToLatest();
+    }
+  }
+
+  protected loadChatHistory(refresh = false): void {
+    if (this.isLoadingChatHistory() || (this.chatHistoryReady() && !refresh)) return;
+
+    this.isLoadingChatHistory.set(true);
+    this.chatHistoryFailed.set(false);
+    this.transactionApi.getChatHistory()
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isLoadingChatHistory.set(false)))
+      .subscribe({
+        next: entries => {
+          const history = entries.map(entry => this.toChatExchange(entry));
+          const loadedIds = new Set(history.map(entry => entry.id));
+          const localFailures = this.chatExchanges().filter(entry => entry.request && !loadedIds.has(entry.id));
+          this.chatExchanges.set([...history, ...localFailures]);
+          const replyTo = this.chatReplyTo();
+          if (refresh && replyTo) {
+            const updated = history.find(entry => entry.id === replyTo.id);
+            this.chatReplyTo.set(updated && this.canReplyTo(updated) ? updated : null);
+          } else if (!refresh) {
+            this.offerClarificationReply(history.at(-1));
+          }
+          this.chatHistoryReady.set(true);
+          if (!refresh) this.scrollChatToLatest();
+        },
+        error: () => this.chatHistoryFailed.set(true),
+      });
   }
 
   protected onTabKeyDown(event: KeyboardEvent, listTab: HTMLButtonElement, chatTab: HTMLButtonElement): void {
@@ -399,40 +443,156 @@ export class Transactions implements OnInit {
   }
 
   protected requestSuggestion(): void {
-    if (this.chatPromptControl.invalid || this.isRequestingSuggestion() || this.isTransactionFormOpen()) return;
+    if (!this.chatHistoryReady() || this.chatPromptControl.invalid || this.chatBusy()) return;
 
     const prompt = this.chatPromptControl.value.trim();
-    this.chatExchanges.update(exchanges => [...exchanges, { prompt }]);
-    this.reviewDraft = null;
-    delete this.pendingCreations.chat;
-    this.isRequestingSuggestion.set(true);
-    this.scrollChatToLatest();
+    const replyTo = this.chatReplyTo()?.id;
+    const latest = this.chatExchanges().at(-1);
+    if (latest?.retryable && latest.request?.description === prompt && latest.request.replyTo === replyTo) {
+      this.retryChatMessage(latest);
+      return;
+    }
 
-    this.transactionApi.suggest(prompt)
-      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.isRequestingSuggestion.set(false)))
+    const request: TransactionChatMessage = {
+      description: prompt,
+      requestId: crypto.randomUUID(),
+      replyTo,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+    const exchange: ChatExchange = { id: request.requestId, prompt, request, replyTo, drafts: [], saved: false };
+    this.chatExchanges.update(exchanges => [...exchanges, exchange]);
+    this.scrollChatToLatest();
+    this.sendChatRequest(request);
+  }
+
+  protected retryChatMessage(exchange: ChatExchange): void {
+    if (!exchange.request || !exchange.retryable || this.chatBusy()) return;
+    this.updateChatExchange(exchange.id, { error: undefined, retryable: false });
+    this.sendChatRequest(exchange.request);
+  }
+
+  private sendChatRequest(request: TransactionChatMessage): void {
+    this.isRequestingSuggestion.set(true);
+    this.transactionApi.sendChatMessage(request)
+      .pipe(
+        timeout(chatRequestTimeoutMs),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isRequestingSuggestion.set(false)),
+      )
       .subscribe({
-        next: response => {
-          if (response.status === 'SUGESTAO' && response.valor >= chatAmountPrecisionLimit) {
-            this.updateLatestExchange({ error: chatAmountPrecisionMessage });
-            return;
+        next: entry => {
+          const exchange = this.toChatExchange(entry);
+          this.chatExchanges.update(exchanges => [
+            ...exchanges
+              .filter(item => item.id !== request.requestId && item.id !== entry.id)
+              .map(item => item.id === request.replyTo ? { ...item, superseded: true } : item),
+            exchange,
+          ]);
+          if (request.replyTo) {
+            this.reviewDrafts.delete(request.replyTo);
           }
-          this.chatPromptControl.reset('');
-          this.updateLatestExchange({ response });
+          if (this.chatReplyTo()?.id === request.replyTo) {
+            if (this.chatPromptControl.value.trim() === request.description) this.chatPromptControl.reset('');
+            if (this.chatPromptControl.value.trim()) this.chatReplyTo.set(null);
+            else this.offerClarificationReply(exchange);
+          }
+          this.scrollChatToLatest();
+          this.focusChatPrompt();
         },
-        error: (error: HttpErrorResponse) => this.updateLatestExchange({
-          error: error.status === 404 || error.status === 405
-            ? 'O chat com IA está indisponível. Você pode registrar a transação pela lista.'
-            : 'Não foi possível gerar a sugestão. Tente novamente.',
-        }),
+        error: (error: unknown) => this.handleChatRequestError(request, error),
       });
   }
 
-  private updateLatestExchange(patch: Partial<ChatExchange>): void {
-    this.chatExchanges.update(exchanges => [
-      ...exchanges.slice(0, -1),
-      { ...exchanges[exchanges.length - 1], ...patch },
-    ]);
-    this.scrollChatToLatest();
+  private handleChatRequestError(request: TransactionChatMessage, error: unknown): void {
+    const http = error instanceof HttpErrorResponse ? error : null;
+    const code = http?.error?.code;
+    if (code === 'CHAT_DRAFT_UNAVAILABLE' || code === 'CHAT_ENTRY_NOT_FOUND') {
+      this.updateChatExchange(request.requestId, { error: 'Esta conversa já mudou. Confira o histórico atualizado.' });
+      this.loadChatHistory(true);
+    } else if (code === 'CHAT_CONTEXT_LIMIT') {
+      this.updateChatExchange(request.requestId, {
+        error: 'Esta conversa atingiu o limite de respostas. Inicie um novo lançamento com os dados completos.',
+      });
+      this.chatReplyTo.set(null);
+    } else if (http?.status === 503 || http?.status === 404 || http?.status === 405) {
+      this.updateChatExchange(request.requestId, {
+        error: 'O chat com IA está indisponível. Tente novamente ou use o formulário manual.',
+        retryable: true,
+      });
+    } else {
+      this.updateChatExchange(request.requestId, {
+        error: 'Não foi possível gerar a sugestão. Tente novamente ou use o formulário manual.',
+        retryable: true,
+      });
+    }
+  }
+
+  private toChatExchange(entry: TransactionChatEntry): ChatExchange {
+    const drafts = entry.drafts ?? (entry.response?.status === 'SUGESTAO'
+      ? [{ id: entry.id, response: entry.response, saved: entry.saved, discarded: false }]
+      : []);
+    return { ...entry, drafts };
+  }
+
+  private updateChatExchange(id: string, patch: Partial<ChatExchange>): void {
+    this.chatExchanges.update(exchanges =>
+      exchanges.map(exchange => exchange.id === id ? { ...exchange, ...patch } : exchange),
+    );
+  }
+
+  private updateChatDraft(id: string, patch: Partial<TransactionChatDraft>): void {
+    this.chatExchanges.update(exchanges => exchanges.map(exchange => {
+      if (!exchange.drafts.some(draft => draft.id === id)) return exchange;
+      return { ...exchange, drafts: exchange.drafts.map(draft => draft.id === id ? { ...draft, ...patch } : draft) };
+    }));
+  }
+
+  protected canReplyTo(exchange: ChatExchange): boolean {
+    if (exchange.superseded || exchange.request) return false;
+    if (exchange.response?.status === 'ESCLARECIMENTO') {
+      return ['VALOR_AUSENTE', 'DADOS_AMBIGUOS', 'DATA_AMBIGUA'].includes(exchange.response.motivo);
+    }
+    return exchange.drafts.length === 1 && !exchange.drafts[0].saved && !exchange.drafts[0].discarded;
+  }
+
+  private offerClarificationReply(exchange?: ChatExchange): void {
+    this.chatReplyTo.set(
+      exchange?.response?.status === 'ESCLARECIMENTO' && this.canReplyTo(exchange) ? exchange : null,
+    );
+  }
+
+  protected replyToChatExchange(exchange: ChatExchange | null): void {
+    if (this.chatBusy() || (exchange && !this.canReplyTo(exchange))) return;
+    this.chatReplyTo.set(exchange);
+    this.focusChatPrompt();
+  }
+
+  protected discardChatDraft(exchange: ChatExchange, draft: TransactionChatDraft): void {
+    if (this.chatBusy() || exchange.superseded || draft.saved || draft.discarded) return;
+
+    this.discardingDraftId.set(draft.id);
+    this.transactionApi.discardChatDraft(draft.id)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.discardingDraftId.set(null)))
+      .subscribe({
+        next: () => {
+          this.updateChatDraft(draft.id, { discarded: true });
+          this.reviewDrafts.delete(draft.id);
+          if (this.chatReplyTo()?.id === exchange.id) this.chatReplyTo.set(null);
+          this.focusChatPrompt();
+        },
+        error: (error: HttpErrorResponse) => {
+          this.notifications.error('Não foi possível descartar a sugestão.');
+          if (error.status === 409 || error.status === 404) this.loadChatHistory(true);
+        },
+      });
+  }
+
+  private focusChatPrompt(): void {
+    afterNextRender(() => {
+      if (this.transactionTab() === 'chat' && !this.isTransactionFormOpen()) {
+        this.chatPrompt()?.nativeElement.focus();
+      }
+    }, { injector: this.injector });
   }
 
   private scrollChatToLatest(): void {
@@ -442,27 +602,45 @@ export class Transactions implements OnInit {
     }, { injector: this.injector });
   }
 
-  protected openSuggestionReview(): void {
-    const exchange = this.chatExchanges().at(-1);
-    const suggestion = exchange?.response;
-    if (suggestion?.status !== 'SUGESTAO' || exchange?.saved || this.isTransactionFormOpen()) return;
+  protected openSuggestionReview(exchange: ChatExchange, draft: TransactionChatDraft, trigger: HTMLButtonElement): void {
+    const suggestion = draft.response;
+    if (this.chatBusy() || exchange.superseded || draft.saved || draft.discarded
+        || suggestion.valor >= chatAmountPrecisionLimit || this.isLoading() || this.errorMessage()) return;
 
     const type = suggestion.tipo === 'DESPESA' ? 'EXPENSE' : 'INCOME';
     const category = this.categories().find(({ id, transactionType }) =>
       id === suggestion.categoriaId && transactionType === type,
     );
-    this.openNewTransactionForm(this.reviewDraft ?? {
+    this.openNewTransactionForm(this.reviewDrafts.get(draft.id) ?? {
       type,
       categoryId: category?.id ?? '',
       amount: suggestion.valor,
       description: suggestion.descricao,
+      occurredOn: suggestion.data ?? formatLocalDate(new Date()),
     });
-    this.isSuggestionReview.set(true);
+    this.activeChatDraftId.set(draft.id);
+    this.formTrigger = trigger;
+    afterNextRender(() => this.transactionAccount()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  protected openManualFromChat(trigger: HTMLButtonElement, exchange?: ChatExchange): void {
+    if (this.isTransactionFormOpen() || this.isLoading() || this.errorMessage()) return;
+    let root = exchange;
+    const history = this.chatExchanges();
+    while (root?.replyTo) {
+      const parent = history.find(item => item.id === root?.replyTo);
+      if (!parent) break;
+      root = parent;
+    }
+    const description = (root?.prompt ?? this.chatPromptControl.value).trim().slice(0, 255);
+    this.pendingCreation = null;
+    this.openNewTransactionForm({ description });
+    this.formTrigger = trigger;
     afterNextRender(() => this.transactionAccount()?.nativeElement.focus(), { injector: this.injector });
   }
 
   protected openCreateForm(): void {
-    delete this.pendingCreations.manual;
+    this.pendingCreation = null;
     this.openNewTransactionForm();
   }
 
@@ -496,14 +674,22 @@ export class Transactions implements OnInit {
       return; // Impede o fechamento do formulário enquanto a transação está sendo enviada.
     }
 
-    if (this.isSuggestionReview()) {
-      this.reviewDraft = this.transactionForm.getRawValue();
-      this.isSuggestionReview.set(false);
-      afterNextRender(() => this.reviewButton()?.nativeElement.focus(), { injector: this.injector });
+    const draftId = this.activeChatDraftId();
+    if (draftId) {
+      this.reviewDrafts.set(draftId, this.transactionForm.getRawValue());
+      this.activeChatDraftId.set(null);
     }
     this.isTransactionFormOpen.set(false);
     this.transactionFormError.set(null);
     this.selectedTransaction.set(null);
+    const trigger = this.formTrigger;
+    this.formTrigger = null;
+    if (trigger) {
+      afterNextRender(() => {
+        if (trigger.isConnected && !trigger.disabled) trigger.focus();
+        else if (this.transactionTab() === 'chat') this.chatPrompt()?.nativeElement.focus();
+      }, { injector: this.injector });
+    }
   }
 
   protected submitTransaction(): void {
@@ -538,8 +724,8 @@ export class Transactions implements OnInit {
     }
 
     const descriptionTrimmed = description.trim();
-    const source = this.isSuggestionReview() ? 'chat' : 'manual';
-    if (source === 'chat' && amount >= chatAmountPrecisionLimit) {
+    const draftId = this.activeChatDraftId();
+    if (draftId && amount >= chatAmountPrecisionLimit) {
       this.transactionFormError.set(chatAmountPrecisionMessage);
       return;
     }
@@ -556,15 +742,16 @@ export class Transactions implements OnInit {
     };
 
     const selectedTransaction = this.selectedTransaction();
-    if (!selectedTransaction) {
+    let creationKey = draftId ?? undefined;
+    if (!selectedTransaction && !draftId) {
       const body = JSON.stringify(transactionRequest);
       // Keep the operation key after an uncertain response so retrying does not
       // create a second financial effect. Changed data starts a new operation.
-      if (this.pendingCreations[source]?.body !== body) {
-        this.pendingCreations[source] = { body, key: crypto.randomUUID() };
+      if (this.pendingCreation?.body !== body) {
+        this.pendingCreation = { body, key: crypto.randomUUID() };
       }
+      creationKey = this.pendingCreation.key;
     }
-
     // Define o sinal isTransactionSubmitting como true para indicar que a transação está sendo enviada, e limpa qualquer mensagem de erro anterior.
     this.isTransactionSubmitting.set(true);
     this.transactionFormError.set(null);
@@ -572,7 +759,7 @@ export class Transactions implements OnInit {
     // Se houver uma transação selecionada, significa que estamos editando uma transação existente, caso contrário, estamos criando uma nova transação.
     const request$ = selectedTransaction
       ? this.transactionApi.update(selectedTransaction.id, transactionRequest)
-      : this.transactionApi.create(transactionRequest, this.pendingCreations[source]!.key);
+      : this.transactionApi.create(transactionRequest, creationKey);
 
     // Define a ação como "atualizar" se houver uma transação selecionada (indicando que estamos editando), ou "criar" se não houver transação selecionada (indicando que estamos criando uma nova transação).
     const action = selectedTransaction ? 'atualizar' : 'criar';
@@ -587,21 +774,31 @@ export class Transactions implements OnInit {
       // Se houver um erro, uma mensagem de erro apropriada é definida com base no tipo de erro retornado pela API.
       .subscribe({
         next: () => {
-          delete this.pendingCreations[source];
-          if (source === 'chat') {
-            this.reviewDraft = null;
-            this.isSuggestionReview.set(false);
-            this.updateLatestExchange({ saved: true });
-            afterNextRender(() => this.chatPrompt()?.nativeElement.focus(), { injector: this.injector });
+          if (this.destroyRef.destroyed) return;
+          if (draftId) {
+            this.reviewDrafts.delete(draftId);
+            this.activeChatDraftId.set(null);
+            this.updateChatDraft(draftId, { saved: true });
+            if (this.chatReplyTo()?.id === draftId) this.chatReplyTo.set(null);
+          } else {
+            this.pendingCreation = null;
           }
           this.selectedTransaction.set(null);
           this.isTransactionFormOpen.set(false);
+          if (this.formTrigger) this.focusChatPrompt();
+          this.formTrigger = null;
           this.notifications.success(selectedTransaction ? 'Transação atualizada com sucesso.' : 'Transação criada com sucesso.');
           this.clearFilters();
         },
         error: (error: HttpErrorResponse) => {
           if (error.status === 409 && error.error?.code === 'TRANSACTION_TYPE_MISMATCH') {
             this.transactionFormError.set('O tipo da transação deve ser igual ao tipo da categoria.');
+          } else if (draftId && error.status === 409 && error.error?.code === 'IDEMPOTENCY_CONFLICT') {
+            this.transactionFormError.set('Esta sugestão já foi confirmada. Confira a transação na aba Lista.');
+            this.loadChatHistory(true);
+          } else if (draftId && error.status === 409 && error.error?.code === 'CHAT_DRAFT_UNAVAILABLE') {
+            this.transactionFormError.set('Esta sugestão já mudou. Feche a revisão e confira o histórico.');
+            this.loadChatHistory(true);
           } else {
             this.transactionFormError.set(`Erro ao ${action} a transação.`);
           }

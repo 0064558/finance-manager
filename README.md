@@ -67,9 +67,19 @@ integrações bancárias, recorrência automática ou múltiplas moedas.
 
 ![Listagem e gerenciamento de transações](docs/images/transacoes.png)
 
-Na aba **Chat com IA**, descreva uma receita ou despesa, como “Gastei 47,90 no
-almoço.”. Ao receber a sugestão, revise os dados, complete os campos do formulário
-e confirme para registrar a transação. O chat requer [Gemini habilitado na API](finance-manager-api/README.md#sugestão-de-transação-com-gemini).
+Na aba **Chat com IA**, descreva uma receita ou despesa, como “Gastei R$ 47,90
+no almoço ontem”. O chat sugere os dados do lançamento, incluindo a data quando
+informada. Se faltar algo, você pode responder à pergunta na mesma conversa.
+Por exemplo, depois de “Paguei o almoço ontem”, basta responder “47,90” quando o
+chat perguntar o valor.
+
+Para vários gastos em uma mensagem, como “Gastei R$ 20 no almoço e R$ 8 no
+ônibus”, revise e confirme cada rascunho separadamente. Você pode enviar até
+cinco lançamentos por mensagem. Os rascunhos pendentes ficam no histórico da
+sua conta e podem ser retomados ou descartados. Use **Corrigir no chat** para
+ajustar uma sugestão individual com outra mensagem. Se a resposta demorar,
+você pode aproveitar o texto no formulário manual. Após uma falha, você também
+pode tentar o envio novamente. O chat requer [Gemini habilitado na API](finance-manager-api/README.md#sugestão-de-transação-com-gemini).
 
 #### Categorias
 

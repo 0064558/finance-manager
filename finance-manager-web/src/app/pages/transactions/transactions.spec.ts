@@ -2,11 +2,11 @@ import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
-import { vi } from 'vitest';
+import { map, of, Subject, throwError, type Observable } from 'rxjs';
+import { vi, type Mock } from 'vitest';
 import { Transactions } from './transactions';
 import { TransactionApi } from '../../core/transaction';
-import { TransactionResponse, TransactionSuggestion, TransactionSuggestionResponse } from '../../core/transaction.models';
+import { TransactionChatEntry, TransactionChatMessage, TransactionResponse, TransactionSuggestion, TransactionSuggestionResponse } from '../../core/transaction.models';
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import { CategoryApi } from '../../core/categories';
 import { Auth } from '../../core/auth';
@@ -23,7 +23,10 @@ describe('Transactions', () => {
   let categories: ReturnType<typeof vi.fn>;
   let transactions: ReturnType<typeof vi.fn>;
   let create: ReturnType<typeof vi.fn>;
-  let suggest: ReturnType<typeof vi.fn>;
+  let suggest: Mock<(prompt: string) => Observable<TransactionSuggestionResponse>>;
+  let sendChatMessage: Mock<(message: TransactionChatMessage) => Observable<TransactionChatEntry>>;
+  let getChatHistory: ReturnType<typeof vi.fn>;
+  let discardChatDraft: ReturnType<typeof vi.fn>;
   const page = { content: [], number: 0, totalPages: 0, totalElements: 0 };
   beforeEach(() => {
     accounts = vi.fn(() => of([{ id: 'account', name: 'Conta', type: 'CHECKING', initialBalance: 0 }]));
@@ -31,10 +34,17 @@ describe('Transactions', () => {
     transactions = vi.fn(() => of(page));
     create = vi.fn();
     suggest = vi.fn();
+    sendChatMessage = vi.fn(({ description, replyTo }) => suggest(description).pipe(map(response => ({
+      id: crypto.randomUUID(), prompt: description, response, saved: false, replyTo,
+    }))));
+    getChatHistory = vi.fn(() => of([]));
+    discardChatDraft = vi.fn(() => of(undefined));
     TestBed.configureTestingModule({
       imports: [Transactions],
       providers: [provideRouter([]),
-        { provide: TransactionApi, useValue: { getAll: transactions, create, suggest } },
+        { provide: TransactionApi, useValue: {
+          getAll: transactions, create, getChatHistory, sendChatMessage, discardChatDraft,
+        } },
         { provide: FinancialAccountApi, useValue: { getAll: accounts } },
         { provide: CategoryApi, useValue: { getAll: categories } },
       ],
@@ -44,6 +54,12 @@ describe('Transactions', () => {
   const element = <T extends HTMLElement = HTMLElement>(selector: string): T => fixture.nativeElement.querySelector(selector);
   const click = (selector: string) => {
     element(selector).click();
+    fixture.detectChanges();
+  };
+  const clickChatAction = (label: string) => {
+    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('#transaction-chat-panel button');
+    const action = Array.from(buttons).find(button => button.textContent?.trim() === label);
+    action!.click();
     fixture.detectChanges();
   };
   const input = (selector: string, value: string, event = 'input') => {
@@ -61,6 +77,26 @@ describe('Transactions', () => {
     categoriaSugerida: 'Alimentação', categoriaId: 'food',
   };
 
+  it('restaura mensagens e confirmação ao reabrir Transações e preserva o histórico entre abas', () => {
+    const prompt = 'Gastei 47,90 no almoço.';
+    getChatHistory.mockReturnValue(of([{ id: 'lunch', prompt, response: lunchSuggestion, saved: true }]));
+    render();
+    click('#transaction-chat-tab');
+    expect(element('.chat-log').textContent).toContain(prompt);
+    click('#transaction-list-tab');
+    click('#transaction-chat-tab');
+    expect(getChatHistory).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+
+    render();
+    click('#transaction-chat-tab');
+    expect(getChatHistory).toHaveBeenCalledTimes(2);
+    expect(element('.chat-log').textContent).toContain(prompt);
+    expect(element('.chat-log').textContent).toContain('Transação registrada');
+    expect(element('.chat-draft-review')).toBeNull();
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('só cria após confirmar os dados revisados e atualiza a lista uma única vez', async () => {
     const pending = new Subject<TransactionResponse>();
     suggest.mockReturnValue(of(lunchSuggestion));
@@ -74,7 +110,7 @@ describe('Transactions', () => {
     expect(transactions).toHaveBeenCalledTimes(1);
     expect(create).not.toHaveBeenCalled();
 
-    click('#review-transaction-suggestion');
+    click('.chat-draft-review');
     await fixture.whenStable();
     expect(element<HTMLInputElement>('#transaction-amount').value).toBe('47.9');
     expect(element<HTMLSelectElement>('#transaction-category').value).toBe('food');
@@ -99,7 +135,7 @@ describe('Transactions', () => {
     pending.next(saved);
     pending.complete();
     fixture.detectChanges();
-    expect(element('#review-transaction-suggestion')).toBeNull();
+    expect(element('.chat-draft-review')).toBeNull();
     expect(element('#transaction-chat-panel').textContent).toContain('Transação registrada');
     expect(transactions).toHaveBeenCalledTimes(2);
 
@@ -128,9 +164,81 @@ describe('Transactions', () => {
     expect(element('[role="dialog"]')).toBeNull();
     click('#transaction-chat-tab');
     expect(element('#transaction-chat-panel').textContent).toContain(message);
-    expect(element('#review-transaction-suggestion')).toBeNull();
+    expect(element('.chat-draft-review')).toBeNull();
     expect(transactions).toHaveBeenCalledTimes(1);
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it('responde ao esclarecimento, preserva a data e substitui uma sugestão ao corrigir o valor', () => {
+    const date = '2026-01-02';
+    sendChatMessage
+      .mockReturnValueOnce(of({
+        id: 'clarification', prompt: 'Paguei o almoço ontem', saved: false,
+        response: { status: 'ESCLARECIMENTO', motivo: 'VALOR_AUSENTE', mensagem: 'Qual foi o valor?' },
+      }))
+      .mockReturnValueOnce(of({
+        id: 'lunch', replyTo: 'clarification', prompt: '47,90', saved: false,
+        response: { ...lunchSuggestion, data: date },
+      }))
+      .mockReturnValueOnce(of({
+        id: 'corrected', replyTo: 'lunch', prompt: 'Na verdade, foi 42,90', saved: false,
+        response: { ...lunchSuggestion, valor: 42.90, data: date },
+      }));
+    render();
+    click('#transaction-chat-tab');
+
+    sendPrompt('Paguei o almoço ontem');
+    expect(element('#chat-reply-context').textContent).toContain('Respondendo ao pedido de esclarecimento');
+    sendPrompt('47,90');
+    expect(sendChatMessage.mock.calls[1][0]).toEqual(expect.objectContaining({
+      description: '47,90', replyTo: 'clarification',
+    }));
+    expect(element('time[datetime="2026-01-02"]').textContent).toBe('02/01/2026');
+
+    clickChatAction('Corrigir no chat');
+    sendPrompt('Na verdade, foi 42,90');
+    expect(sendChatMessage.mock.calls[2][0].replyTo).toBe('lunch');
+    expect(element('.chat-log').textContent).toContain('Sugestão substituída');
+    expect(fixture.nativeElement.querySelectorAll('.chat-draft-review')).toHaveLength(1);
+    click('.chat-draft-review');
+    expect(element<HTMLInputElement>('#transaction-date').value).toBe(date);
+    expect(element<HTMLInputElement>('#transaction-amount').value).toBe('42.9');
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('mantém rascunhos antigos acessíveis e permite confirmar ou descartar itens do lote de forma independente', () => {
+    const busSuggestion: TransactionSuggestion = { ...lunchSuggestion, descricao: 'Ônibus', valor: 8 };
+    getChatHistory.mockReturnValue(of([
+      {
+        id: 'batch', prompt: 'Gastei R$ 47,90 no almoço e R$ 8 no ônibus', saved: false,
+        drafts: [
+          { id: 'lunch-draft', response: lunchSuggestion, saved: false, discarded: false },
+          { id: 'bus-draft', response: busSuggestion, saved: false, discarded: false },
+        ],
+      },
+      { id: 'more-recent', prompt: 'Outra transação', response: busSuggestion, saved: true },
+    ]));
+    create.mockReturnValue(of({ id: 'created' }));
+    render();
+    click('#transaction-chat-tab');
+    click('.chat-draft-review');
+    input('#transaction-description', 'Almoço revisado');
+    click('[role="dialog"] button[aria-label="Fechar formulário"]');
+
+    click('.chat-draft:nth-child(2) .chat-draft-review');
+    expect(element<HTMLTextAreaElement>('#transaction-description').value).toBe('Ônibus');
+    click('[role="dialog"] button[aria-label="Fechar formulário"]');
+    click('.chat-draft:nth-child(2) .chat-draft-discard');
+    expect(discardChatDraft).toHaveBeenCalledExactlyOnceWith('bus-draft');
+    expect(element('.chat-draft:nth-child(2)').textContent).toContain('Sugestão descartada');
+
+    click('.chat-draft-review');
+    expect(element<HTMLTextAreaElement>('#transaction-description').value).toBe('Almoço revisado');
+    input('#transaction-account', 'account', 'change');
+    click('[role="dialog"] button[type="submit"]');
+    expect(create).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ description: 'Almoço revisado' }), 'lunch-draft');
+    expect(element('.chat-draft:first-child').textContent).toContain('Transação registrada');
+    expect(element('.chat-draft:nth-child(2)').textContent).toContain('Sugestão descartada');
   });
 
   it('deixa a categoria para o usuário quando o ID sugerido não é compatível', () => {
@@ -138,7 +246,7 @@ describe('Transactions', () => {
     render();
     click('#transaction-chat-tab');
     sendPrompt('Recebi 47,90.');
-    click('#review-transaction-suggestion');
+    click('.chat-draft-review');
     expect(element<HTMLSelectElement>('#transaction-type').value).toBe('INCOME');
     expect(element<HTMLSelectElement>('#transaction-category').value).toBe('');
     expect(create).not.toHaveBeenCalled();
@@ -150,14 +258,14 @@ describe('Transactions', () => {
     render();
     click('#transaction-chat-tab');
     sendPrompt('Gastei 47,90 no almoço.');
-    click('#review-transaction-suggestion');
+    click('.chat-draft-review');
     input('#transaction-account', 'account', 'change');
     input('#transaction-description', 'Almoço revisado');
     click('[role="dialog"] button[type="submit"]');
     click('[role="dialog"] button[aria-label="Fechar formulário"]');
     click('#transaction-list-tab');
     click('#transaction-chat-tab');
-    click('#review-transaction-suggestion');
+    click('.chat-draft-review');
     expect(element<HTMLTextAreaElement>('#transaction-description').value).toBe('Almoço revisado');
     click('[role="dialog"] button[type="submit"]');
     expect(create).toHaveBeenCalledTimes(2);
@@ -171,9 +279,43 @@ describe('Transactions', () => {
     sendPrompt('Gastei 47,90 no almoço.');
     expect(element('#transaction-chat-panel').textContent).toContain('Não foi possível gerar a sugestão.');
     expect(element<HTMLTextAreaElement>('#transaction-prompt').value).toBe('Gastei 47,90 no almoço.');
-    click('#transaction-chat-panel button[type="submit"]');
-    expect(element('#review-transaction-suggestion')).not.toBeNull();
+    clickChatAction('Tentar novamente');
+    expect(sendChatMessage.mock.calls[1][0]).toEqual(sendChatMessage.mock.calls[0][0]);
+    expect(fixture.nativeElement.querySelectorAll('.chat-message--user')).toHaveLength(1);
+    expect(element('.chat-draft-review')).not.toBeNull();
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it('aproveita a descrição original no formulário manual durante uma resposta demorada', () => {
+    const pending = new Subject<TransactionChatEntry>();
+    getChatHistory.mockReturnValue(of([{
+      id: 'clarification', prompt: 'Paguei o almoço ontem', saved: false,
+      response: { status: 'ESCLARECIMENTO', motivo: 'VALOR_AUSENTE', mensagem: 'Qual foi o valor?' },
+    }]));
+    sendChatMessage.mockReturnValue(pending);
+    render();
+    click('#transaction-chat-tab');
+    sendPrompt('47,90');
+    clickChatAction('Abrir formulário manual');
+    expect(element<HTMLTextAreaElement>('#transaction-description').value).toBe('Paguei o almoço ontem');
+    expect(element('[role="dialog"] button[type="submit"]').textContent).toContain('Salvar transação');
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('mantém um novo lançamento que já estava sendo escrito ao repetir uma mensagem antiga', () => {
+    suggest.mockReturnValueOnce(throwError(() => ({ status: 502 }))).mockReturnValueOnce(of({
+      status: 'ESCLARECIMENTO', motivo: 'VALOR_AUSENTE', mensagem: 'Qual foi o valor?',
+    })).mockReturnValueOnce(of(lunchSuggestion));
+    render();
+    click('#transaction-chat-tab');
+    sendPrompt('Paguei o almoço');
+    input('#transaction-prompt', 'Paguei R$ 10 na farmácia');
+    clickChatAction('Tentar novamente');
+
+    expect(element<HTMLTextAreaElement>('#transaction-prompt').value).toBe('Paguei R$ 10 na farmácia');
+    expect(element('#chat-reply-context')).toBeNull();
+    click('#transaction-chat-panel button[type="submit"]');
+    expect(sendChatMessage.mock.calls[2][0].replyTo).toBeUndefined();
   });
 
   it('impede a revisão de um valor que o navegador não representa com precisão de centavos', () => {
@@ -182,7 +324,7 @@ describe('Transactions', () => {
     click('#transaction-chat-tab');
     sendPrompt('Gastei R$ 70.368.744.177.664 no almoço.');
     expect(element('.chat-log').textContent).toContain('Este valor excede a precisão do chat.');
-    expect(element('#review-transaction-suggestion')).toBeNull();
+    expect(element('.chat-draft-review')).toBeNull();
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -191,7 +333,7 @@ describe('Transactions', () => {
     render();
     click('#transaction-chat-tab');
     sendPrompt('Gastei 47,90 no almoço.');
-    click('#review-transaction-suggestion');
+    click('.chat-draft-review');
     input('#transaction-account', 'account', 'change');
     input('#transaction-amount', String(2 ** 46));
     click('[role="dialog"] button[type="submit"]');
@@ -210,6 +352,7 @@ describe('Transactions', () => {
       fixture.detectChanges();
       expect(element('.chat-log').textContent).toContain('Mensagem oculta pelo modo de privacidade.');
       expect(element('.chat-log').textContent).not.toContain('47,90');
+      expect(element('.chat-log').textContent).not.toContain('Almoço');
     } finally {
       privacy.setHidden(false);
     }
