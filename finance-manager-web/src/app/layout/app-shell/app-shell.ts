@@ -20,6 +20,7 @@ import {
 import { Auth } from '../../core/auth';
 import { AuthUser } from '../../core/auth.models';
 import { ValuePrivacy } from '../../core/value-privacy';
+import { TransactionChat } from '../../shared/transaction-chat/transaction-chat';
 
 const CURRENT_ONBOARDING_VERSION = 1;
 
@@ -39,6 +40,7 @@ type OnboardingStep = {
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
+    TransactionChat,
     LucideArrowLeftRight,
     LucideChartNoAxesCombined,
     LucideLayoutDashboard,

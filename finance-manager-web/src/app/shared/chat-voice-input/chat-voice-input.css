@@ -1,0 +1,41 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+button {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--fm-line, #dfe9e3);
+  border-radius: 0.65rem;
+  color: var(--fm-green, #176c53);
+  background: var(--fm-surface, #fff);
+  cursor: pointer;
+}
+
+button:enabled:hover {
+  background: var(--fm-green-soft, #e5f3eb);
+}
+
+button.is-recording {
+  border-color: var(--fm-danger, #b64050);
+  color: var(--fm-danger, #b64050);
+  background: var(--fm-danger-soft, #fff2f3);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.voice-status {
+  color: var(--fm-muted, #50675a);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}

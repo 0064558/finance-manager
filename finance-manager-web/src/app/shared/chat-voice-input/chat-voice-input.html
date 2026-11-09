@@ -1,0 +1,9 @@
+<button type="button" [attr.aria-label]="buttonLabel()" [attr.title]="buttonLabel()"
+  [class.is-recording]="recording()" [disabled]="buttonDisabled()" (click)="toggle()">
+  @if (recording()) {
+    <svg lucideSquare size="17" aria-hidden="true"></svg>
+  } @else {
+    <svg lucideMic size="17" aria-hidden="true"></svg>
+  }
+</button>
+<span class="voice-status" role="status">{{ status() }}</span>
