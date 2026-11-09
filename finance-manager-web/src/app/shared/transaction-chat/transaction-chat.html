@@ -26,9 +26,10 @@
   } @else if (chatHistoryFailed()) {
     <p role="alert">Não foi possível carregar o histórico do chat.</p>
     <div class="chat-actions">
-      <button class="secondary-button fm-button" type="button" (click)="loadChatHistory(true)">Tentar novamente</button>
+      <button class="secondary-button fm-button" type="button" [disabled]="historyActions.busy()"
+        (click)="loadChatHistory(true)">Tentar novamente</button>
       <button #manualHistory class="secondary-button fm-button" type="button"
-        [disabled]="isLoadingFormData() || !!form()" aria-haspopup="dialog"
+        [disabled]="manualFormBusy()" aria-haspopup="dialog"
         (click)="openManualFromChat(manualHistory)">Abrir formulário manual</button>
     </div>
   }
@@ -36,19 +37,26 @@
   <div #chatLog class="chat-log" role="log" aria-label="Conversa com a IA" aria-relevant="additions text">
     @for (exchange of chatExchanges(); track exchange.id) {
       <div class="chat-message chat-message--user">
-        <strong>Você</strong>
-        <p>{{ valuePrivacy.hidden() ? 'Mensagem oculta pelo modo de privacidade.' : exchange.prompt }}</p>
+        <div class="chat-message__heading">
+          <strong>Você</strong>
+          <button #deleteButton class="chat-message-delete fm-button" type="button" aria-haspopup="dialog"
+            aria-label="Excluir mensagem" title="Excluir mensagem" [attr.aria-describedby]="'chat-message-' + exchange.id"
+            [disabled]="!canDeleteExchange()" (click)="openDeleteConfirmation(exchange, deleteButton)">
+            <svg lucideTrash2 aria-hidden="true"></svg>
+          </button>
+        </div>
+        <p [id]="'chat-message-' + exchange.id">{{ valuePrivacy.hidden() ? 'Mensagem oculta pelo modo de privacidade.' : exchange.prompt }}</p>
       </div>
       @if (exchange.error) {
         <div class="chat-message chat-message--error">
           <p role="alert">{{ exchange.error }}</p>
           <div class="chat-actions">
-            @if (exchange.retryable) {
+            @if (exchange.retryable && hasReplyContext(exchange)) {
               <button class="secondary-button fm-button" type="button" [disabled]="chatBusy()"
                 (click)="retryChatMessage(exchange)">Tentar novamente</button>
             }
             <button #manualError class="secondary-button fm-button" type="button"
-              [disabled]="isLoadingFormData() || !!form()" aria-haspopup="dialog"
+              [disabled]="manualFormBusy()" aria-haspopup="dialog"
               (click)="openManualFromChat(manualError, exchange)">Abrir formulário manual</button>
           </div>
         </div>
@@ -56,7 +64,7 @@
         <div class="chat-message">
           <p>Gerando sugestão...</p>
           <button #manualWhileWaiting class="secondary-button fm-button" type="button"
-            [disabled]="isLoadingFormData() || !!form()" aria-haspopup="dialog"
+            [disabled]="manualFormBusy()" aria-haspopup="dialog"
             (click)="openManualFromChat(manualWhileWaiting, exchange)">Abrir formulário manual</button>
         </div>
       } @else if (exchange.response?.status === 'ESCLARECIMENTO') {
@@ -66,6 +74,8 @@
           @if (canReplyTo(exchange)) {
             <button class="secondary-button fm-button" type="button" [disabled]="chatBusy()"
               (click)="replyToChatExchange(exchange)">Responder</button>
+          } @else if (!exchange.superseded && !hasReplyContext(exchange)) {
+            <p>Parte da conversa foi excluída. Inicie um novo lançamento para enviar mais informações.</p>
           }
         </div>
       } @else if (exchange.drafts.length) {
@@ -105,7 +115,7 @@
                         (click)="openSuggestionReview(exchange, draft, reviewButton)">Revisar sugestão</button>
                     } @else {
                       <button #manualPrecision class="secondary-button fm-button" type="button"
-                        [disabled]="isLoadingFormData() || !!form()" aria-haspopup="dialog"
+                        [disabled]="manualFormBusy()" aria-haspopup="dialog"
                         (click)="openManualFromChat(manualPrecision, exchange)">Abrir formulário manual</button>
                     }
                     @if (canReplyTo(exchange)) {
@@ -160,6 +170,26 @@
     </div>
   </form>
 </section>
+
+@if (deleteTarget()) {
+  <dialog #deleteDialog class="chat-delete-dialog fm-modal" role="alertdialog" aria-modal="true"
+    aria-labelledby="chat-delete-title" aria-describedby="chat-delete-description"
+    [attr.aria-busy]="historyActions.busy()" (cancel)="$event.preventDefault(); closeDeleteConfirmation()">
+    <h2 id="chat-delete-title">Excluir mensagem?</h2>
+    <p id="chat-delete-description">
+      A mensagem e a resposta do assistente serão apagadas do histórico. As transações já registradas serão mantidas.
+    </p>
+    @if (deleteError()) {
+      <p class="chat-delete-error" role="alert">Não foi possível excluir a mensagem. Tente novamente.</p>
+    }
+    <div class="chat-delete-actions">
+      <button class="fm-button" type="button" autofocus [disabled]="historyActions.busy()"
+        (click)="closeDeleteConfirmation()">Cancelar</button>
+      <button class="chat-delete-confirm fm-button" type="button" [disabled]="historyActions.busy()"
+        (click)="confirmDeleteExchange()">{{ historyActions.busy() ? 'Excluindo…' : 'Excluir mensagem' }}</button>
+    </div>
+  </dialog>
+}
 
 @if (form(); as formData) {
   <app-transaction-form-dialog

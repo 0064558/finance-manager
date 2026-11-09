@@ -1,14 +1,15 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
-  afterNextRender, Component, computed, DestroyRef, ElementRef, inject, Injector, input, signal, viewChild,
+  afterNextRender, Component, computed, DestroyRef, effect, ElementRef, inject, Injector, input, signal, untracked, viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { LucideMessageCircle, LucideX } from '@lucide/angular';
+import { LucideMessageCircle, LucideTrash2, LucideX } from '@lucide/angular';
 import { finalize, forkJoin, Subscription, timeout } from 'rxjs';
 import { CategoryApi } from '../../core/categories';
 import { Category } from '../../core/category.models';
+import { ChatHistoryActions } from '../../core/chat-history-actions';
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import { FinancialAccount } from '../../core/financial-account.models';
 import { Notifications } from '../../core/notifications';
@@ -41,7 +42,10 @@ const chatRequestTimeoutMs = 30_000;
 
 @Component({
   selector: 'app-transaction-chat',
-  imports: [ChatVoiceInput, DatePipe, LucideMessageCircle, LucideX, PrivateCurrency, ReactiveFormsModule, TransactionFormDialog],
+  imports: [
+    ChatVoiceInput, DatePipe, LucideMessageCircle, LucideTrash2, LucideX, PrivateCurrency,
+    ReactiveFormsModule, TransactionFormDialog,
+  ],
   templateUrl: './transaction-chat.html',
   styleUrl: './transaction-chat.css',
 })
@@ -50,6 +54,7 @@ export class TransactionChat {
 
   private readonly reviewDrafts = new Map<string, TransactionFormValues>();
   private formTrigger: HTMLButtonElement | null = null;
+  private deleteTrigger: HTMLButtonElement | null = null;
   private formDataRequest?: Subscription;
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
@@ -59,9 +64,11 @@ export class TransactionChat {
   private readonly chatPanel = viewChild.required<ElementRef<HTMLElement>>('chatPanel');
   private readonly chatPrompt = viewChild.required<ElementRef<HTMLTextAreaElement>>('chatPrompt');
   private readonly chatLog = viewChild.required<ElementRef<HTMLElement>>('chatLog');
-  private readonly voice = viewChild.required<ChatVoiceInput>('voice');
+  private readonly voice = viewChild<ChatVoiceInput>('voice');
+  private readonly deleteDialog = viewChild<ElementRef<HTMLDialogElement>>('deleteDialog');
 
   protected readonly valuePrivacy = inject(ValuePrivacy);
+  protected readonly historyActions = inject(ChatHistoryActions);
   protected readonly isOpen = signal(false);
   protected readonly form = signal<ChatFormData | null>(null);
   protected readonly isLoadingFormData = signal(false);
@@ -72,16 +79,46 @@ export class TransactionChat {
   protected readonly isRequestingSuggestion = signal(false);
   protected readonly discardingDraftId = signal<string | null>(null);
   protected readonly chatReplyTo = signal<ChatExchange | null>(null);
+  protected readonly deleteTarget = signal<ChatExchange | null>(null);
+  protected readonly deleteError = signal(false);
   protected readonly chatAmountPrecisionLimit = chatAmountPrecisionLimit;
   protected readonly chatAmountPrecisionMessage = chatAmountPrecisionMessage;
   protected readonly promptMaxLength = 500;
-  protected readonly chatBusy = computed(() =>
+  private readonly chatWorkInProgress = computed(() =>
     this.isLoadingChatHistory() || this.isRequestingSuggestion() || this.discardingDraftId() !== null
     || this.isLoadingFormData() || this.form() !== null,
+  );
+  protected readonly chatBusy = computed(() =>
+    this.chatWorkInProgress() || this.historyActions.busy() || this.deleteTarget() !== null,
+  );
+  protected readonly manualFormBusy = computed(() =>
+    this.isLoadingFormData() || !!this.form() || this.historyActions.busy() || !!this.deleteTarget(),
+  );
+  protected readonly canDeleteExchange = computed(() => !this.chatBusy() && !this.voice()?.isCapturing());
+  private readonly exchangesById = computed(() =>
+    new Map(this.chatExchanges().map(exchange => [exchange.id, exchange])),
   );
   protected readonly chatPromptControl = inject(FormBuilder).nonNullable.control('', [
     Validators.required, Validators.maxLength(this.promptMaxLength), Validators.pattern(/\S/),
   ]);
+
+  constructor() {
+    effect(() => this.historyActions.setChatInUse(this.chatWorkInProgress() || !!this.voice()?.isCapturing()));
+    effect(() => {
+      if (this.isOpen() && !this.historyActions.busy() && !this.chatHistoryReady() && !this.chatHistoryFailed()) {
+        untracked(() => this.loadChatHistory());
+      }
+    });
+    this.destroyRef.onDestroy(() => this.historyActions.setChatInUse(false));
+    this.historyActions.cleared$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.chatExchanges.set([]);
+      this.chatReplyTo.set(null);
+      this.chatPromptControl.reset('');
+      this.reviewDrafts.clear();
+      this.chatHistoryFailed.set(false);
+      this.chatHistoryReady.set(false);
+    });
+  }
 
   private get transactionApi(): TransactionApi {
     return this.injector.get(TransactionApi);
@@ -93,7 +130,6 @@ export class TransactionChat {
       return;
     }
     this.isOpen.set(true);
-    this.loadChatHistory();
     this.scrollChatToLatest();
     this.focusChatPrompt(true);
   }
@@ -113,7 +149,7 @@ export class TransactionChat {
 
 
   protected loadChatHistory(refresh = false): void {
-    if (this.isLoadingChatHistory() || (this.chatHistoryReady() && !refresh)) return;
+    if (this.historyActions.busy() || this.isLoadingChatHistory() || (this.chatHistoryReady() && !refresh)) return;
 
     this.isLoadingChatHistory.set(true);
     this.chatHistoryFailed.set(false);
@@ -123,7 +159,10 @@ export class TransactionChat {
         next: entries => {
           const history = entries.map(entry => this.toChatExchange(entry));
           const loadedIds = new Set(history.map(entry => entry.id));
-          const localFailures = this.chatExchanges().filter(entry => entry.request && !loadedIds.has(entry.id));
+          const loadedRequestIds = new Set(history.map(entry => entry.requestId));
+          const localFailures = this.chatExchanges().filter(entry =>
+            entry.request && !loadedIds.has(entry.id) && !loadedRequestIds.has(entry.request.requestId),
+          );
           this.chatExchanges.set([...history, ...localFailures]);
           const replyTo = this.chatReplyTo();
           if (refresh && replyTo) {
@@ -140,7 +179,7 @@ export class TransactionChat {
   }
 
   protected requestSuggestion(): void {
-    if (!this.chatHistoryReady() || this.chatPromptControl.invalid || this.chatBusy() || this.voice().isCapturing()) return;
+    if (!this.chatHistoryReady() || this.chatPromptControl.invalid || this.chatBusy() || this.voice()?.isCapturing()) return;
 
     const prompt = this.chatPromptControl.value.trim();
     const replyTo = this.chatReplyTo()?.id;
@@ -163,7 +202,7 @@ export class TransactionChat {
   }
 
   protected retryChatMessage(exchange: ChatExchange): void {
-    if (!exchange.request || !exchange.retryable || this.chatBusy()) return;
+    if (!exchange.request || !exchange.retryable || this.chatBusy() || !this.hasReplyContext(exchange)) return;
     this.updateChatExchange(exchange.id, { error: undefined, retryable: false });
     this.sendChatRequest(exchange.request);
   }
@@ -203,8 +242,11 @@ export class TransactionChat {
   private handleChatRequestError(request: TransactionChatMessage, error: unknown): void {
     const http = error instanceof HttpErrorResponse ? error : null;
     const code = http?.error?.code;
-    if (code === 'CHAT_DRAFT_UNAVAILABLE' || code === 'CHAT_ENTRY_NOT_FOUND') {
-      this.updateChatExchange(request.requestId, { error: 'Esta conversa já mudou. Confira o histórico atualizado.' });
+    if (code === 'CHAT_DRAFT_UNAVAILABLE' || code === 'CHAT_ENTRY_NOT_FOUND' || code === 'CHAT_HISTORY_CHANGED') {
+      this.updateChatExchange(request.requestId, {
+        error: 'Esta conversa já mudou. Confira o histórico atualizado e envie novamente se desejar.',
+        retryable: false,
+      });
       this.loadChatHistory(true);
     } else if (code === 'CHAT_CONTEXT_LIMIT') {
       this.updateChatExchange(request.requestId, {
@@ -245,11 +287,78 @@ export class TransactionChat {
   }
 
   protected canReplyTo(exchange: ChatExchange): boolean {
-    if (exchange.superseded || exchange.request) return false;
+    if (exchange.superseded || exchange.request || !this.hasReplyContext(exchange)) return false;
     if (exchange.response?.status === 'ESCLARECIMENTO') {
       return ['VALOR_AUSENTE', 'DADOS_AMBIGUOS', 'DATA_AMBIGUA'].includes(exchange.response.motivo);
     }
     return exchange.drafts.length === 1 && !exchange.drafts[0].saved && !exchange.drafts[0].discarded;
+  }
+
+  protected hasReplyContext(exchange: ChatExchange): boolean {
+    const exchanges = this.exchangesById();
+    let parentId = exchange.replyTo;
+    while (parentId) {
+      const parent = exchanges.get(parentId);
+      if (!parent || parent.request) return false;
+      parentId = parent.replyTo;
+    }
+    return true;
+  }
+
+  protected openDeleteConfirmation(exchange: ChatExchange, trigger: HTMLButtonElement): void {
+    if (!this.canDeleteExchange()) return;
+    this.deleteTrigger = trigger;
+    this.deleteTarget.set(exchange);
+    this.deleteError.set(false);
+    afterNextRender(() => this.deleteDialog()?.nativeElement.showModal(), { injector: this.injector });
+  }
+
+  protected closeDeleteConfirmation(): void {
+    if (this.historyActions.busy()) return;
+    const trigger = this.deleteTrigger;
+    this.dismissDeleteConfirmation();
+    afterNextRender(() => {
+      if (trigger?.isConnected && !trigger.disabled) trigger.focus();
+    }, { injector: this.injector });
+  }
+
+  protected confirmDeleteExchange(): void {
+    const exchange = this.deleteTarget();
+    if (!exchange || this.historyActions.busy()) return;
+    this.deleteError.set(false);
+    this.historyActions.deleteEntry(exchange.id, !!exchange.request)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.removeDeletedExchange(exchange);
+          this.dismissDeleteConfirmation();
+          this.loadChatHistory(true);
+          this.focusChatPrompt(true);
+          this.notifications.success('Mensagem excluída do chat.');
+        },
+        error: () => this.deleteError.set(true),
+      });
+  }
+
+  private removeDeletedExchange(deleted: ChatExchange): void {
+    const requestId = deleted.request?.requestId ?? deleted.requestId;
+    const remaining: ChatExchange[] = [];
+    for (const exchange of this.chatExchanges()) {
+      if (exchange.id === deleted.id || (requestId && (exchange.request?.requestId ?? exchange.requestId) === requestId)) {
+        for (const draft of exchange.drafts) this.reviewDrafts.delete(draft.id);
+      } else {
+        remaining.push(exchange);
+      }
+    }
+    this.chatExchanges.set(remaining);
+    const replyTo = this.chatReplyTo();
+    if (replyTo && (!this.exchangesById().has(replyTo.id) || !this.hasReplyContext(replyTo))) this.chatReplyTo.set(null);
+  }
+
+  private dismissDeleteConfirmation(): void {
+    this.deleteDialog()?.nativeElement.close();
+    this.deleteTarget.set(null);
+    this.deleteTrigger = null;
   }
 
   private offerClarificationReply(exchange?: ChatExchange): void {
@@ -320,7 +429,7 @@ export class TransactionChat {
   }
 
   protected openManualFromChat(trigger: HTMLButtonElement, exchange?: ChatExchange): void {
-    if (this.form() || this.isLoadingFormData()) return;
+    if (this.manualFormBusy()) return;
     let root = exchange;
     const history = this.chatExchanges();
     while (root?.replyTo) {

@@ -100,6 +100,9 @@ public class GlobalExceptionHandler {
                     "Envie os dados completos da transação em uma nova mensagem.", "CHAT_CONTEXT_LIMIT", request);
             case INVALID_TIME_ZONE -> problem(HttpStatus.BAD_REQUEST, "Fuso horário inválido",
                     "Informe um fuso horário válido.", "INVALID_CHAT_TIME_ZONE", request);
+            case HISTORY_CHANGED -> problem(HttpStatus.CONFLICT, "Histórico do chat alterado",
+                    "O histórico mudou durante o envio. Envie os dados completos em uma nova mensagem.",
+                    "CHAT_HISTORY_CHANGED", request);
         };
     }
 

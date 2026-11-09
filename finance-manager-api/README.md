@@ -707,7 +707,7 @@ os identificadores da conta e da categoria.
 
 ### Histórico e rascunhos do chat
 
-A aba **Chat com IA** usa `POST /api/v1/transactions/chat`. Envie `description`
+O painel **Chat com IA** usa `POST /api/v1/transactions/chat`. Envie `description`
 com o texto da mensagem. Os demais campos são opcionais.
 
 - `timeZone` recebe um fuso IANA, como `America/Sao_Paulo`, para interpretar datas
@@ -724,6 +724,14 @@ Para confirmar um rascunho, envie os dados revisados a `POST /api/v1/transaction
 com o ID do rascunho como `Idempotency-Key`. Para descartá-lo, use
 `DELETE /api/v1/transactions/chat/drafts/{draftId}`. Cada rascunho tem seu próprio
 estado, inclusive quando uma mensagem contém vários lançamentos.
+
+Use `DELETE /api/v1/transactions/chat/messages/{id}` para apagar uma mensagem e
+sua resposta, ou `DELETE /api/v1/transactions/chat` para apagar todo o histórico
+da conta autenticada. Ambas retornam `204 No Content` e preservam transações
+confirmadas. Na exclusão individual, `?byRequestId=true` identifica um envio pelo
+`requestId`, inclusive se a resposta ainda estiver pendente. Uma resposta cuja
+mensagem anterior foi excluída permanece no histórico, mas já não pode receber
+correções que dependam do contexto excluído.
 
 ## Dashboard e relatórios
 

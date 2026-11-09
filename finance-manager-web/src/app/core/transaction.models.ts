@@ -2,6 +2,7 @@ export type TransactionType = 'INCOME' | 'EXPENSE'; // union type
 
 export interface TransactionChatEntry {
   id: string;
+  requestId?: string;
   prompt: string;
   response?: TransactionSuggestionResponse;
   saved: boolean;

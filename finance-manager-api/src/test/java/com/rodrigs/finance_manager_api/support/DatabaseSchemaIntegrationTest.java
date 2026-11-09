@@ -39,7 +39,7 @@ class DatabaseSchemaIntegrationTest extends PostgresIntegrationTest {
                                      'transaction_idempotency', 'transaction_chat_history', 'transaction_chat_drafts')
                 """, Integer.class);
 
-        assertThat(appliedMigrations).isEqualTo(9);
+        assertThat(appliedMigrations).isEqualTo(10);
         assertThat(applicationTables).isEqualTo(7);
     }
 

@@ -81,6 +81,16 @@ export class TransactionApi {
     return this.http.post<TransactionChatEntry>(`${this.endpoint}/chat`, message);
   }
 
+  clearChatHistory(): Observable<void> {
+    return this.http.delete<void>(`${this.endpoint}/chat`);
+  }
+
+  deleteChatMessage(id: string, byRequestId: boolean): Observable<void> {
+    return this.http.delete<void>(`${this.endpoint}/chat/messages/${encodeURIComponent(id)}`, {
+      params: byRequestId ? { byRequestId: true } : {},
+    });
+  }
+
   discardChatDraft(draftId: string): Observable<void> {
     return this.http.delete<void>(`${this.endpoint}/chat/drafts/${draftId}`);
   }
