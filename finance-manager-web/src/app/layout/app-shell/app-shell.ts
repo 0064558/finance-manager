@@ -20,6 +20,7 @@ import {
 import { Auth } from '../../core/auth';
 import { AuthUser } from '../../core/auth.models';
 import { ValuePrivacy } from '../../core/value-privacy';
+import { ChatHistoryActions } from '../../core/chat-history-actions';
 import { TransactionChat } from '../../shared/transaction-chat/transaction-chat';
 
 const CURRENT_ONBOARDING_VERSION = 1;
@@ -36,6 +37,7 @@ type OnboardingStep = {
 
 @Component({
   selector: 'app-shell',
+  providers: [ChatHistoryActions],
   imports: [
     RouterLink,
     RouterLinkActive,

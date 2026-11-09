@@ -10,6 +10,7 @@ import { apiUrlInterceptor } from '../../core/api-url-interceptor';
 import { authInterceptor } from '../../core/auth.interceptor';
 import { TransactionApi } from '../../core/transaction';
 import { ValuePrivacy } from '../../core/value-privacy';
+import { Settings } from '../../pages/settings/settings';
 import { AppShell } from './app-shell';
 
 @Component({ template: '<p>Conteúdo da página</p>' })
@@ -118,6 +119,41 @@ describe('AppShell floating AI chat', () => {
     fixture.detectChanges();
     expect(panel.querySelector('textarea')?.value).toBe('Gastei R$ 30 no almoço');
     expect(getChatHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it('updates the floating panel when Settings clears the account history', async () => {
+    const getChatHistory = vi.fn().mockReturnValueOnce(of([
+      { id: 'entry', prompt: 'Paguei o almoço', drafts: [], saved: false },
+    ])).mockReturnValue(of([]));
+    const clearChatHistory = vi.fn(() => of(undefined));
+    TestBed.configureTestingModule({
+      imports: [AppShell],
+      providers: [
+        provideRouter([{ path: 'settings', component: Settings }]),
+        { provide: Auth, useValue: { getCurrentUser: () => of({ name: 'Maria', onboardingVersion: 1 }) } },
+        { provide: TransactionApi, useValue: { getChatHistory, clearChatHistory } },
+      ],
+    });
+    const fixture = TestBed.createComponent(AppShell);
+    const root: HTMLElement = fixture.nativeElement;
+    await TestBed.inject(Router).navigateByUrl('/settings');
+    fixture.detectChanges();
+    root.querySelector<HTMLButtonElement>('.chat-launcher')!.click();
+    fixture.detectChanges();
+    const log = root.querySelector('.chat-log')!;
+    expect(log.textContent).toContain('Paguei o almoço');
+
+    const dialog = root.querySelector<HTMLDialogElement>('.history-dialog')!;
+    dialog.showModal = () => { dialog.open = true; };
+    dialog.close = () => { dialog.open = false; };
+    root.querySelector<HTMLButtonElement>('.history-trigger')!.click();
+    fixture.detectChanges();
+    dialog.querySelector<HTMLButtonElement>('.history-confirm')!.click();
+    fixture.detectChanges();
+
+    expect(clearChatHistory).toHaveBeenCalledOnce();
+    expect(log.textContent).not.toContain('Paguei o almoço');
+    expect(getChatHistory).toHaveBeenCalledTimes(2);
   });
 });
 

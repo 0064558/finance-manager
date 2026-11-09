@@ -8,6 +8,8 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -16,6 +18,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +41,9 @@ class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
 
     @MockitoBean(enforceOverride = true)
     private ChatModel chatModel;
+
+    @Autowired
+    private JdbcTemplate jdbc;
 
     @Test
     void scopesCategoryToTheAuthenticatedUserAndDoesNotCreateTransactions() throws Exception {
@@ -66,6 +74,8 @@ class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
         request("POST", SUGGESTIONS, null, LUNCH).status(401);
         request("GET", CHAT, null, null).status(401);
         request("POST", CHAT, null, LUNCH).status(401);
+        request("DELETE", CHAT, null, null).status(401);
+        request("DELETE", CHAT + "/messages/" + UUID.randomUUID(), null, null).status(401);
         request("DELETE", CHAT + "/drafts/" + UUID.randomUUID(), null, null).status(401);
 
         verify(chatModel, never()).call(any(Prompt.class));
@@ -169,6 +179,141 @@ class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
         assertThat(history.value("1.superseded")).isEqualTo(true);
         assertThat(history.value("2.drafts.0.saved")).isEqualTo(true);
         assertThat(request("GET", TRANSACTIONS, owner.token(), null).list("content")).hasSize(1);
+    }
+
+    @Test
+    void clearsOnlyOwnHistoryAndPreservesConfirmedTransactions() throws Exception {
+        var owner = user();
+        var other = user();
+        String accountId = account(owner, "Conta de teste", "100");
+        String categoryId = category(owner, "Alimentação", "EXPENSE");
+        when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
+        when(chatModel.call(any(Prompt.class))).thenReturn(chatLunch("47.90"));
+
+        Reply confirmedDraft = request("POST", CHAT, owner.token(), LUNCH);
+        confirmedDraft.status(200);
+        var pendingMessage = Map.of("description", LUNCH.get("description"), "requestId", UUID.randomUUID().toString());
+        Reply pendingDraft = request("POST", CHAT, owner.token(), pendingMessage);
+        pendingDraft.status(200);
+        Reply otherDraft = request("POST", CHAT, other.token(), LUNCH);
+        otherDraft.status(200);
+        var body = transactionBody(accountId, categoryId, "EXPENSE", "47.90", LocalDate.now().minusDays(1));
+        Reply created = requestWithKey("POST", TRANSACTIONS, owner.token(), body, confirmedDraft.text("id"));
+        created.status(201);
+
+        request("DELETE", CHAT, owner.token(), null).status(204);
+        request("DELETE", CHAT, owner.token(), null).status(204);
+        assertThat(request("GET", CHAT, owner.token(), null).list("")).isEmpty();
+        assertThat(request("GET", CHAT, other.token(), null).text("0.id")).isEqualTo(otherDraft.text("id"));
+        Reply deletedRequest = request("POST", CHAT, owner.token(), pendingMessage);
+        deletedRequest.status(409);
+        assertThat(deletedRequest.text("code")).isEqualTo("CHAT_HISTORY_CHANGED");
+
+        Reply staleConfirmation = requestWithKey("POST", TRANSACTIONS, owner.token(), body, pendingDraft.text("id"));
+        staleConfirmation.status(409);
+        assertThat(staleConfirmation.text("code")).isEqualTo("CHAT_DRAFT_UNAVAILABLE");
+        Reply replay = requestWithKey("POST", TRANSACTIONS, owner.token(), body, confirmedDraft.text("id"));
+        replay.status(201);
+        assertThat(replay.text("id")).isEqualTo(created.text("id"));
+        Reply transactions = request("GET", TRANSACTIONS, owner.token(), null);
+        assertThat(transactions.list("content")).hasSize(1);
+        assertThat(transactions.text("content.0.id")).isEqualTo(created.text("id"));
+    }
+
+    @Test
+    void deletesOneMessageWithoutRevivingItsParentOrDeletingItsReply() throws Exception {
+        var owner = user();
+        var other = user();
+        when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
+        when(chatModel.call(any(Prompt.class))).thenReturn(missingValue(), chatLunch("47.90"), chatLunch("42.90"));
+
+        Reply question = request("POST", CHAT, owner.token(), Map.of("description", "Paguei o almoço ontem"));
+        question.status(200);
+        Reply suggestion = request("POST", CHAT, owner.token(),
+                Map.of("description", "47,90", "replyTo", question.text("id")));
+        suggestion.status(200);
+        var correctionBody = Map.of("description", "Na verdade, foi 42,90", "replyTo", suggestion.text("id"),
+                "requestId", UUID.randomUUID().toString());
+        Reply correction = request("POST", CHAT, owner.token(), correctionBody);
+        correction.status(200);
+
+        String message = CHAT + "/messages/" + suggestion.text("id");
+        request("DELETE", message, other.token(), null).status(204);
+        assertThat(request("GET", CHAT, owner.token(), null).list("")).hasSize(3);
+        request("DELETE", message, owner.token(), null).status(204);
+        request("DELETE", message, owner.token(), null).status(204);
+        Reply history = request("GET", CHAT, owner.token(), null);
+        history.status(200);
+        assertThat(history.list("")).hasSize(2);
+        assertThat(history.text("0.id")).isEqualTo(question.text("id"));
+        assertThat(history.value("0.superseded")).isEqualTo(true);
+        assertThat(history.text("1.id")).isEqualTo(correction.text("id"));
+        assertThat(jdbc.queryForObject("""
+                SELECT prompt = '' AND response_body IS NULL AND reference_date IS NULL
+                FROM transaction_chat_history WHERE id = ?
+                """, Boolean.class, UUID.fromString(suggestion.text("id")))).isTrue();
+        assertThat(jdbc.queryForObject("""
+                SELECT response_body::jsonb = 'null'::jsonb FROM transaction_chat_drafts WHERE id = ?
+                """, Boolean.class, UUID.fromString(suggestion.text("drafts.0.id")))).isTrue();
+
+        Reply deletedTarget = request("POST", CHAT, owner.token(),
+                Map.of("description", "Foi 40 reais", "replyTo", suggestion.text("id")));
+        deletedTarget.status(404);
+        assertThat(deletedTarget.text("code")).isEqualTo("CHAT_ENTRY_NOT_FOUND");
+        Reply incompleteContext = request("POST", CHAT, owner.token(),
+                Map.of("description", "Foi 40 reais", "replyTo", correction.text("id")));
+        incompleteContext.status(409);
+        assertThat(incompleteContext.text("code")).isEqualTo("CHAT_DRAFT_UNAVAILABLE");
+        Reply correctionReplay = request("POST", CHAT, owner.token(), correctionBody);
+        correctionReplay.status(200);
+        assertThat(correctionReplay.text("id")).isEqualTo(correction.text("id"));
+        verify(chatModel, times(3)).call(any(Prompt.class));
+    }
+
+    @Test
+    void deletingAnUncertainRequestPreventsItsReplayOnlyForTheOwner() throws Exception {
+        var owner = user();
+        var other = user();
+        String requestId = UUID.randomUUID().toString();
+        var message = Map.of("description", LUNCH.get("description"), "requestId", requestId);
+        when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
+        when(chatModel.call(any(Prompt.class))).thenReturn(chatLunch("47.90"));
+
+        request("DELETE", CHAT + "/messages/" + requestId + "?byRequestId=true", owner.token(), null).status(204);
+        Reply deleted = request("POST", CHAT, owner.token(), message);
+        deleted.status(409);
+        assertThat(deleted.text("code")).isEqualTo("CHAT_HISTORY_CHANGED");
+        assertThat(request("GET", CHAT, owner.token(), null).list("")).isEmpty();
+        request("POST", CHAT, other.token(), message).status(200);
+        verify(chatModel, times(1)).call(any(Prompt.class));
+    }
+
+    @Test
+    void clearingHistoryPreventsAnInFlightSuggestionFromRestoringIt() throws Exception {
+        var owner = user();
+        var providerStarted = new CountDownLatch(1);
+        var releaseProvider = new CountDownLatch(1);
+        when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
+        when(chatModel.call(any(Prompt.class))).thenAnswer(invocation -> {
+            providerStarted.countDown();
+            if (!releaseProvider.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Provider mock timed out");
+            return chatLunch("47.90");
+        });
+
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            var pending = executor.submit(() -> request("POST", CHAT, owner.token(), LUNCH));
+            try {
+                assertThat(providerStarted.await(10, TimeUnit.SECONDS)).isTrue();
+                request("DELETE", CHAT, owner.token(), null).status(204);
+            } finally {
+                releaseProvider.countDown();
+            }
+            Reply supersededRequest = pending.get(10, TimeUnit.SECONDS);
+            supersededRequest.status(409);
+            assertThat(supersededRequest.text("code")).isEqualTo("CHAT_HISTORY_CHANGED");
+        }
+        assertThat(request("GET", CHAT, owner.token(), null).list("")).isEmpty();
+        request("POST", CHAT, owner.token(), LUNCH).status(200);
     }
 
     @Test

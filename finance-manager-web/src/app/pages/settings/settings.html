@@ -89,4 +89,53 @@
       <span>Esta opção também pode ser alterada pelo botão de olho no cabeçalho.</span>
     </footer>
   </section>
+
+  <section class="settings-panel" aria-labelledby="chat-history-title">
+    <header class="panel-heading">
+      <span class="heading-icon" aria-hidden="true"><svg lucideMessageCircle></svg></span>
+      <div>
+        <h2 id="chat-history-title">Chat com IA</h2>
+        <p>Gerencie as conversas salvas na sua conta.</p>
+      </div>
+    </header>
+
+    <div class="setting-row setting-row--history">
+      <div class="setting-copy">
+        <h3>Histórico de conversas</h3>
+        <p>Exclua todas as conversas e os rascunhos pendentes do chat.</p>
+        @if (historyClearBlocked()) {
+          <p role="status">Aguarde a operação em andamento no chat.</p>
+        }
+      </div>
+      <button class="history-button history-trigger fm-button" type="button" aria-haspopup="dialog"
+        [attr.aria-disabled]="historyClearBlocked()" (click)="openClearHistory(clearHistoryDialog)">
+        Limpar histórico
+      </button>
+    </div>
+  </section>
+
+  <dialog #clearHistoryDialog class="history-dialog" role="alertdialog" aria-modal="true" aria-labelledby="clear-history-title"
+    aria-describedby="clear-history-description" (cancel)="cancelClearHistory(clearHistoryDialog, $event)">
+    <h2 id="clear-history-title">Limpar todo o histórico do chat?</h2>
+    <p id="clear-history-description">
+      Todas as conversas e os rascunhos pendentes serão excluídos permanentemente.
+      As transações já registradas serão mantidas.
+    </p>
+    @if (clearHistoryError()) {
+      <p class="history-error" role="alert">{{ clearHistoryError() }}</p>
+    }
+    @if (clearingHistory()) {
+      <p role="status">Limpando o histórico…</p>
+    } @else if (historyClearBlocked()) {
+      <p role="status">Aguarde a operação em andamento no chat.</p>
+    }
+    <div class="history-actions">
+      <button class="history-button fm-button" type="button" autofocus [disabled]="clearingHistory()"
+        (click)="cancelClearHistory(clearHistoryDialog)">Cancelar</button>
+      <button class="history-button history-confirm fm-button" type="button"
+        [disabled]="historyClearBlocked() || clearingHistory()" (click)="confirmClearHistory(clearHistoryDialog)">
+        {{ clearingHistory() ? 'Limpando…' : 'Limpar histórico' }}
+      </button>
+    </div>
+  </dialog>
 </section>

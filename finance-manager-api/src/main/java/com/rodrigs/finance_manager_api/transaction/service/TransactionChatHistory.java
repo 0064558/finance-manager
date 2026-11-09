@@ -23,6 +23,7 @@ import java.util.UUID;
 import static com.rodrigs.finance_manager_api.shared.exception.TransactionChatException.Reason.CONTEXT_LIMIT;
 import static com.rodrigs.finance_manager_api.shared.exception.TransactionChatException.Reason.DRAFT_UNAVAILABLE;
 import static com.rodrigs.finance_manager_api.shared.exception.TransactionChatException.Reason.ENTRY_NOT_FOUND;
+import static com.rodrigs.finance_manager_api.shared.exception.TransactionChatException.Reason.HISTORY_CHANGED;
 import static com.rodrigs.finance_manager_api.shared.exception.TransactionChatException.Reason.REQUEST_CONFLICT;
 
 @Service
@@ -30,7 +31,7 @@ public class TransactionChatHistory {
     private static final int MAX_MESSAGES_PER_THREAD = 12;
 
     private static final String ENTRIES = """
-            SELECT chat.id, chat.prompt, chat.response_body, chat.reply_to,
+            SELECT chat.id, chat.prompt, chat.response_body, chat.reply_to, chat.request_id, chat.deleted,
                    EXISTS (SELECT 1 FROM transaction_chat_history reply WHERE reply.reply_to = chat.id) AS superseded,
                    COALESCE((
                        SELECT jsonb_agg(jsonb_build_object(
@@ -45,6 +46,19 @@ public class TransactionChatHistory {
             FROM transaction_chat_history chat
             WHERE chat.user_id = ?
             """;
+    private static final String ERASE = """
+            WITH erased AS (
+                UPDATE transaction_chat_history
+                SET deleted = true, prompt = '', response_body = NULL, reference_date = NULL
+                WHERE user_id = ? AND NOT deleted %s
+                RETURNING id
+            ), erased_drafts AS (
+                UPDATE transaction_chat_drafts draft
+                SET response_body = 'null', discarded = true
+                FROM erased WHERE draft.entry_id = erased.id
+            )
+            SELECT EXISTS (SELECT 1 FROM erased)
+            """;
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
@@ -55,12 +69,50 @@ public class TransactionChatHistory {
     }
 
     public List<Entry> findByUser(UUID userId) {
-        return jdbc.query(ENTRIES + "ORDER BY chat.sequence_number", this::readEntry, userId);
+        return jdbc.query(ENTRIES + "AND NOT chat.deleted ORDER BY chat.sequence_number", this::readEntry, userId);
+    }
+
+    public long revision(UUID userId) {
+        return jdbc.queryForObject("SELECT chat_history_revision FROM users WHERE id = ?", Long.class, userId);
+    }
+
+    @Transactional
+    public void clear(UUID userId) {
+        // Advance even if the history is empty to invalidate requests still at the model.
+        advanceRevision(userId);
+        jdbc.queryForObject(ERASE.formatted(""), Boolean.class, userId);
+    }
+
+    @Transactional
+    public void deleteMessage(UUID userId, UUID id, boolean byRequestId) {
+        lockRevision(userId);
+        var filter = byRequestId ? "AND request_id = ?" : "AND id = ?";
+        boolean erased = Boolean.TRUE.equals(jdbc.queryForObject(ERASE.formatted(filter), Boolean.class, userId, id));
+        if (byRequestId && !erased) {
+            // A timed-out send can still be at the model. Reserve its request ID before it saves.
+            erased = jdbc.update("""
+                    INSERT INTO transaction_chat_history (id, user_id, prompt, request_id, deleted)
+                    VALUES (?, ?, '', ?, true) ON CONFLICT (user_id, request_id) DO NOTHING
+                    """, UUID.randomUUID(), userId, id) == 1;
+        }
+        if (erased) advanceRevision(userId);
+    }
+
+    private long lockRevision(UUID userId) {
+        return jdbc.queryForObject("SELECT chat_history_revision FROM users WHERE id = ? FOR NO KEY UPDATE",
+                Long.class, userId);
+    }
+
+    private void advanceRevision(UUID userId) {
+        jdbc.update("UPDATE users SET chat_history_revision = chat_history_revision + 1 WHERE id = ?", userId);
     }
 
     public Optional<Entry> findReplay(UUID userId, UUID requestId, String prompt, UUID replyTo) {
         if (requestId == null) return Optional.empty();
-        return jdbc.query(ENTRIES + "AND chat.request_id = ?", this::readEntry, userId, requestId)
+        return jdbc.query(ENTRIES + "AND chat.request_id = ?", (row, index) -> {
+                    if (row.getBoolean("deleted")) throw new TransactionChatException(HISTORY_CHANGED);
+                    return readEntry(row, index);
+                }, userId, requestId)
                 .stream()
                 .findFirst()
                 .map(existing -> {
@@ -73,7 +125,7 @@ public class TransactionChatHistory {
 
     public List<ChatMessage> context(UUID userId, UUID replyTo, ChatMessage current) {
         if (replyTo == null) return List.of(current);
-        var parent = jdbc.query(ENTRIES + "AND chat.id = ?", this::readEntry, userId, replyTo).stream()
+        var parent = jdbc.query(ENTRIES + "AND chat.id = ? AND NOT chat.deleted", this::readEntry, userId, replyTo).stream()
                 .findFirst()
                 .orElseThrow(() -> new TransactionChatException(ENTRY_NOT_FOUND));
         if (parent.superseded() || parent.drafts().size() > 1
@@ -82,16 +134,19 @@ public class TransactionChatHistory {
         }
 
         var ancestors = jdbc.query("""
-                WITH RECURSIVE ancestry (prompt, reference_date, reply_to, depth) AS (
-                    SELECT prompt, reference_date, reply_to, 1
+                WITH RECURSIVE ancestry (prompt, reference_date, reply_to, deleted, depth) AS (
+                    SELECT prompt, reference_date, reply_to, deleted, 1
                     FROM transaction_chat_history WHERE user_id = ? AND id = ?
                     UNION ALL
-                    SELECT parent.prompt, parent.reference_date, parent.reply_to, ancestry.depth + 1
+                    SELECT parent.prompt, parent.reference_date, parent.reply_to, parent.deleted, ancestry.depth + 1
                     FROM transaction_chat_history parent JOIN ancestry ON parent.id = ancestry.reply_to
                     WHERE parent.user_id = ? AND ancestry.depth < ?
                 )
-                SELECT prompt, reference_date FROM ancestry ORDER BY depth DESC
-                """, (row, index) -> new ChatMessage(row.getString("prompt"), row.getObject("reference_date", LocalDate.class)),
+                SELECT prompt, reference_date, deleted FROM ancestry ORDER BY depth DESC
+                """, (row, index) -> {
+                    if (row.getBoolean("deleted")) throw new TransactionChatException(DRAFT_UNAVAILABLE);
+                    return new ChatMessage(row.getString("prompt"), row.getObject("reference_date", LocalDate.class));
+                },
                 userId, replyTo, userId, MAX_MESSAGES_PER_THREAD);
         if (ancestors.isEmpty()) throw new TransactionChatException(ENTRY_NOT_FOUND);
         if (ancestors.size() == MAX_MESSAGES_PER_THREAD) throw new TransactionChatException(CONTEXT_LIMIT);
@@ -101,8 +156,9 @@ public class TransactionChatHistory {
     }
 
     @Transactional
-    public Entry save(UUID userId, ChatMessage current, UUID replyTo, UUID requestId,
+    public Entry save(UUID userId, long revision, ChatMessage current, UUID replyTo, UUID requestId,
                       List<TransactionSuggestionResponseDTO> responses) {
+        if (lockRevision(userId) != revision) throw new TransactionChatException(HISTORY_CHANGED);
         if (replyTo != null) lockEntry(userId, replyTo);
         var replay = findReplay(userId, requestId, current.text(), replyTo);
         if (replay.isPresent()) return replay.get();
@@ -117,7 +173,9 @@ public class TransactionChatHistory {
                 current.referenceDate(), replyTo, requestId);
         if (inserted == 0) return findReplay(userId, requestId, current.text(), replyTo).orElseThrow();
 
-        if (clarification != null) return new Entry(id, current.text(), clarification, false, List.of(), replyTo, false);
+        if (clarification != null) {
+            return new Entry(id, current.text(), clarification, false, List.of(), replyTo, false, requestId);
+        }
 
         var drafts = new ArrayList<Draft>();
         for (int position = 0; position < responses.size(); position++) {
@@ -130,7 +188,7 @@ public class TransactionChatHistory {
             drafts.add(new Draft(draftId, response, false, false));
         }
         return new Entry(id, current.text(), drafts.size() == 1 ? drafts.getFirst().response() : null, false,
-                List.copyOf(drafts), replyTo, false);
+                List.copyOf(drafts), replyTo, false, requestId);
     }
 
     @Transactional
@@ -155,14 +213,14 @@ public class TransactionChatHistory {
         if (!id.toString().equals(key)) return;
 
         lockDraft(userId, id).ifPresent(draft -> {
-            if (draft.discarded() || hasSuccessor(draft.entryId())) {
+            if ((draft.discarded() || hasSuccessor(draft.entryId())) && !wasConfirmed(userId, id)) {
                 throw new TransactionChatException(DRAFT_UNAVAILABLE);
             }
         });
     }
 
     private void lockEntry(UUID userId, UUID id) {
-        if (jdbc.queryForList("SELECT id FROM transaction_chat_history WHERE user_id = ? AND id = ? FOR UPDATE",
+        if (jdbc.queryForList("SELECT id FROM transaction_chat_history WHERE user_id = ? AND id = ? AND NOT deleted FOR UPDATE",
                 UUID.class, userId, id).isEmpty()) {
             throw new TransactionChatException(ENTRY_NOT_FOUND);
         }
@@ -213,7 +271,7 @@ public class TransactionChatHistory {
                 : json.readValue(clarification, TransactionSuggestionResponseDTO.class);
         return new Entry(row.getObject("id", UUID.class), row.getString("prompt"), response,
                 single != null && single.saved(), drafts, row.getObject("reply_to", UUID.class),
-                row.getBoolean("superseded"));
+                row.getBoolean("superseded"), row.getObject("request_id", UUID.class));
     }
 
     private record LockedDraft(UUID entryId, boolean discarded) {
@@ -221,7 +279,7 @@ public class TransactionChatHistory {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Entry(UUID id, String prompt, TransactionSuggestionResponseDTO response, boolean saved,
-                        List<Draft> drafts, UUID replyTo, boolean superseded) {
+                        List<Draft> drafts, UUID replyTo, boolean superseded, UUID requestId) {
     }
 
     public record Draft(UUID id, TransactionSuggestionResponseDTO response, boolean saved, boolean discarded) {

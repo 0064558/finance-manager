@@ -8,6 +8,7 @@ import { vi, type Mock } from 'vitest';
 import { Transactions } from './transactions';
 import { ChatVoiceInput } from '../../shared/chat-voice-input/chat-voice-input';
 import { TransactionChat } from '../../shared/transaction-chat/transaction-chat';
+import { ChatHistoryActions } from '../../core/chat-history-actions';
 import { TransactionApi } from '../../core/transaction';
 import { TransactionChatEntry, TransactionChatMessage, TransactionResponse, TransactionSuggestion, TransactionSuggestionResponse } from '../../core/transaction.models';
 import { FinancialAccountApi } from '../../core/financial-accounts';
@@ -22,6 +23,7 @@ registerLocaleData(localePt, 'pt-BR');
 
 @Component({
   imports: [Transactions, TransactionChat],
+  providers: [ChatHistoryActions],
   template: '<app-transactions /><app-transaction-chat />',
 })
 class TransactionsAndChat {}
@@ -36,6 +38,8 @@ describe('Transactions', () => {
   let sendChatMessage: Mock<(message: TransactionChatMessage) => Observable<TransactionChatEntry>>;
   let getChatHistory: ReturnType<typeof vi.fn>;
   let discardChatDraft: ReturnType<typeof vi.fn>;
+  let deleteChatMessage: ReturnType<typeof vi.fn>;
+  let clearChatHistory: ReturnType<typeof vi.fn>;
   const page = { content: [], number: 0, totalPages: 0, totalElements: 0 };
   beforeEach(() => {
     if (!HTMLDialogElement.prototype.showModal) {
@@ -60,11 +64,14 @@ describe('Transactions', () => {
     }))));
     getChatHistory = vi.fn(() => of([]));
     discardChatDraft = vi.fn(() => of(undefined));
+    deleteChatMessage = vi.fn(() => of(undefined));
+    clearChatHistory = vi.fn(() => of(undefined));
     TestBed.configureTestingModule({
       imports: [TransactionsAndChat],
       providers: [provideRouter([]),
         { provide: TransactionApi, useValue: {
           getAll: transactions, create, getChatHistory, sendChatMessage, discardChatDraft,
+          deleteChatMessage, clearChatHistory,
         } },
         { provide: FinancialAccountApi, useValue: { getAll: accounts } },
         { provide: CategoryApi, useValue: { getAll: categories } },
@@ -117,6 +124,129 @@ describe('Transactions', () => {
     expect(element('.chat-log').textContent).toContain('Transação registrada');
     expect(element('.chat-draft-review')).toBeNull();
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it('confirma a exclusão da mensagem e mantém as outras mensagens, transações e o texto em edição', () => {
+    const saved = { id: 'saved', prompt: 'Almoço registrado', response: lunchSuggestion, saved: true };
+    const target = {
+      id: 'question', prompt: 'Paguei o ônibus', saved: false,
+      response: { status: 'ESCLARECIMENTO', motivo: 'VALOR_AUSENTE', mensagem: 'Qual foi o valor da passagem?' },
+    };
+    getChatHistory.mockReturnValueOnce(of([saved, target])).mockReturnValueOnce(of([saved]));
+    render();
+    click('.chat-launcher');
+    input('#transaction-prompt', '8 reais');
+    expect(element('#chat-reply-context')).not.toBeNull();
+
+    click('.chat-message-delete[aria-describedby="chat-message-question"]');
+    expect(element('.chat-delete-dialog').textContent).toContain('As transações já registradas serão mantidas.');
+    expect(deleteChatMessage).not.toHaveBeenCalled();
+    click('.chat-delete-dialog button[autofocus]');
+    expect(element('.chat-delete-dialog')).toBeNull();
+    expect(deleteChatMessage).not.toHaveBeenCalled();
+
+    click('.chat-message-delete[aria-describedby="chat-message-question"]');
+    click('.chat-delete-confirm');
+    expect(deleteChatMessage).toHaveBeenCalledExactlyOnceWith('question', false);
+    expect(getChatHistory).toHaveBeenCalledTimes(2);
+    expect(element('.chat-log').textContent).not.toContain('Paguei o ônibus');
+    expect(element('.chat-log').textContent).not.toContain('Qual foi o valor da passagem?');
+    expect(element('.chat-log').textContent).toContain('Almoço registrado');
+    expect(element('.chat-log').textContent).toContain('Transação registrada');
+    expect(element<HTMLTextAreaElement>('#transaction-prompt').value).toBe('8 reais');
+    expect(element('#chat-reply-context')).toBeNull();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('mantém a mensagem quando a exclusão falha e permite tentar novamente', () => {
+    getChatHistory.mockReturnValueOnce(of([{ id: 'lunch', prompt: 'Almoço', response: lunchSuggestion, saved: false }]));
+    deleteChatMessage.mockReturnValueOnce(throwError(() => new Error('offline')));
+    render();
+    click('.chat-launcher');
+    click('.chat-message-delete');
+    click('.chat-delete-confirm');
+
+    expect(element('.chat-delete-dialog [role="alert"]').textContent).toContain('Não foi possível excluir');
+    expect(element('.chat-log').textContent).toContain('Almoço');
+    expect(getChatHistory).toHaveBeenCalledTimes(1);
+
+    click('.chat-delete-confirm');
+    expect(deleteChatMessage).toHaveBeenCalledTimes(2);
+    expect(element('.chat-delete-dialog')).toBeNull();
+    expect(element('.chat-log').textContent).not.toContain('Almoço');
+  });
+
+  it('usa a chave da solicitação para excluir uma mensagem cujo envio falhou', () => {
+    suggest.mockReturnValue(throwError(() => new Error('offline')));
+    render();
+    click('.chat-launcher');
+    sendPrompt('Gastei 47,90 no almoço.');
+    const requestId = sendChatMessage.mock.calls[0][0].requestId;
+    click('.chat-message-delete');
+    click('.chat-delete-confirm');
+    expect(deleteChatMessage).toHaveBeenCalledExactlyOnceWith(requestId, true);
+    expect(element('.chat-message--user')).toBeNull();
+    expect(element<HTMLTextAreaElement>('#transaction-prompt').value).toBe('Gastei 47,90 no almoço.');
+  });
+
+  it('troca a cópia local de um envio incerto pela mensagem que o servidor salvou', () => {
+    getChatHistory.mockReturnValueOnce(of([{ id: 'old', prompt: 'Mensagem antiga', saved: false }]));
+    suggest.mockReturnValue(throwError(() => new Error('offline')));
+    render();
+    click('.chat-launcher');
+    const prompt = 'Gastei 47,90 no almoço.';
+    sendPrompt(prompt);
+    const requestId = sendChatMessage.mock.calls[0][0].requestId;
+    getChatHistory.mockReturnValueOnce(of([{
+      id: 'persisted', requestId, prompt, response: lunchSuggestion, saved: false,
+    }]));
+    click('.chat-message-delete[aria-describedby="chat-message-old"]');
+    click('.chat-delete-confirm');
+    expect(fixture.nativeElement.querySelectorAll('.chat-message--user')).toHaveLength(1);
+    expect(element('.chat-log').textContent).toContain(prompt);
+    expect(element('.chat-log .chat-message--error')).toBeNull();
+
+    click('.chat-message-delete');
+    click('.chat-delete-confirm');
+    expect(deleteChatMessage).toHaveBeenLastCalledWith('persisted', false);
+    expect(element('.chat-message--user')).toBeNull();
+  });
+
+  it('mantém respostas de outras mensagens e encerra o contexto interrompido', () => {
+    const parent = { id: 'parent', prompt: 'Paguei o ônibus', saved: false, superseded: true };
+    const reply = {
+      id: 'child', prompt: 'Foi ontem', saved: false, replyTo: parent.id,
+      response: { status: 'ESCLARECIMENTO', motivo: 'VALOR_AUSENTE', mensagem: 'Qual foi o valor?' },
+    };
+    getChatHistory.mockReturnValueOnce(of([parent, reply])).mockReturnValueOnce(of([reply]));
+    render();
+    click('.chat-launcher');
+    expect(element('#chat-reply-context')).not.toBeNull();
+    click('.chat-message-delete[aria-describedby="chat-message-parent"]');
+    click('.chat-delete-confirm');
+    expect(element('#chat-reply-context')).toBeNull();
+    expect(element('.chat-log').textContent).toContain('Foi ontem');
+    expect(element('.chat-log').textContent).toContain('Qual foi o valor?');
+    expect(element('.chat-log').textContent).toContain('Parte da conversa foi excluída.');
+    expect(element('.chat-log').textContent).not.toContain('Responder');
+  });
+
+  it('reinicia o chat depois que o histórico é apagado nas configurações', () => {
+    getChatHistory.mockReturnValueOnce(of([{ id: 'lunch', prompt: 'Almoço', response: lunchSuggestion, saved: false }]));
+    suggest.mockReturnValue(throwError(() => new Error('offline')));
+    render();
+    click('.chat-launcher');
+    sendPrompt('Gastei 8 no ônibus.');
+    click('.chat-launcher');
+    fixture.debugElement.injector.get(ChatHistoryActions).clear().subscribe();
+    fixture.detectChanges();
+
+    expect(clearChatHistory).toHaveBeenCalledOnce();
+    expect(getChatHistory).toHaveBeenCalledTimes(1);
+    click('.chat-launcher');
+    expect(getChatHistory).toHaveBeenCalledTimes(2);
+    expect(element('.chat-message--user')).toBeNull();
+    expect(element<HTMLTextAreaElement>('#transaction-prompt').value).toBe('');
   });
 
   it('só cria após confirmar os dados revisados e atualiza a lista uma única vez', async () => {
