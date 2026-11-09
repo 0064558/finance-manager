@@ -101,6 +101,13 @@ public class TransactionChatController {
         return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
+    @DeleteMapping("/messages/{id}/response")
+    @Operation(summary = "Apaga a resposta da IA e seus rascunhos, preservando a mensagem enviada e as transações")
+    public ResponseEntity<Void> deleteResponse(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID id) {
+        history.deleteResponse(user.id(), id);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+    }
+
     @DeleteMapping("/drafts/{draftId}")
     @Operation(summary = "Descarta um rascunho pendente do chat")
     public ResponseEntity<Void> discard(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable UUID draftId) {

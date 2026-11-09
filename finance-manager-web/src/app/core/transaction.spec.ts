@@ -55,5 +55,10 @@ it('sends a message and reads history through the chat endpoint', () => {
   const discard = http.expectOne('/api/v1/transactions/chat/drafts/draft-id');
   expect(discard.request.method).toBe('DELETE');
   discard.flush(null, { status: 204, statusText: 'No Content' });
+
+  api.deleteChatResponse('chat-id').subscribe();
+  const removeResponse = http.expectOne('/api/v1/transactions/chat/messages/chat-id/response');
+  expect(removeResponse.request.method).toBe('DELETE');
+  removeResponse.flush(null, { status: 204, statusText: 'No Content' });
   http.verify();
 });

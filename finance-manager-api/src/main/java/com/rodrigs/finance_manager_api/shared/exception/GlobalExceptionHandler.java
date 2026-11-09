@@ -92,7 +92,7 @@ public class GlobalExceptionHandler {
             case ENTRY_NOT_FOUND -> problem(HttpStatus.NOT_FOUND, "Mensagem ou rascunho indisponível",
                     "A mensagem ou o rascunho solicitado não foi encontrado.", "CHAT_ENTRY_NOT_FOUND", request);
             case DRAFT_UNAVAILABLE -> problem(HttpStatus.CONFLICT, "Rascunho indisponível",
-                    "A mensagem ou o rascunho já foi respondido, confirmado ou descartado.",
+                    "A mensagem ou o rascunho já foi respondido, confirmado, descartado ou excluído.",
                     "CHAT_DRAFT_UNAVAILABLE", request);
             case REQUEST_CONFLICT -> problem(HttpStatus.CONFLICT, "Envio em conflito",
                     "O identificador de envio já foi usado para outra mensagem.", "CHAT_REQUEST_CONFLICT", request);

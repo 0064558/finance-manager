@@ -733,6 +733,11 @@ confirmadas. Na exclusão individual, `?byRequestId=true` identifica um envio pe
 mensagem anterior foi excluída permanece no histórico, mas já não pode receber
 correções que dependam do contexto excluído.
 
+Use `DELETE /api/v1/transactions/chat/messages/{id}/response` para apagar só a
+resposta da IA e seus rascunhos. A mensagem enviada e as transações confirmadas
+permanecem. A operação retorna `204 No Content`. Repetir o envio com o mesmo
+`requestId` retorna a mensagem existente sem gerar a resposta novamente.
+
 ## Dashboard e relatórios
 
 Os endpoints de relatório exigem autenticação JWT:

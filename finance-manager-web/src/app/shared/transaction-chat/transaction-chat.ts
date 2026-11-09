@@ -38,6 +38,11 @@ interface ChatFormData {
   draftId?: string;
 }
 
+interface ChatDeleteTarget {
+  exchange: ChatExchange;
+  part: 'message' | 'response';
+}
+
 const chatRequestTimeoutMs = 30_000;
 
 @Component({
@@ -79,7 +84,7 @@ export class TransactionChat {
   protected readonly isRequestingSuggestion = signal(false);
   protected readonly discardingDraftId = signal<string | null>(null);
   protected readonly chatReplyTo = signal<ChatExchange | null>(null);
-  protected readonly deleteTarget = signal<ChatExchange | null>(null);
+  protected readonly deleteTarget = signal<ChatDeleteTarget | null>(null);
   protected readonly deleteError = signal(false);
   protected readonly chatAmountPrecisionLimit = chatAmountPrecisionLimit;
   protected readonly chatAmountPrecisionMessage = chatAmountPrecisionMessage;
@@ -305,10 +310,14 @@ export class TransactionChat {
     return true;
   }
 
-  protected openDeleteConfirmation(exchange: ChatExchange, trigger: HTMLButtonElement): void {
+  protected openDeleteConfirmation(
+    exchange: ChatExchange,
+    part: ChatDeleteTarget['part'],
+    trigger: HTMLButtonElement,
+  ): void {
     if (!this.canDeleteExchange()) return;
     this.deleteTrigger = trigger;
-    this.deleteTarget.set(exchange);
+    this.deleteTarget.set({ exchange, part });
     this.deleteError.set(false);
     afterNextRender(() => this.deleteDialog()?.nativeElement.showModal(), { injector: this.injector });
   }
@@ -323,18 +332,29 @@ export class TransactionChat {
   }
 
   protected confirmDeleteExchange(): void {
-    const exchange = this.deleteTarget();
-    if (!exchange || this.historyActions.busy()) return;
+    const target = this.deleteTarget();
+    if (!target || this.historyActions.busy()) return;
+    const { exchange, part } = target;
+    const responseOnly = part === 'response';
     this.deleteError.set(false);
-    this.historyActions.deleteEntry(exchange.id, !!exchange.request)
+    const deletion$ = responseOnly
+      ? this.historyActions.deleteResponse(exchange.id)
+      : this.historyActions.deleteEntry(exchange.id, !!exchange.request);
+    deletion$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.removeDeletedExchange(exchange);
+          if (responseOnly) {
+            for (const draft of exchange.drafts) this.reviewDrafts.delete(draft.id);
+            this.updateChatExchange(exchange.id, { response: undefined, drafts: [], saved: false });
+            if (this.chatReplyTo()?.id === exchange.id) this.chatReplyTo.set(null);
+          } else {
+            this.removeDeletedExchange(exchange);
+          }
           this.dismissDeleteConfirmation();
           this.loadChatHistory(true);
           this.focusChatPrompt(true);
-          this.notifications.success('Mensagem excluída do chat.');
+          this.notifications.success(responseOnly ? 'Resposta excluída do chat.' : 'Mensagem excluída do chat.');
         },
         error: () => this.deleteError.set(true),
       });

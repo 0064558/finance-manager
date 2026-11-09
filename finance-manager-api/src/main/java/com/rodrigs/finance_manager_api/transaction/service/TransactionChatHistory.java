@@ -41,17 +41,29 @@ public class TransactionChatHistory {
                        FROM transaction_chat_drafts draft
                        LEFT JOIN transaction_idempotency creation
                          ON creation.user_id = chat.user_id AND creation.idempotency_key = draft.id::text
-                       WHERE draft.entry_id = chat.id
+                       WHERE draft.entry_id = chat.id AND draft.response_body <> 'null'
                    ), '[]'::jsonb)::text AS drafts
             FROM transaction_chat_history chat
             WHERE chat.user_id = ?
             """;
-    private static final String ERASE = """
-            WITH erased AS (
-                UPDATE transaction_chat_history
-                SET deleted = true, prompt = '', response_body = NULL, reference_date = NULL
-                WHERE user_id = ? AND NOT deleted %s
-                RETURNING id
+    private static final String ERASE_ENTRY = """
+            UPDATE transaction_chat_history
+            SET deleted = true, prompt = '', response_body = NULL, reference_date = NULL
+            WHERE user_id = ? AND NOT deleted %s
+            RETURNING id
+            """;
+    private static final String ERASE_RESPONSE = """
+            UPDATE transaction_chat_history chat
+            SET response_body = NULL
+            WHERE user_id = ? AND id = ? AND NOT deleted
+              AND (response_body IS NOT NULL OR EXISTS (
+                  SELECT 1 FROM transaction_chat_drafts draft
+                  WHERE draft.entry_id = chat.id AND draft.response_body <> 'null'
+              ))
+            RETURNING id
+            """;
+    // Keep draft keys so an old confirmation cannot turn into a manual creation.
+    private static final String ERASE_DRAFTS = """
             ), erased_drafts AS (
                 UPDATE transaction_chat_drafts draft
                 SET response_body = 'null', discarded = true
@@ -80,14 +92,14 @@ public class TransactionChatHistory {
     public void clear(UUID userId) {
         // Advance even if the history is empty to invalidate requests still at the model.
         advanceRevision(userId);
-        jdbc.queryForObject(ERASE.formatted(""), Boolean.class, userId);
+        erase(ERASE_ENTRY.formatted(""), userId);
     }
 
     @Transactional
     public void deleteMessage(UUID userId, UUID id, boolean byRequestId) {
         lockRevision(userId);
         var filter = byRequestId ? "AND request_id = ?" : "AND id = ?";
-        boolean erased = Boolean.TRUE.equals(jdbc.queryForObject(ERASE.formatted(filter), Boolean.class, userId, id));
+        boolean erased = erase(ERASE_ENTRY.formatted(filter), userId, id);
         if (byRequestId && !erased) {
             // A timed-out send can still be at the model. Reserve its request ID before it saves.
             erased = jdbc.update("""
@@ -96,6 +108,17 @@ public class TransactionChatHistory {
                     """, UUID.randomUUID(), userId, id) == 1;
         }
         if (erased) advanceRevision(userId);
+    }
+
+    @Transactional
+    public void deleteResponse(UUID userId, UUID id) {
+        lockRevision(userId);
+        if (erase(ERASE_RESPONSE, userId, id)) advanceRevision(userId);
+    }
+
+    private boolean erase(String update, Object... arguments) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("WITH erased AS (" + update + ERASE_DRAFTS,
+                Boolean.class, arguments));
     }
 
     private long lockRevision(UUID userId) {
@@ -128,7 +151,7 @@ public class TransactionChatHistory {
         var parent = jdbc.query(ENTRIES + "AND chat.id = ? AND NOT chat.deleted", this::readEntry, userId, replyTo).stream()
                 .findFirst()
                 .orElseThrow(() -> new TransactionChatException(ENTRY_NOT_FOUND));
-        if (parent.superseded() || parent.drafts().size() > 1
+        if (parent.superseded() || (parent.response() == null && parent.drafts().isEmpty()) || parent.drafts().size() > 1
                 || parent.drafts().stream().anyMatch(draft -> draft.saved() || draft.discarded())) {
             throw new TransactionChatException(DRAFT_UNAVAILABLE);
         }

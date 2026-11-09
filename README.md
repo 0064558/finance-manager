@@ -86,9 +86,10 @@ ajustar uma sugestão individual com outra mensagem. Se a resposta demorar,
 você pode aproveitar o texto no formulário manual. Após uma falha, você também
 pode tentar o envio novamente. O chat requer [Gemini habilitado na API](finance-manager-api/README.md#sugestão-de-transação-com-gemini).
 
-Use **Excluir mensagem** no chat para apagar uma pergunta e sua resposta, ou
-**Limpar histórico** em **Configurações** para apagar toda a conversa.
-As transações já registradas permanecem na sua conta.
+Use **Excluir resposta da IA** na resposta para manter a sua mensagem no chat.
+Use **Excluir mensagem** na sua mensagem para apagar o par, ou **Limpar histórico**
+em **Configurações** para apagar toda a conversa. As transações já registradas
+permanecem na sua conta.
 
 #### Categorias
 
