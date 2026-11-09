@@ -39,6 +39,7 @@ describe('Transactions', () => {
   let getChatHistory: ReturnType<typeof vi.fn>;
   let discardChatDraft: ReturnType<typeof vi.fn>;
   let deleteChatMessage: ReturnType<typeof vi.fn>;
+  let deleteChatResponse: ReturnType<typeof vi.fn>;
   let clearChatHistory: ReturnType<typeof vi.fn>;
   const page = { content: [], number: 0, totalPages: 0, totalElements: 0 };
   beforeEach(() => {
@@ -65,13 +66,14 @@ describe('Transactions', () => {
     getChatHistory = vi.fn(() => of([]));
     discardChatDraft = vi.fn(() => of(undefined));
     deleteChatMessage = vi.fn(() => of(undefined));
+    deleteChatResponse = vi.fn(() => of(undefined));
     clearChatHistory = vi.fn(() => of(undefined));
     TestBed.configureTestingModule({
       imports: [TransactionsAndChat],
       providers: [provideRouter([]),
         { provide: TransactionApi, useValue: {
           getAll: transactions, create, getChatHistory, sendChatMessage, discardChatDraft,
-          deleteChatMessage, clearChatHistory,
+          deleteChatMessage, deleteChatResponse, clearChatHistory,
         } },
         { provide: FinancialAccountApi, useValue: { getAll: accounts } },
         { provide: CategoryApi, useValue: { getAll: categories } },
@@ -174,6 +176,52 @@ describe('Transactions', () => {
     expect(deleteChatMessage).toHaveBeenCalledTimes(2);
     expect(element('.chat-delete-dialog')).toBeNull();
     expect(element('.chat-log').textContent).not.toContain('Almoço');
+  });
+
+  it('exclui diretamente a pergunta do assistente e mantém a mensagem e o texto em edição', () => {
+    const prompt = { id: 'bus', prompt: 'Paguei o ônibus', saved: false };
+    const response = { status: 'ESCLARECIMENTO', motivo: 'VALOR_AUSENTE', mensagem: 'Qual foi o valor da passagem?' };
+    const refreshedHistory = new Subject<TransactionChatEntry[]>();
+    getChatHistory.mockReturnValueOnce(of([{ ...prompt, response }])).mockReturnValueOnce(refreshedHistory);
+    render();
+    click('.chat-launcher');
+    input('#transaction-prompt', '8 reais');
+    expect(element('#chat-reply-context')).not.toBeNull();
+
+    click('.chat-message-delete[aria-label="Excluir resposta da IA"]');
+    expect(element('#chat-delete-title').textContent).toBe('Excluir resposta?');
+    expect(element('#chat-delete-description').textContent).toContain('Sua mensagem');
+    expect(deleteChatResponse).not.toHaveBeenCalled();
+    click('.chat-delete-confirm');
+    expect(deleteChatResponse).toHaveBeenCalledExactlyOnceWith('bus');
+    expect(deleteChatMessage).not.toHaveBeenCalled();
+    expect(element('.chat-log').textContent).toContain(prompt.prompt);
+    expect(element('.chat-log').textContent).not.toContain(response.mensagem);
+    expect(element('#chat-reply-context')).toBeNull();
+    expect(element<HTMLTextAreaElement>('#transaction-prompt').value).toBe('8 reais');
+
+    refreshedHistory.next([prompt]);
+    refreshedHistory.complete();
+    fixture.detectChanges();
+    expect(element('.chat-message-delete[aria-label="Excluir mensagem"]')).not.toBeNull();
+    expect(element('.chat-message-delete[aria-label="Excluir resposta da IA"]')).toBeNull();
+  });
+
+  it('exclui a resposta com sugestões sem modificar transações já registradas', () => {
+    const prompt = { id: 'lunch', prompt: 'Paguei o almoço', saved: false };
+    const saved = { ...prompt, response: lunchSuggestion, saved: true };
+    getChatHistory.mockReturnValueOnce(of([saved])).mockReturnValueOnce(of([prompt]));
+    render();
+    click('.chat-launcher');
+    expect(element('.chat-drafts').textContent).toContain('Transação registrada');
+
+    click('.chat-message-delete[aria-label="Excluir resposta da IA"]');
+    click('.chat-delete-confirm');
+    expect(deleteChatResponse).toHaveBeenCalledExactlyOnceWith('lunch');
+    expect(deleteChatMessage).not.toHaveBeenCalled();
+    expect(element('.chat-log').textContent).toContain(prompt.prompt);
+    expect(element('.chat-drafts')).toBeNull();
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('usa a chave da solicitação para excluir uma mensagem cujo envio falhou', () => {

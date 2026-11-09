@@ -76,6 +76,7 @@ class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
         request("POST", CHAT, null, LUNCH).status(401);
         request("DELETE", CHAT, null, null).status(401);
         request("DELETE", CHAT + "/messages/" + UUID.randomUUID(), null, null).status(401);
+        request("DELETE", CHAT + "/messages/" + UUID.randomUUID() + "/response", null, null).status(401);
         request("DELETE", CHAT + "/drafts/" + UUID.randomUUID(), null, null).status(401);
 
         verify(chatModel, never()).call(any(Prompt.class));
@@ -268,6 +269,110 @@ class TransactionSuggestionRequestSpecTest extends HttpRequestSpec {
         correctionReplay.status(200);
         assertThat(correctionReplay.text("id")).isEqualTo(correction.text("id"));
         verify(chatModel, times(3)).call(any(Prompt.class));
+    }
+
+    @Test
+    void deletesOnlyTheClarificationAndDoesNotRegenerateItOnReplay() throws Exception {
+        var owner = user();
+        var other = user();
+        when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
+        when(chatModel.call(any(Prompt.class))).thenReturn(missingValue(), missingValue(), chatLunch("47.90"),
+                chatLunch("42.90"));
+        var message = Map.of("description", "Paguei o almoço", "requestId", UUID.randomUUID().toString());
+        Reply isolated = request("POST", CHAT, owner.token(), message);
+        isolated.status(200);
+        assertThat(isolated.text("response.motivo")).isEqualTo("VALOR_AUSENTE");
+
+        Reply parent = request("POST", CHAT, owner.token(), Map.of("description", "Paguei o almoço ontem"));
+        parent.status(200);
+        Reply child = request("POST", CHAT, owner.token(),
+                Map.of("description", "47,90", "replyTo", parent.text("id")));
+        child.status(200);
+
+        String isolatedResponse = CHAT + "/messages/" + isolated.text("id") + "/response";
+        request("DELETE", isolatedResponse, other.token(), null).status(204);
+        assertThat(request("GET", CHAT, owner.token(), null).text("0.response.motivo")).isEqualTo("VALOR_AUSENTE");
+        request("DELETE", isolatedResponse, owner.token(), null).status(204);
+        request("DELETE", isolatedResponse, owner.token(), null).status(204);
+        request("DELETE", CHAT + "/messages/" + parent.text("id") + "/response", owner.token(), null).status(204);
+
+        Reply history = request("GET", CHAT, owner.token(), null);
+        history.status(200);
+        assertThat(history.list("")).hasSize(3);
+        assertThat(history.text("0.id")).isEqualTo(isolated.text("id"));
+        assertThat(history.text("0.prompt")).isEqualTo(message.get("description"));
+        assertThat(history.value("0.response")).isNull();
+        assertThat(history.list("0.drafts")).isEmpty();
+        assertThat(history.text("1.id")).isEqualTo(parent.text("id"));
+        assertThat(history.value("1.response")).isNull();
+        assertThat(history.text("2.id")).isEqualTo(child.text("id"));
+        assertThat(history.text("2.replyTo")).isEqualTo(parent.text("id"));
+        assertThat(history.text("2.response.descricao")).isEqualTo("Almoço");
+        assertThat(jdbc.queryForObject("""
+                SELECT response_body IS NULL FROM transaction_chat_history WHERE id = ?
+                """, Boolean.class, UUID.fromString(isolated.text("id")))).isTrue();
+
+        Reply replay = request("POST", CHAT, owner.token(), message);
+        replay.status(200);
+        assertThat(replay.text("id")).isEqualTo(isolated.text("id"));
+        assertThat(replay.value("response")).isNull();
+        assertThat(replay.list("drafts")).isEmpty();
+        Reply unavailable = request("POST", CHAT, owner.token(),
+                Map.of("description", "47,90", "replyTo", isolated.text("id")));
+        unavailable.status(409);
+        assertThat(unavailable.text("code")).isEqualTo("CHAT_DRAFT_UNAVAILABLE");
+        verify(chatModel, times(3)).call(any(Prompt.class));
+
+        Reply correction = request("POST", CHAT, owner.token(),
+                Map.of("description", "Na verdade, foi 42,90", "replyTo", child.text("id")));
+        correction.status(200);
+        correction.money("response.valor", "42.90");
+        assertThat(correction.text("response.data")).isEqualTo(child.text("response.data"));
+    }
+
+    @Test
+    void erasesSuggestionDraftsWithoutRemovingTheirPromptsOrSavedTransactions() throws Exception {
+        var owner = user();
+        String accountId = account(owner, "Conta de teste", "100");
+        String categoryId = category(owner, "Alimentação", "EXPENSE");
+        when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
+        when(chatModel.call(any(Prompt.class))).thenReturn(chatLunch("47.90"));
+        Reply saved = request("POST", CHAT, owner.token(), LUNCH);
+        saved.status(200);
+        Reply pending = request("POST", CHAT, owner.token(), LUNCH);
+        pending.status(200);
+        String savedDraftId = saved.text("drafts.0.id");
+        String pendingDraftId = pending.text("drafts.0.id");
+        var body = transactionBody(accountId, categoryId, "EXPENSE", "47.90", LocalDate.now().minusDays(1));
+        Reply created = requestWithKey("POST", TRANSACTIONS, owner.token(), body, savedDraftId);
+        created.status(201);
+
+        request("DELETE", CHAT + "/messages/" + saved.text("id") + "/response", owner.token(), null).status(204);
+        request("DELETE", CHAT + "/messages/" + pending.text("id") + "/response", owner.token(), null).status(204);
+        Reply history = request("GET", CHAT, owner.token(), null);
+        history.status(200);
+        assertThat(history.list("")).hasSize(2);
+        assertThat(history.text("0.id")).isEqualTo(saved.text("id"));
+        assertThat(history.text("1.id")).isEqualTo(pending.text("id"));
+        for (int index = 0; index < 2; index++) {
+            assertThat(history.text(index + ".prompt")).isEqualTo(LUNCH.get("description"));
+            assertThat(history.value(index + ".response")).isNull();
+            assertThat(history.list(index + ".drafts")).isEmpty();
+        }
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM transaction_chat_drafts
+                WHERE id IN (?, ?) AND response_body::jsonb = 'null'::jsonb
+                """, Integer.class, UUID.fromString(savedDraftId), UUID.fromString(pendingDraftId))).isEqualTo(2);
+
+        Reply stale = requestWithKey("POST", TRANSACTIONS, owner.token(), body, pendingDraftId);
+        stale.status(409);
+        assertThat(stale.text("code")).isEqualTo("CHAT_DRAFT_UNAVAILABLE");
+        Reply replay = requestWithKey("POST", TRANSACTIONS, owner.token(), body, savedDraftId);
+        replay.status(201);
+        assertThat(replay.text("id")).isEqualTo(created.text("id"));
+        Reply transactions = request("GET", TRANSACTIONS, owner.token(), null);
+        assertThat(transactions.list("content")).hasSize(1);
+        assertThat(transactions.text("content.0.id")).isEqualTo(created.text("id"));
     }
 
     @Test

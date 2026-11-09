@@ -91,6 +91,10 @@ export class TransactionApi {
     });
   }
 
+  deleteChatResponse(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.endpoint}/chat/messages/${encodeURIComponent(id)}/response`);
+  }
+
   discardChatDraft(draftId: string): Observable<void> {
     return this.http.delete<void>(`${this.endpoint}/chat/drafts/${draftId}`);
   }

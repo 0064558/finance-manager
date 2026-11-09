@@ -25,6 +25,10 @@ export class ChatHistoryActions {
     return this.run(api => api.deleteChatMessage(id, byRequestId));
   }
 
+  deleteResponse(id: string): Observable<void> {
+    return this.run(api => api.deleteChatResponse(id));
+  }
+
   private run(request: (api: TransactionApi) => Observable<void>, onSuccess?: () => void): Observable<void> {
     return defer(() => {
       if (this.busy() || this.chatInUse()) {
