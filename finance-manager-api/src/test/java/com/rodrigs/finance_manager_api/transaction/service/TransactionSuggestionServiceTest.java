@@ -8,6 +8,8 @@ import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResp
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Motivo;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Status;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Tipo;
+import com.rodrigs.finance_manager_api.transaction.rag.TransactionEmbeddingRepository.Match;
+import com.rodrigs.finance_manager_api.transaction.rag.TransactionRagRetriever;
 import com.rodrigs.finance_manager_api.transaction.service.TransactionSuggestionService.ChatMessage;
 import jakarta.validation.Validation;
 import jakarta.validation.ValidatorFactory;
@@ -26,6 +28,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,7 +37,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -58,6 +65,7 @@ class TransactionSuggestionServiceTest {
 
     private final ChatModel model = mock(ChatModel.class);
     private final CategoryService categories = mock(CategoryService.class);
+    private final TransactionRagRetriever ragRetriever = mock(TransactionRagRetriever.class);
     private final UUID userId = UUID.randomUUID();
 
     @AfterAll
@@ -382,6 +390,102 @@ class TransactionSuggestionServiceTest {
         });
     }
 
+    @Test
+    void chatUsesRetrievedExamplesOnlyAsCategoryContext() {
+        var dining = category("Restaurantes", TransactionType.EXPENSE);
+        when(categories.findAllCategories(userId)).thenReturn(List.of(dining));
+        String description = "Paguei R$ 39,90 no japonês ontem";
+        var match = new Match("Jantar no sushi", dining.id(), TransactionType.EXPENSE);
+        when(ragRetriever.findExamples(userId, description)).thenReturn(List.of(
+                match,
+                new Match("Categoria removida", UUID.randomUUID(), TransactionType.EXPENSE),
+                new Match("Categoria de tipo divergente", dining.id(), TransactionType.INCOME)));
+        var service = chatService("""
+                {"descricao":"Jantar japonês","valor":39.90,"tipo":"DESPESA","categoriaSugerida":"%s"}
+                """.formatted(dining.id()));
+
+        assertThat(service.suggestChat(userId, List.of(new ChatMessage(description, CHAT_DAY))))
+                .singleElement().satisfies(draft -> {
+                    assertThat(draft.categoriaId()).isEqualTo(dining.id());
+                    assertThat(draft.valor()).isEqualByComparingTo("39.90");
+                    assertThat(draft.data()).isEqualTo(CHAT_DAY.minusDays(1));
+                });
+
+        var prompt = ArgumentCaptor.forClass(Prompt.class);
+        verify(model).call(prompt.capture());
+        assertThat(prompt.getValue().getInstructions()).satisfiesExactly(
+                message -> assertThat(message.getText()).contains("Leia somente mensagemAtual"),
+                message -> {
+                    var json = JsonMapper.builder().build().readTree(message.getText());
+                    assertThat(json.path("mensagemAtual").asString()).isEqualTo(description);
+                    assertThat(json.at("/categorias/0/id").asString()).isEqualTo(dining.id().toString());
+                    assertThat(json.path("historico").size()).isOne();
+                    assertThat(json.at("/historico/0/descricao").asString()).isEqualTo(match.description());
+                    assertThat(json.at("/historico/0/tipo").asString()).isEqualTo("EXPENSE");
+                });
+        verify(ragRetriever).recordChatLatency(anyLong(), eq(true));
+    }
+
+    @Test
+    void chatWithHistoryStillRejectsAnAmountThatAppearsOnlyInHistory() {
+        var dining = category("Restaurantes", TransactionType.EXPENSE);
+        var example = new ChatCategoryContext.Example("Jantar de R$ 59,90", dining.id(), TransactionType.EXPENSE);
+        var result = chatService(CHAT_DRAFT.formatted("59.90")).suggestChat(userId,
+                List.of(new ChatMessage("Paguei R$ 39,90 no japonês", CHAT_DAY)),
+                new ChatCategoryContext(true, List.of(dining), List.of(example)));
+
+        assertThat(result).extracting(TransactionSuggestionResponseDTO::motivo).containsExactly(Motivo.DADOS_AMBIGUOS);
+    }
+
+    @Test
+    void chatRejectsContextualCategoryIdsThatAreMissingOrOfTheWrongType() {
+        var removed = category("Restaurantes", TransactionType.EXPENSE);
+        var income = category("Trabalhos extras", TransactionType.INCOME);
+        when(categories.findAllCategories(userId)).thenReturn(List.of(income));
+        var messages = List.of(new ChatMessage("Paguei R$ 39,90 no japonês", CHAT_DAY));
+        var context = new ChatCategoryContext(true, List.of(removed, income), List.of());
+
+        for (UUID rejected : List.of(removed.id(), income.id(), UUID.randomUUID())) {
+            var service = chatService("""
+                    {"descricao":"Jantar","valor":39.90,"tipo":"DESPESA","categoriaSugerida":"%s"}
+                    """.formatted(rejected));
+            assertThat(service.suggestChat(userId, messages, context)).singleElement().satisfies(draft -> {
+                assertThat(draft.status()).isEqualTo(Status.SUGESTAO);
+                assertThat(draft.categoriaId()).isNull();
+            });
+        }
+    }
+
+    @Test
+    void chatRechecksCurrentCategoryAfterGeneration() {
+        var dining = category("Restaurantes", TransactionType.EXPENSE);
+        when(categories.findAllCategories(userId)).thenReturn(List.of(dining)).thenReturn(List.of());
+        var service = chatService("""
+                {"descricao":"Jantar","valor":39.90,"tipo":"DESPESA","categoriaSugerida":"%s"}
+                """.formatted(dining.id()));
+
+        assertThat(service.suggestChat(userId, List.of(new ChatMessage("Paguei R$ 39,90 no japonês", CHAT_DAY))))
+                .singleElement().satisfies(draft -> {
+                    assertThat(draft.status()).isEqualTo(Status.SUGESTAO);
+                    assertThat(draft.categoriaId()).isNull();
+                });
+    }
+
+    @Test
+    void chatUsesCatalogueWithoutRetrievedExamplesForFollowUpsAndRecognizedBatches() {
+        var dining = category("Restaurantes", TransactionType.EXPENSE);
+        when(categories.findAllCategories(userId)).thenReturn(List.of(dining));
+
+        chatService(CHAT_DRAFT.formatted("47.90")).suggestChat(userId, List.of(
+                new ChatMessage("Paguei o almoço ontem", CHAT_DAY),
+                new ChatMessage("47,90", CHAT_DAY)));
+        chatService(LUNCH_AND_BUS).suggestChat(userId, List.of(
+                new ChatMessage("Gastei 20 no almoço e 8 no ônibus", CHAT_DAY)));
+
+        verify(ragRetriever, never()).findExamples(any(), any());
+        verify(ragRetriever, times(2)).recordChatLatency(anyLong(), eq(false));
+    }
+
     private TransactionSuggestionService chatService(String drafts) {
         return serviceWithResponse("""
                 {"status":"SUGESTAO","lancamentos":[%s]}
@@ -400,6 +504,6 @@ class TransactionSuggestionServiceTest {
 
     private TransactionSuggestionService service() {
         when(model.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
-        return new TransactionSuggestionService(ChatClient.builder(model), categories, VALIDATION.getValidator());
+        return new TransactionSuggestionService(ChatClient.builder(model), categories, VALIDATION.getValidator(), ragRetriever);
     }
 }

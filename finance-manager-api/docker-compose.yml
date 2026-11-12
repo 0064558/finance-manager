@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     container_name: finance-manager-postgres
     restart: unless-stopped
 
@@ -46,6 +46,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no arquivo .env}
       TRANSACTION_SUGGESTION_PROVIDER: ${TRANSACTION_SUGGESTION_PROVIDER:-none}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      TRANSACTION_CHAT_RAG_ENABLED: ${TRANSACTION_CHAT_RAG_ENABLED:-false}
+      TRANSACTION_CHAT_RAG_PILOT_USER_IDS: ${TRANSACTION_CHAT_RAG_PILOT_USER_IDS:-}
+      TRANSACTION_CHAT_RAG_SEARCH_TIMEOUT: ${TRANSACTION_CHAT_RAG_SEARCH_TIMEOUT:-2s}
+      TRANSACTION_CHAT_RAG_MIN_SIMILARITY: ${TRANSACTION_CHAT_RAG_MIN_SIMILARITY:-0.55}
 
     ports:
       - "${API_PORT:-8080}:8080"

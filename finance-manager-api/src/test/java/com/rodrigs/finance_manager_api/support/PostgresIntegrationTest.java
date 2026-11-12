@@ -9,6 +9,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.ContextConfiguration;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Shared infrastructure for integration tests against the same PostgreSQL container.
@@ -17,7 +18,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @ContextConfiguration(initializers = PostgresIntegrationTest.TestDatabaseGuard.class)
 public abstract class PostgresIntegrationTest {
 
-    private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine")
+    private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
+            DockerImageName.parse("pgvector/pgvector:pg17").asCompatibleSubstituteFor("postgres"))
             .withDatabaseName("finance_manager_test")
             .withUsername("finance_manager_test")
             .withPassword("finance_manager_test");
