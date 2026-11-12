@@ -2,6 +2,21 @@
 
 ## Decisão e escopo
 
+**Situação em 12 de novembro de 2026:** integração, índice, busca e métricas de
+cobertura implementados e validação do piloto local aprovada. A
+[rodada mais recente](avaliacao-rag-transporte-2026-11-12.md) teve 19 categorias
+corretas no RAG contra 18 no catálogo, sem falhas de geração e com valor e tipo
+corretos nos vinte casos. Houve uma correção, zero regressões e um fallback de
+busca com resposta válida. O p95 ficou dentro da meta. O fluxo HTTP do piloto,
+incluindo o job registrado, passou com dados fictícios e provedores simulados.
+A flag padrão continua desligada; a ativação de histórico real segue as condições
+operacionais e de privacidade deste plano. Os resultados de 11 de novembro abaixo
+são históricos e não substituem a rodada mais recente.
+
+O [diagnóstico de geração e resiliência](diagnostico-rag-resiliencia.md) registra
+a reprodução de HTTP 503, a política de tentativas compartilhada, os testes HTTP
+locais e o estado da nova avaliação com critérios de aceite automáticos.
+
 Entregar as categorias reais como base da categorização em `POST /api/v1/transactions/chat`. Acrescentar exemplos do histórico confirmado do próprio usuário quando o RAG estiver habilitado e houver resultados relevantes. A resposta da API continua usando o contrato atual de rascunhos, esclarecimentos e sugestões de categoria.
 
 Na avaliação local de 11 de novembro de 2026, categorias no prompt acertaram 16 dos 19 casos comparáveis e categorias com RAG acertaram 18. O histórico corrigiu `trabalho` e `uber-show`, com zero regressões nesses pares. As medianas observadas foram 2,44 s e 2,05 s, respectivamente. A amostra é fictícia e orienta um piloto. [Como reproduzir a avaliação](avaliacao-sugestoes-transacoes.md)

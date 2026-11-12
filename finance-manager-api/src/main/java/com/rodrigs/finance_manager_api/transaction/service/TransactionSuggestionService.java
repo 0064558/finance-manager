@@ -342,6 +342,7 @@ public class TransactionSuggestionService {
     }
 
     private <T> T generate(Class<T> outputType, String system, String input) {
+        long started = System.nanoTime();
         try {
             T result = chatClient.prompt()
                     .system(system)
@@ -351,9 +352,13 @@ public class TransactionSuggestionService {
             if (result != null) {
                 return result;
             }
+            LOGGER.warn("Transaction suggestion provider failed (reason=empty_response, elapsedMs={})",
+                    (System.nanoTime() - started) / 1_000_000);
         } catch (RuntimeException exception) {
             // Provider errors can contain prompts, responses or credentials in their details.
-            LOGGER.warn("Transaction suggestion provider failed ({})", exception.getClass().getSimpleName());
+            var failure = TransactionProviderFailure.from(exception);
+            LOGGER.warn("Transaction suggestion provider failed (reason={}, status={}, cause={}, elapsedMs={})",
+                    failure.reason(), failure.status(), failure.cause(), (System.nanoTime() - started) / 1_000_000);
         }
         throw new TransactionSuggestionUnavailableException();
     }

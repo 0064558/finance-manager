@@ -1,8 +1,5 @@
 package com.rodrigs.finance_manager_api.transaction.service;
 
-import com.google.genai.Client;
-import com.google.genai.types.HttpOptions;
-import com.google.genai.types.HttpRetryOptions;
 import com.rodrigs.finance_manager_api.shared.exception.TransactionSuggestionUnavailableException;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Status;
@@ -20,16 +17,11 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.util.Assert;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -51,12 +43,10 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.ai.retry.max-attempts=1",
         "finance-manager.transaction-chat.rag.indexing-initial-delay=3600000"
 })
-@Import(TransactionChatRagEvaluationTest.GeminiTestConfiguration.class)
 @EnabledIf("experimentEnabled")
 class TransactionChatRagEvaluationTest {
     private static final String LIVE_PROPERTY = "transaction.chat.rag.evaluate";
     private static final String POSTGRES_PROPERTY = "transaction.chat.rag.postgres";
-    private static final int CHAT_TIMEOUT_MS = 60_000;
     private static final long REQUEST_PAUSE_MS = 4_000;
     private static final LocalDate REFERENCE_DATE = LocalDate.of(2026, 11, 11);
     private static final UUID CORPUS_USER_ID = UUID.fromString("0e4352be-5c64-4ea4-b6c2-7eb5e327142c");
@@ -77,6 +67,44 @@ class TransactionChatRagEvaluationTest {
     private ObjectProvider<TransactionSuggestionService> chat;
     @Autowired
     private ObjectProvider<TransactionEmbeddingClient> embeddings;
+
+    @Autowired
+    private ObjectProvider<org.springframework.ai.chat.model.ChatModel> chatModels;
+    @Autowired
+    private ObjectProvider<com.google.genai.Client> geminiClients;
+    @Autowired
+    private org.springframework.context.ApplicationContext applicationContext;
+
+    @Test
+    @EnabledIfSystemProperty(named = "transaction.chat.rag.diagnose", matches = "true")
+    void diagnosesTheSpringClientWithFixedPublicInput() {
+        var model = chatModels.getObject();
+        var client = geminiClients.getObject();
+        String key = System.getenv("GEMINI_API_KEY").strip();
+        System.out.printf("Gemini Spring diagnostic: model=%s, expectedCredential=%s%n",
+                model.getOptions().getModel(), key.equals(client.apiKey()));
+        String configured = applicationContext.getEnvironment().getProperty("spring.ai.google.genai.api-key");
+        System.out.printf("Gemini Spring diagnostic: beans=%s, propertyMatchesEnvironment=%s, clientMatchesProperty=%s%n",
+                java.util.Arrays.toString(applicationContext.getBeanNamesForType(com.google.genai.Client.class)),
+                key.equals(configured), java.util.Objects.equals(configured, client.apiKey()));
+        assertThat(key.equals(client.apiKey())).as("O cliente deve usar a credencial fornecida no ambiente da avaliação")
+                .isTrue();
+        try {
+            model.call("Reply with OK.");
+            System.out.println("Gemini Spring diagnostic: fixed-input generation succeeded.");
+        } catch (RuntimeException failure) {
+            Throwable current = failure;
+            for (int depth = 0; current != null && depth < 32; depth++, current = current.getCause()) {
+                if (current instanceof com.google.genai.errors.ApiException api) {
+                    String detail = api.message().replace(key, "[redacted]").replaceAll("[\\r\\n]", " ");
+                    System.out.printf("Gemini Spring diagnostic: status=%d, detail=%s%n", api.code(),
+                            detail.substring(0, Math.min(detail.length(), 500)));
+                    break;
+                }
+            }
+            throw new AssertionError("Fixed-input Spring diagnostic failed; see sanitized diagnostic.");
+        }
+    }
 
     static boolean experimentEnabled() {
         return Boolean.getBoolean(LIVE_PROPERTY) || Boolean.getBoolean(POSTGRES_PROPERTY);
@@ -135,6 +163,10 @@ class TransactionChatRagEvaluationTest {
     @Test
     @EnabledIfSystemProperty(named = LIVE_PROPERTY, matches = "true")
     void comparesCurrentChatCategoriesAndRagUsingFictitiousTransactions() throws InterruptedException {
+        String evaluationKey = System.getenv("GEMINI_API_KEY");
+        assertThat(evaluationKey).as("GEMINI_API_KEY deve estar configurada para a avaliação").isNotBlank();
+        assertThat(evaluationKey.strip().equals(geminiClients.getObject().apiKey()))
+                .as("O cliente de geração deve usar a credencial fornecida no ambiente da avaliação").isTrue();
         var owner = user(CORPUS_USER_ID);
         var emptyHistoryUser = user(EMPTY_HISTORY_USER_ID);
         UUID dining = category(owner, "Restaurantes", "EXPENSE");
@@ -234,6 +266,32 @@ class TransactionChatRagEvaluationTest {
             assertThat(results).as("Ao menos uma recuperação real por embeddings deve chegar ao Gemini")
                     .anyMatch(result -> result.variant() == Variant.RAG && result.examples() > 0 && !result.chatFailed());
         }
+        if (Boolean.getBoolean("transaction.chat.rag.acceptance")) {
+            assertThat(selectedCase).as("Aceite exige os vinte casos, sem seleção parcial").isNull();
+            verifyAcceptance(results, comparisons);
+        }
+    }
+
+    static void verifyAcceptance(List<Measurement> results, EnumMap<CategoryComparison, Integer> comparisons) {
+        var catalogue = results.stream().filter(result -> result.variant() == Variant.CATEGORIES).toList();
+        var rag = results.stream().filter(result -> result.variant() == Variant.RAG).toList();
+        var checks = new org.assertj.core.api.SoftAssertions();
+        checks.assertThat(catalogue).as("Catálogo deve concluir os vinte casos para comparação pareada")
+                .hasSize(20).allMatch(result -> !result.chatFailed());
+        checks.assertThat(rag).as("RAG deve concluir os vinte casos com valor e tipo corretos, inclusive em fallback de busca")
+                .hasSize(20).allMatch(result -> !result.chatFailed() && result.extractionCorrect());
+        checks.assertThat(comparisons.getOrDefault(CategoryComparison.CORRIGIU, 0))
+                .as("Correções de categoria devem superar regressões")
+                .isGreaterThan(comparisons.getOrDefault(CategoryComparison.PIOROU, 0));
+        checks.assertThat(p95(rag) - p95(catalogue))
+                .as("p95 do RAG, incluindo falhas, deve ficar até 2 s acima do catálogo")
+                .isLessThanOrEqualTo(2_000);
+        checks.assertAll();
+    }
+
+    private static double p95(List<Measurement> rows) {
+        var times = rows.stream().map(Measurement::ms).sorted().toList();
+        return times.isEmpty() ? Double.NaN : times.get((int) Math.ceil(times.size() * 0.95) - 1);
     }
 
     private Measurement measure(Variant variant, Case example) {
@@ -277,7 +335,7 @@ class TransactionChatRagEvaluationTest {
         return new RetrievalMetrics(failures, examples);
     }
 
-    private CategoryComparison compareCategories(Measurement categoriesResult, Measurement ragResult) {
+    static CategoryComparison compareCategories(Measurement categoriesResult, Measurement ragResult) {
         if (categoriesResult.chatFailed() || ragResult.chatFailed() || ragResult.retrievalFailed()) {
             return CategoryComparison.INCONCLUSIVO;
         }
@@ -355,27 +413,13 @@ class TransactionChatRagEvaluationTest {
         return vector;
     }
 
-    @TestConfiguration(proxyBeanMethods = false)
-    static class GeminiTestConfiguration {
-        @Bean
-        @ConditionalOnProperty(name = "spring.ai.model.chat", havingValue = "google-genai")
-        Client evaluationGeminiClient() {
-            String apiKey = System.getenv("GEMINI_API_KEY");
-            Assert.hasText(apiKey, "Configure GEMINI_API_KEY para a avaliação ao vivo.");
-            return Client.builder().apiKey(apiKey.strip()).vertexAI(false)
-                    .httpOptions(HttpOptions.builder().timeout(CHAT_TIMEOUT_MS)
-                            .retryOptions(HttpRetryOptions.builder().attempts(1).build()).build())
-                    .build();
-        }
-    }
-
-    private enum Variant { CURRENT, CATEGORIES, RAG }
-    private enum CategoryComparison { CORRIGIU, PIOROU, MANTEVE_ACERTO, MANTEVE_ERRO, INCONCLUSIVO }
+    enum Variant { CURRENT, CATEGORIES, RAG }
+    enum CategoryComparison { CORRIGIU, PIOROU, MANTEVE_ACERTO, MANTEVE_ERRO, INCONCLUSIVO }
     private record User(UUID id, UUID accountId) {}
     private record SavedExample(UUID categoryId, String type, String description) {}
     private record Case(User user, String name, String prompt, UUID categoryId, String amount, Tipo type) {}
     private record RetrievalMetrics(long failures, double examples) {}
-    private record Measurement(Variant variant, String name, String categoryLabel, boolean categoryCorrect, boolean wrongCategory,
+    record Measurement(Variant variant, String name, String categoryLabel, boolean categoryCorrect, boolean wrongCategory,
                                boolean extractionCorrect, boolean chatFailed, boolean retrievalFailed,
                                int examples, double ms) {}
 }

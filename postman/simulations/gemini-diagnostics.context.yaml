@@ -1,0 +1,30 @@
+purpose:
+  stands_in_for: Gemini generateContent responses used by transaction chat.
+  unblocks: Verify the real SDK retry and timeout behavior without provider calls.
+assumptions:
+  - id: bounded-generation-retry
+    status: supported
+    claim: Generation recovers from one HTTP 503, stops after two HTTP 503 responses, and does not retry HTTP 400 or 429.
+    reason: A live fictitious mercado case returned HTTP 503 after successful retrieval; production and evaluation now share one SDK policy.
+    verification: On 2026-11-12, five TransactionGeminiSimulationTest cases passed against Postman CLI 1.76.0 on localhost port 4517. The mock log and request-count endpoint confirmed 503 then 200 recovery, exactly two persistent 503 responses, and one request each for 400, 429 and a delayed response. A delayed response produced a controlled service failure before the stand-in completed; this establishes client behavior only, not real-provider availability.
+    source: finance-manager-api/src/test/java/com/rodrigs/finance_manager_api/transaction/service/TransactionGeminiSimulationTest.java; finance-manager-api/target/surefire-reports/TEST-com.rodrigs.finance_manager_api.transaction.service.TransactionGeminiSimulationTest.xml; postman/mocks/gemini-diagnostics/default.js
+    updated_at: '2026-11-12'
+  - id: real-provider-availability
+    status: unknown
+    claim: The real Gemini provider can complete the twenty-case evaluation with the bounded retry policy.
+    reason: Synthetic responses cannot establish upstream availability or model accuracy.
+    verification: The intermediate SDK-only retry run completed eighteen of twenty RAG attempts and failed acceptance. The subsequent model-owned transport retry run completed all twenty RAG and catalogue attempts with correct amounts and types, nineteen RAG categories versus eighteen catalogue categories, and one safe lookup fallback. Its frozen sixty measurements passed the plan-aligned verifier. This supports the observed local run, not a general availability guarantee.
+    source: docs/avaliacao-rag-resiliencia-2026-11-12.md; docs/avaliacao-rag-transporte-2026-11-12.md
+    updated_at: '2026-11-12'
+  - id: transport-retry-without-layering
+    status: supported
+    claim: The model's retry policy recovers from a first interrupted connection and bounds persistent HTTP 503 and delayed responses to two calls in the exercised scenarios, without retrying HTTP 400 or 429.
+    reason: The previous live evaluation had four transport failures that the SDK-only status policy did not retry. The model now owns retries and the SDK uses one attempt.
+    verification: Six TransactionGeminiSimulationTest cases passed on 2026-11-12 with the real SDK and service against localhost port 4517. The control endpoint confirmed two calls for connection recovery, repeated HTTP 503 and a delayed response; HTTP 400 and 429 made one call. InterruptedIOException was classified as timeout. This is local evidence, not an availability guarantee for Gemini.
+    source: finance-manager-api/src/test/java/com/rodrigs/finance_manager_api/transaction/service/TransactionGeminiSimulationTest.java; postman/mocks/gemini-diagnostics/default.js
+    updated_at: '2026-11-12'
+fingerprints:
+  - id: local-gemini-diagnostics
+    date: '2026-11-12'
+    commit: null
+    cli: '1.76.0'

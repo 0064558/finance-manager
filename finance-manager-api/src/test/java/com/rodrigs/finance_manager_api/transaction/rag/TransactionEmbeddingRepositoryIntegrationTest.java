@@ -11,6 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,39 @@ class TransactionEmbeddingRepositoryIntegrationTest extends PostgresIntegrationT
 
     @Autowired
     private TransactionEmbeddingRepository repository;
+
+    @Test
+    void measuresOnlyThePilotCohortAndCountsStaleMissingAndSkippedVectors() {
+        Account owner = account();
+        Account other = account();
+        transaction(owner, "Fora do backfill", 1);
+        transaction(owner, "12345", 2);
+        UUID ready = transaction(owner, "Almoço", 3);
+        transaction(other, "Privada", 1);
+        repository.reconcile(owner.userId(), VERSION, 2, 1);
+
+        assertThat(repository.coverage(Set.of(owner.userId()), VERSION))
+                .isEqualTo(new TransactionEmbeddingRepository.Coverage(0, 2, 0));
+        completeNext(owner, vector(1, 0));
+        repository.reconcile(owner.userId(), VERSION, 2, 1);
+        assertThat(repository.skip(repository.claim(owner.userId(), VERSION, LEASE).orElseThrow())).isTrue();
+        assertThat(repository.coverage(Set.of(owner.userId()), VERSION))
+                .isEqualTo(new TransactionEmbeddingRepository.Coverage(1, 0, 1));
+        assertThat(repository.coverage(Set.of(owner.userId()), VERSION).ratio()).isEqualTo(1);
+
+        transaction(owner, "Nova ainda sem índice", 4);
+        assertThat(repository.coverage(Set.of(owner.userId(), other.userId()), VERSION))
+                .isEqualTo(new TransactionEmbeddingRepository.Coverage(1, 1, 1));
+        jdbc.update("UPDATE transactions SET description = 'Jantar' WHERE id = ?", ready);
+        assertThat(repository.coverage(Set.of(owner.userId()), VERSION))
+                .isEqualTo(new TransactionEmbeddingRepository.Coverage(0, 2, 1));
+        assertThat(repository.coverage(Set.of(owner.userId()), "embedding-v2"))
+                .isEqualTo(new TransactionEmbeddingRepository.Coverage(0, 3, 0));
+        jdbc.update("DELETE FROM transactions WHERE id = ?", ready);
+        assertThat(repository.coverage(Set.of(owner.userId()), VERSION))
+                .isEqualTo(new TransactionEmbeddingRepository.Coverage(0, 1, 1));
+        assertThat(repository.coverage(Set.of(), VERSION).ratio()).isNaN();
+    }
 
     @Test
     void searchesOnlyOwnedAndCurrentVectorsAndUsesCurrentCategoryAndType() {
@@ -79,6 +113,31 @@ class TransactionEmbeddingRepositoryIntegrationTest extends PostgresIntegrationT
         assertThat(jdbc.queryForList("SELECT transaction_id FROM transaction_embeddings", UUID.class))
                 .containsExactlyInAnyOrder(oldestEligible, newestEligible, newTransaction, anotherNewTransaction)
                 .doesNotContain(excluded);
+    }
+
+    @Test
+    void reservesTheSameTransactionOnlyOnceUnderConcurrentClaims() throws Exception {
+        Account owner = account();
+        UUID transaction = transaction(owner, "Almoço", 1);
+        repository.reconcile(owner.userId(), VERSION, 100, 100);
+        var start = new java.util.concurrent.CountDownLatch(1);
+        try (var threads = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            var first = threads.submit(() -> {
+                start.await();
+                return repository.claim(owner.userId(), VERSION, LEASE);
+            });
+            var second = threads.submit(() -> {
+                start.await();
+                return repository.claim(owner.userId(), VERSION, LEASE);
+            });
+            start.countDown();
+            var claims = List.of(first.get(5, java.util.concurrent.TimeUnit.SECONDS),
+                            second.get(5, java.util.concurrent.TimeUnit.SECONDS)).stream()
+                    .flatMap(java.util.Optional::stream).toList();
+            assertThat(claims).singleElement().satisfies(work -> assertThat(work.transactionId()).isEqualTo(transaction));
+            assertThat(repository.complete(claims.getFirst(), vector(1, 0))).isTrue();
+            assertThat(repository.complete(claims.getFirst(), vector(1, 0))).isFalse();
+        }
     }
 
     @Test

@@ -9,8 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -163,6 +166,35 @@ public class TransactionEmbeddingRepository {
                 """ + READY_FILTER + ")", Boolean.class, userId, version)));
     }
 
+    public Coverage coverage(Set<UUID> userIds, String version) {
+        if (userIds.isEmpty()) {
+            return new Coverage(0, 0, 0);
+        }
+        var arguments = new ArrayList<Object>();
+        arguments.add(version);
+        arguments.addAll(userIds);
+        String placeholders = String.join(",", Collections.nCopies(userIds.size(), "?"));
+        return jdbc.queryForObject("""
+                WITH cohort AS (
+                    SELECT e.embedding, e.skipped,
+                           e.embedding_version = ? AND e.source_hash = %s AS current
+                    FROM transactions t
+                    JOIN transaction_embedding_pilots p ON p.user_id = t.user_id
+                    LEFT JOIN transaction_embeddings e ON e.transaction_id = t.id
+                    WHERE t.user_id IN (%s) AND t.description IS NOT NULL
+                      AND (t.created_at, t.id) >= (p.from_created_at, p.from_transaction_id)
+                )
+                SELECT count(*) AS total,
+                       count(*) FILTER (WHERE current AND embedding IS NOT NULL) AS ready,
+                       count(*) FILTER (WHERE current AND skipped) AS skipped
+                FROM cohort
+                """.formatted(DESCRIPTION_HASH, placeholders), (row, index) -> {
+            long ready = row.getLong("ready");
+            long skipped = row.getLong("skipped");
+            return new Coverage(ready, row.getLong("total") - ready - skipped, skipped);
+        }, arguments.toArray());
+    }
+
     public List<Match> search(UUID userId, String version, float[] vector, double minSimilarity, int limit,
                               Duration timeout) {
         String literal = vectorLiteral(vector);
@@ -218,4 +250,10 @@ public class TransactionEmbeddingRepository {
                        UUID leaseToken, int attempts) {}
 
     public record Match(String description, UUID categoryId, TransactionType type) {}
+
+    public record Coverage(long ready, long pending, long skipped) {
+        public double ratio() {
+            return ready + pending == 0 ? Double.NaN : (double) ready / (ready + pending);
+        }
+    }
 }

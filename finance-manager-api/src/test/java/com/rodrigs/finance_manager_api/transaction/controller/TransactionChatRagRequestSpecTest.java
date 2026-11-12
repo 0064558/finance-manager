@@ -59,6 +59,8 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
     private TransactionRagProperties settings;
     @Autowired
     private MeterRegistry meters;
+    @Autowired
+    private org.springframework.context.ApplicationContext context;
 
     @MockitoBean(enforceOverride = true)
     private ChatModel chatModel;
@@ -104,6 +106,52 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
     }
 
     @Test
+    void pilotWorkerIndexesManualAndChatConfirmedTransactionsButLeavesOtherUsersIdle() throws Exception {
+        String token = pilotToken();
+        var own = createConfirmedHistory(token, "Plantão", OWN_HISTORY);
+        var foreign = user();
+        var other = createConfirmedHistory(foreign.token(), "Lazer", FOREIGN_HISTORY);
+        when(embeddingClient.embedDocument(anyString())).thenReturn(vector());
+        when(embeddingClient.embedQuery(anyString(), any(Duration.class))).thenReturn(vector());
+        mockDraft(own.categoryId());
+
+        Object worker = context.getBean("transactionEmbeddingWorker");
+        var scheduler = context.getBean(org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor.class);
+        var indexingTasks = scheduler.getScheduledTasks().stream()
+                .filter(task -> task.toString().equals(worker.getClass().getName() + ".run")).toList();
+        assertThat(indexingTasks).hasSize(1);
+        Runnable indexing = indexingTasks.getFirst().getTask().getRunnable();
+        indexing.run();
+        assertThat(readyVectors(own.transactionId())).isOne();
+        assertThat(readyVectors(other.transactionId())).isZero();
+
+        Reply suggestion = request("POST", CHAT, token, Map.of("description", DESCRIPTION));
+        suggestion.status(200);
+        assertThat(suggestion.text("response.categoriaId")).isEqualTo(own.categoryId());
+        suggestion.money("response.valor", "31.50");
+        var prompt = ArgumentCaptor.forClass(Prompt.class);
+        verify(chatModel).call(prompt.capture());
+        assertThat(JSON.readTree(userPrompt(prompt.getValue())).get("historico").size()).isOne();
+
+        var body = new HashMap<>(transactionBody(own.accountId(), own.categoryId(), "EXPENSE", "31.50", LocalDate.now().minusDays(1)));
+        body.put("description", "Uber para o plantão");
+        Reply confirmed = requestWithKey("POST", TRANSACTIONS, token, body, suggestion.text("id"));
+        confirmed.status(201);
+        indexing.run();
+        assertThat(readyVectors(confirmed.text("id"))).isOne();
+        assertThat(readyVectors(other.transactionId())).isZero();
+        var indexedText = ArgumentCaptor.forClass(String.class);
+        verify(embeddingClient, times(2)).embedDocument(indexedText.capture());
+        assertThat(indexedText.getAllValues()).allSatisfy(text ->
+                assertThat(text).doesNotContain("pessoa@example.test", FOREIGN_HISTORY));
+    }
+
+    private long readyVectors(String transactionId) {
+        return jdbc.queryForObject("SELECT count(*) FROM transaction_embeddings WHERE transaction_id = ? AND embedding IS NOT NULL",
+                Long.class, UUID.fromString(transactionId));
+    }
+
+    @Test
     void fallsBackToTheCatalogueWhenQueryEmbeddingFails() throws Exception {
         String token = pilotToken();
         var own = indexHistory(PILOT_ID, token, "Plantão", OWN_HISTORY);
@@ -132,6 +180,16 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
     }
 
     private History indexHistory(UUID userId, String token, String category, String description) throws Exception {
+        var history = createConfirmedHistory(token, category, description);
+        String version = settings.version();
+        embeddings.reconcile(userId, version, settings.backfillLimit(), settings.batchSize());
+        var work = embeddings.claim(userId, version, Duration.ofMinutes(1)).orElseThrow();
+        assertThat(work.transactionId().toString()).isEqualTo(history.transactionId());
+        assertThat(embeddings.complete(work, vector())).isTrue();
+        return history;
+    }
+
+    private History createConfirmedHistory(String token, String category, String description) throws Exception {
         Reply account = request("POST", ACCOUNTS, token, accountBody("Conta", "CHECKING", "0"));
         account.status(201);
         Reply classification = request("POST", CATEGORIES, token, categoryBody(category, "EXPENSE"));
@@ -143,12 +201,7 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
         Reply transaction = request("POST", TRANSACTIONS, token, body);
         transaction.status(201);
 
-        String version = settings.version();
-        embeddings.reconcile(userId, version, settings.backfillLimit(), settings.batchSize());
-        var work = embeddings.claim(userId, version, Duration.ofMinutes(1)).orElseThrow();
-        assertThat(work.transactionId().toString()).isEqualTo(transaction.text("id"));
-        assertThat(embeddings.complete(work, vector())).isTrue();
-        return new History(accountId, categoryId);
+        return new History(accountId, categoryId, transaction.text("id"));
     }
 
     private void mockDraft(String categoryId) {
@@ -176,5 +229,5 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
         return vector;
     }
 
-    private record History(String accountId, String categoryId) {}
+    private record History(String accountId, String categoryId, String transactionId) {}
 }

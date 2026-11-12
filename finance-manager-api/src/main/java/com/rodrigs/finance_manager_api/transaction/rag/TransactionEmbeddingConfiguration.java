@@ -20,6 +20,12 @@ class TransactionEmbeddingConfiguration {
     }
 
     @Bean
+    TransactionEmbeddingMetrics transactionEmbeddingMetrics(TransactionRagProperties properties,
+            TransactionEmbeddingRepository repository, MeterRegistry meters) {
+        return new TransactionEmbeddingMetrics(properties, repository, meters);
+    }
+
+    @Bean
     TransactionEmbeddingWorker transactionEmbeddingWorker(TransactionRagProperties properties,
             TransactionEmbeddingRepository repository, TransactionEmbeddingClient client, MeterRegistry meters) {
         return new TransactionEmbeddingWorker(properties, repository, client, meters);

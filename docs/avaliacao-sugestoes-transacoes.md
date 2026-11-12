@@ -106,6 +106,13 @@ As regras são rápidas para frases com os verbos e formatos previstos. O Gemini
 
 ## Experimento local de categorização no chat
 
+Resultado mais recente: [validação local com tratamento de transporte](avaliacao-rag-transporte-2026-11-12.md).
+Os critérios do plano foram atendidos nesta amostra: 19/20 categorias no RAG,
+18/20 no catálogo, uma correção, zero regressões e nenhuma falha de geração.
+Um fallback de busca preservou a resposta correta. A
+[primeira rodada completa de 12 de novembro](avaliacao-rag-2026-11-12.md) permanece
+preservada como histórico.
+
 O experimento usa um PostgreSQL descartável do Testcontainers com `pgvector` e cria as próprias
 contas, categorias e transações fictícias. Ele indexa esse histórico com o repositório, a
 normalização de texto e o cliente de embeddings usados pela aplicação. O serviço de chat
@@ -133,7 +140,9 @@ mvn '-Dtest=TransactionChatRagEvaluationTest' '-Dtransaction.chat.rag.evaluate=t
 ```
 
 O terminal mostra o início da indexação e o avanço das chamadas ao chat. A busca usa o orçamento
-da aplicação, inicialmente 2 s. As chamadas ao chat têm limite de 60 s na avaliação. A pausa
+da aplicação, inicialmente 2 s. O chat usa a configuração da aplicação: timeout HTTP de 30 s
+por tentativa e até duas tentativas para HTTP 500, 502, 503 ou 504, timeout ou
+falha de transporte. A pausa
 de quatro segundos entre as 60 medições soma quase quatro minutos à rodada completa.
 
 A comparação com o Gemini imprime acertos, sugestões erradas, falhas e latência mediana e p95
@@ -143,6 +152,22 @@ Quando `exemplos=0`, as duas variantes recebem o mesmo contexto e diferenças po
 variação das respostas do Gemini.
 Na variante RAG, a latência inclui o embedding da mensagem e a busca, com o histórico já indexado.
 Falhas de busca são sinalizadas e a chamada ao chat segue com as categorias disponíveis.
+
+Para validar a candidata com critérios automáticos, acrescente o modo de aceite:
+
+```powershell
+mvn '-Dtest=TransactionChatRagEvaluationTest' '-Dtransaction.chat.rag.evaluate=true' '-Dtransaction.chat.rag.acceptance=true' test
+```
+
+Esse modo exige os vinte casos completos: catálogo e RAG sem falhas de geração,
+valor e tipo corretos no RAG inclusive em fallback, mais correções que regressões e p95
+de todas as tentativas RAG até 2 s acima do catálogo. Ele recusa seleção parcial
+de casos. Uma busca indisponível deve preservar uma resposta válida com o catálogo,
+como exige o plano; esse par fica inconclusivo na comparação de categoria. O modo
+exploratório continua imprimindo falhas sem tratá-las como aceite.
+Os [cenários HTTP locais](../postman/simulations/README.md) verificam recuperação,
+limites de tentativas e falhas sem chamar o provedor real.
+
 O experimento indexa apenas os dados fictícios da rodada e configura a lista de pilotos com
 os IDs dessas contas. Para configurar o piloto no backend, consulte o
 [README da API](../finance-manager-api/README.md#piloto-de-categorização-com-histórico).
