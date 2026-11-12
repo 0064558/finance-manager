@@ -1,0 +1,8 @@
+simulation: gemini-diagnostics
+routing: path
+mocks:
+  - name: Gemini generation failures
+    routeKey: gemini
+    origin:
+      - generativelanguage.googleapis.com
+    path: postman/mocks/gemini-diagnostics

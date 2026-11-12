@@ -1,0 +1,12 @@
+version: 1
+id: c9b77f48-5d6a-4fe5-a867-c6987cc6453f
+name: gemini-diagnostics
+slug: gemini-diagnostics
+protocol: http
+port: 4500
+interceptRequests: true
+origin: generativelanguage.googleapis.com
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true
