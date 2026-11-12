@@ -4,9 +4,13 @@ import com.rodrigs.finance_manager_api.shared.exception.IdempotencyConflictExcep
 import com.rodrigs.finance_manager_api.shared.exception.InvalidIdempotencyKeyException;
 import com.rodrigs.finance_manager_api.transaction.dto.CreateTransactionRequestDTO;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionResponseDTO;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.cfg.DateTimeFeature;
 
@@ -22,13 +26,15 @@ public class IdempotentTransactionService {
     private final ObjectMapper json;
     private final TransactionService transactions;
     private final TransactionChatHistory chatHistory;
+    private final ObjectProvider<MeterRegistry> metrics;
 
     public IdempotentTransactionService(JdbcTemplate jdbc, ObjectMapper json, TransactionService transactions,
-                                        TransactionChatHistory chatHistory) {
+                                        TransactionChatHistory chatHistory, ObjectProvider<MeterRegistry> metrics) {
         this.jdbc = jdbc;
         this.json = json;
         this.transactions = transactions;
         this.chatHistory = chatHistory;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -37,7 +43,7 @@ public class IdempotentTransactionService {
         if (key == null) return transactions.createTransaction(userId, request);
         if (key.isBlank() || key.length() > 200) throw new InvalidIdempotencyKeyException();
 
-        chatHistory.lockForConfirmation(userId, key);
+        var suggestedCategory = chatHistory.lockForConfirmation(userId, key);
         String hash = fingerprint(request);
         // The unique key waits for any competing uncommitted insert. Both the
         // claim and financial write commit together, or both roll back.
@@ -61,7 +67,20 @@ public class IdempotentTransactionService {
                 UPDATE transaction_idempotency SET response_body = ?
                 WHERE user_id = ? AND idempotency_key = ?
                 """, json.writeValueAsString(response), userId, key);
+        suggestedCategory.ifPresent(category -> countConfirmationAfterCommit(category.equals(request.categoryId().toString())));
         return response;
+    }
+
+    private void countConfirmationAfterCommit(boolean retained) {
+        MeterRegistry registry = metrics.getIfAvailable();
+        if (registry == null) return;
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                registry.counter("finance.manager.chat.category.confirmation", "outcome",
+                        retained ? "retained" : "changed").increment();
+            }
+        });
     }
 
     private String fingerprint(CreateTransactionRequestDTO request) {

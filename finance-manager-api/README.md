@@ -738,6 +738,40 @@ resposta da IA e seus rascunhos. A mensagem enviada e as transações confirmada
 permanecem. A operação retorna `204 No Content`. Repetir o envio com o mesmo
 `requestId` retorna a mensagem existente sem gerar a resposta novamente.
 
+### Piloto de categorização com histórico
+
+O chat oferece ao Gemini as categorias cadastradas pelo usuário. Com o RAG
+habilitado para um usuário piloto, o chat também pode recuperar até três
+exemplos de lançamentos confirmados desse mesmo usuário. Uma busca vazia ou
+indisponível segue com o catálogo de categorias.
+
+Para testar com dados fictícios, habilite o provedor Gemini e configure o
+ambiente da API antes de reiniciá-la.
+
+```dotenv
+TRANSACTION_CHAT_RAG_ENABLED=true
+TRANSACTION_CHAT_RAG_PILOT_USER_IDS=11111111-1111-4111-8111-111111111111
+TRANSACTION_CHAT_RAG_SEARCH_TIMEOUT=2s
+TRANSACTION_CHAT_RAG_MIN_SIMILARITY=0.55
+```
+
+Troque o UUID pelo ID de um usuário de teste. Separe vários IDs por vírgulas.
+A flag começa desligada e uma lista vazia mantém o histórico inativo para
+todos. O primeiro processamento inclui até 100 lançamentos elegíveis por
+usuário piloto e acompanha os lançamentos novos em segundo plano. A busca usa
+somente vetores atualizados. A exclusão da transação remove o vetor.
+
+O PostgreSQL precisa ter a extensão `vector` disponível para o Flyway. Antes
+de trocar a imagem do banco local, faça um backup lógico do banco existente.
+Se a nova imagem não conseguir abrir esse volume, preserve-o e restaure o
+backup em um novo volume com `pgvector`. No Neon, valide a disponibilidade
+da extensão e a permissão da conta de migração em ambiente de teste.
+
+Antes de ativar para histórico real, confirme que a configuração do provedor
+é adequada aos dados e revise o aviso de privacidade da aplicação.
+[Plano de implementação](../docs/plano-rag-categorizacao.md) ·
+[Avaliação com casos fictícios](../docs/avaliacao-sugestoes-transacoes.md)
+
 ## Dashboard e relatórios
 
 Os endpoints de relatório exigem autenticação JWT:

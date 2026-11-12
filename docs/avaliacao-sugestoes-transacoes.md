@@ -103,3 +103,46 @@ Latência mediana 1295.446 ms, p95 28988.051 ms.
 O reteste recuperou os quatro casos que haviam atingido o limite de tempo e preencheu as três categorias de receita. No caso 12, “Juros recebidos” preserva o sentido da descrição esperada, mas requer a edição para “Juros” pelo critério estrito da amostra. O caso 06 levou quase 29 segundos. A latência observada pode variar entre chamadas ao provedor.
 
 As regras são rápidas para frases com os verbos e formatos previstos. O Gemini conseguiu distinguir a quantidade do preço total, interpretar o reembolso e ler reais e centavos separados. A comparação é descritiva e usa uma amostra pequena. Os testes automatizados com provedor simulado verificam o contrato e os erros da API e ficam fora das tabelas de desempenho.
+
+## Experimento local de categorização no chat
+
+O experimento usa um PostgreSQL descartável do Testcontainers com `pgvector` e cria as próprias
+contas, categorias e transações fictícias. Ele indexa esse histórico com o repositório, a
+normalização de texto e o cliente de embeddings usados pela aplicação. O serviço de chat
+compara o prompt anterior (`CURRENT`), o catálogo de categorias (`CATEGORIES`) e o fluxo
+de produção com RAG ligado para os usuários de teste (`RAG`).
+
+A amostra inclui 20 lançamentos, com categorias óbvias, categorias personalizadas e históricos
+que podem induzir uma escolha errada. Inclui também uma conta sem histórico e uma despesa
+para a qual nenhuma categoria cadastrada se aplica.
+
+A partir de `finance-manager-api`, com o Docker em execução:
+
+```powershell
+# Valida a consulta pgvector, o isolamento entre usuários e a edição/exclusão de lançamentos.
+mvn '-Dtest=TransactionChatRagEvaluationTest' '-Dtransaction.chat.rag.postgres=true' test
+
+# Com GEMINI_API_KEY no ambiente, compara as três versões usando o Gemini de verdade.
+mvn '-Dtest=TransactionChatRagEvaluationTest' '-Dtransaction.chat.rag.evaluate=true' test
+```
+
+Para conferir a execução com um único caso antes de medir os 20, use a mesma chave.
+
+```powershell
+mvn '-Dtest=TransactionChatRagEvaluationTest' '-Dtransaction.chat.rag.evaluate=true' '-Dtransaction.chat.rag.case=restaurante' test
+```
+
+O terminal mostra o início da indexação e o avanço das chamadas ao chat. A busca usa o orçamento
+da aplicação, inicialmente 2 s. As chamadas ao chat têm limite de 60 s na avaliação. A pausa
+de quatro segundos entre as 60 medições soma quase quatro minutos à rodada completa.
+
+A comparação com o Gemini imprime acertos, sugestões erradas, falhas e latência mediana e p95
+por versão. As linhas `COMPARACAO` mostram quando o RAG corrigiu, piorou ou manteve o resultado
+das categorias no prompt. Uma falha do chat ou da busca marca o par como inconclusivo.
+Quando `exemplos=0`, as duas variantes recebem o mesmo contexto e diferenças podem vir da
+variação das respostas do Gemini.
+Na variante RAG, a latência inclui o embedding da mensagem e a busca, com o histórico já indexado.
+Falhas de busca são sinalizadas e a chamada ao chat segue com as categorias disponíveis.
+O experimento indexa apenas os dados fictícios da rodada e configura a lista de pilotos com
+os IDs dessas contas. Para configurar o piloto no backend, consulte o
+[README da API](../finance-manager-api/README.md#piloto-de-categorização-com-histórico).
