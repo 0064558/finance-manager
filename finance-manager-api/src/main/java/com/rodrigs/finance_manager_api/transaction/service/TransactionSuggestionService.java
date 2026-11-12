@@ -9,11 +9,13 @@ import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResp
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Motivo;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Status;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Tipo;
+import com.rodrigs.finance_manager_api.transaction.rag.TransactionRagRetriever;
 import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -69,9 +71,7 @@ public class TransactionSuggestionService {
             Retorne SUGESTAO e preencha lancamentos com um item por receita ou despesa completa, na ordem do relato.
             Para cada item, use uma descricao curta em português, o valor monetário explícito em reais e o tipo
             RECEITA ou DESPESA. Quantidade, dia e hora não são valores. Nunca invente, some, arredonde ou converta.
-            Exemplos de categorias genéricas: ALIMENTACAO, TRANSPORTE, SALARIO, REEMBOLSOS,
-            TRABALHOS_EXTRAS, RENDIMENTOS. Sugira em categoriaSugerida o rótulo em maiúsculas sem acentos.
-            Para "Gastei 47,90 no almoço", use "Almoço", 47.90, DESPESA e ALIMENTACAO.
+            %s
             Uma compra de vários itens com um preço total, inclusive dividida entre meios de pagamento,
             continua sendo um só lançamento. Dois gastos com valores próprios são lançamentos distintos.
             Em "Gastei 20 no almoço e 8 no ônibus", use um item de 20 para o almoço e outro de 8 para o ônibus.
@@ -88,6 +88,13 @@ public class TransactionSuggestionService {
             - LOTE_INCOMPLETO se houver um lote e os itens não estiverem completos na mensagem mais recente;
             - LIMITE_DE_LANCAMENTOS se houver mais de cinco lançamentos distintos.
             """;
+    private static final String LEGACY_CHAT_CATEGORY_INSTRUCTION = """
+            Exemplos de categorias genéricas: ALIMENTACAO, TRANSPORTE, SALARIO, REEMBOLSOS,
+            TRABALHOS_EXTRAS, RENDIMENTOS. Sugira em categoriaSugerida o rótulo em maiúsculas sem acentos.
+            Para "Gastei 47,90 no almoço", use "Almoço", 47.90, DESPESA e ALIMENTACAO.
+            """.stripTrailing();
+    private static final String CATALOGUE_CHAT_EXAMPLE =
+            "Para \"Gastei 47,90 no almoço\", use \"Almoço\", 47.90 e DESPESA.";
     private static final Pattern AMOUNT_TOKEN = Pattern.compile(
             "(?<![\\p{L}\\d.:/+\\-])(?:(?<sign>[+\\-])?"
                     + "(?<currency>R\\$|BRL|US\\$|USD|EUR|GBP|[€£$])\\s*)?"
@@ -116,11 +123,19 @@ public class TransactionSuggestionService {
     private final ChatClient chatClient;
     private final CategoryService categoryService;
     private final Validator validator;
+    private final TransactionRagRetriever ragRetriever;
 
     public TransactionSuggestionService(ChatClient.Builder builder, CategoryService categoryService, Validator validator) {
+        this(builder, categoryService, validator, null);
+    }
+
+    @Autowired
+    public TransactionSuggestionService(ChatClient.Builder builder, CategoryService categoryService, Validator validator,
+                                        TransactionRagRetriever ragRetriever) {
         this.chatClient = builder.build();
         this.categoryService = categoryService;
         this.validator = validator;
+        this.ragRetriever = ragRetriever;
     }
 
     public TransactionSuggestionResponseDTO suggest(UUID userId, String input) {
@@ -146,10 +161,51 @@ public class TransactionSuggestionService {
     }
 
     public List<TransactionSuggestionResponseDTO> suggestChat(UUID userId, List<ChatMessage> messages) {
+        return suggestChatWithCatalogue(userId, messages, true);
+    }
+
+    List<TransactionSuggestionResponseDTO> suggestChatWithCatalogue(UUID userId, List<ChatMessage> messages) {
+        return suggestChatWithCatalogue(userId, messages, false);
+    }
+
+    private List<TransactionSuggestionResponseDTO> suggestChatWithCatalogue(UUID userId, List<ChatMessage> messages,
+                                                                           boolean allowHistory) {
+        long started = System.nanoTime();
+        List<ChatCategoryContext.Example> examples = List.of();
+        try {
+            var categories = categoryService.findAllCategories(userId);
+            if (allowHistory && ragRetriever != null && !categories.isEmpty() && isHistoryCandidate(messages)) {
+                examples = ragRetriever.findExamples(userId, messages.getFirst().text()).stream()
+                        .filter(match -> categories.stream().anyMatch(category ->
+                                category.id().equals(match.categoryId()) && category.transactionType() == match.type()))
+                        .map(match -> new ChatCategoryContext.Example(match.description(), match.categoryId(), match.type()))
+                        .toList();
+            }
+            return suggestChat(userId, messages, new ChatCategoryContext(true, categories, examples));
+        } finally {
+            if (ragRetriever != null) {
+                ragRetriever.recordChatLatency(System.nanoTime() - started, !examples.isEmpty());
+            }
+        }
+    }
+
+    private boolean isHistoryCandidate(List<ChatMessage> messages) {
+        if (messages.size() != 1) {
+            return false;
+        }
+        String textWithoutDates = TransactionChatDates.withoutDates(messages.getFirst().text());
+        return hasAmountCandidate(textWithoutDates) && !hasSeparateExpensePrices(textWithoutDates, true)
+                && !hasAlternativeAmounts(textWithoutDates);
+    }
+
+    List<TransactionSuggestionResponseDTO> suggestChat(UUID userId, List<ChatMessage> messages,
+                                                        ChatCategoryContext categoryContext) {
         String transcript = messages.stream()
                 .map(ChatMessage::text)
                 .collect(Collectors.joining("\n\n--- próxima mensagem ---\n\n"));
-        var response = generate(ModelChatResponse.class, CHAT_INSTRUCTION, transcript);
+        String categoryInstruction = categoryContext.enabled() ? CATALOGUE_CHAT_EXAMPLE : LEGACY_CHAT_CATEGORY_INSTRUCTION;
+        var response = generate(ModelChatResponse.class, categoryContext.instruction(CHAT_INSTRUCTION.formatted(categoryInstruction)),
+                categoryContext.input(transcript));
         if (response.status() == Status.ESCLARECIMENTO && response.motivo() != null) {
             return chatClarification(response.motivo());
         }
@@ -160,13 +216,14 @@ public class TransactionSuggestionService {
             return chatClarification(Motivo.LIMITE_DE_LANCAMENTOS);
         }
         if (response.lancamentos().size() == 1) {
-            return suggestSingleChatDraft(userId, messages, response.lancamentos().getFirst());
+            return suggestSingleChatDraft(userId, messages, response.lancamentos().getFirst(), categoryContext);
         }
-        return suggestChatBatch(userId, messages.getLast(), response.lancamentos());
+        return suggestChatBatch(userId, messages.getLast(), response.lancamentos(), categoryContext);
     }
 
     private List<TransactionSuggestionResponseDTO> suggestSingleChatDraft(UUID userId, List<ChatMessage> messages,
-                                                                          ModelChatDraft draft) {
+                                                                          ModelChatDraft draft,
+                                                                          ChatCategoryContext categoryContext) {
         requireChatDraftFields(draft);
         LocalDate referenceDate = messages.getLast().referenceDate();
         LocalDate date = null;
@@ -188,11 +245,12 @@ public class TransactionSuggestionService {
         if (!hasValidAmount(amountText, draft.valor(), true)) {
             return chatClarification(Motivo.DADOS_AMBIGUOS);
         }
-        return List.of(suggestion(userId, draft.descricao(), draft.tipo(), draft.valor(), draft.categoriaSugerida(), date));
+        return List.of(chatSuggestion(userId, draft, date, categoryContext, currentChatCategories(userId, categoryContext)));
     }
 
     private List<TransactionSuggestionResponseDTO> suggestChatBatch(UUID userId, ChatMessage message,
-                                                                   List<ModelChatDraft> drafts) {
+                                                                   List<ModelChatDraft> drafts,
+                                                                   ChatCategoryContext categoryContext) {
         String text = message.text();
         LocalDate referenceDate = message.referenceDate();
         var leadingDate = TransactionChatDates.leading(text, referenceDate);
@@ -222,10 +280,9 @@ public class TransactionSuggestionService {
         }
 
         List<TransactionSuggestionResponseDTO> suggestions = new ArrayList<>(drafts.size());
+        var currentCategories = currentChatCategories(userId, categoryContext);
         for (int i = 0; i < drafts.size(); i++) {
-            ModelChatDraft draft = drafts.get(i);
-            suggestions.add(suggestion(userId, draft.descricao(), draft.tipo(), draft.valor(),
-                    draft.categoriaSugerida(), dates.get(i)));
+            suggestions.add(chatSuggestion(userId, drafts.get(i), dates.get(i), categoryContext, currentCategories));
         }
         return suggestions;
     }
@@ -254,7 +311,26 @@ public class TransactionSuggestionService {
 
     private TransactionSuggestionResponseDTO suggestion(UUID userId, String description, Tipo type, BigDecimal amount,
                                                         String categoryLabel, LocalDate date) {
-        CategoryResponseDTO category = findCategory(userId, type, categoryLabel);
+        return suggestion(description, type, amount, findCategory(userId, type, categoryLabel), date);
+    }
+
+    private TransactionSuggestionResponseDTO chatSuggestion(UUID userId, ModelChatDraft draft, LocalDate date,
+                                                            ChatCategoryContext categoryContext,
+                                                            List<CategoryResponseDTO> currentCategories) {
+        CategoryResponseDTO category = categoryContext.enabled()
+                ? categoryContext.findCategory(draft.tipo(), draft.categoriaSugerida(), currentCategories)
+                : findCategory(userId, draft.tipo(), draft.categoriaSugerida());
+        return suggestion(draft.descricao(), draft.tipo(), draft.valor(), category, date);
+    }
+
+    private List<CategoryResponseDTO> currentChatCategories(UUID userId, ChatCategoryContext categoryContext) {
+        return categoryContext.enabled() && !categoryContext.categories().isEmpty()
+                ? categoryService.findAllCategories(userId)
+                : List.of();
+    }
+
+    private TransactionSuggestionResponseDTO suggestion(String description, Tipo type, BigDecimal amount,
+                                                        CategoryResponseDTO category, LocalDate date) {
         return TransactionSuggestionResponseDTO.suggestion(description.strip(), amount, type,
                 category == null ? null : categoryLabel(category.name()), category == null ? null : category.id(), date);
     }
@@ -266,6 +342,7 @@ public class TransactionSuggestionService {
     }
 
     private <T> T generate(Class<T> outputType, String system, String input) {
+        long started = System.nanoTime();
         try {
             T result = chatClient.prompt()
                     .system(system)
@@ -275,9 +352,13 @@ public class TransactionSuggestionService {
             if (result != null) {
                 return result;
             }
+            LOGGER.warn("Transaction suggestion provider failed (reason=empty_response, elapsedMs={})",
+                    (System.nanoTime() - started) / 1_000_000);
         } catch (RuntimeException exception) {
             // Provider errors can contain prompts, responses or credentials in their details.
-            LOGGER.warn("Transaction suggestion provider failed ({})", exception.getClass().getSimpleName());
+            var failure = TransactionProviderFailure.from(exception);
+            LOGGER.warn("Transaction suggestion provider failed (reason={}, status={}, cause={}, elapsedMs={})",
+                    failure.reason(), failure.status(), failure.cause(), (System.nanoTime() - started) / 1_000_000);
         }
         throw new TransactionSuggestionUnavailableException();
     }

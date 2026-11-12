@@ -225,20 +225,21 @@ public class TransactionChatHistory {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void lockForConfirmation(UUID userId, String key) {
-        if (key.length() != 36) return;
+    public Optional<String> lockForConfirmation(UUID userId, String key) {
+        if (key.length() != 36) return Optional.empty();
         UUID id;
         try {
             id = UUID.fromString(key);
         } catch (IllegalArgumentException exception) {
-            return;
+            return Optional.empty();
         }
-        if (!id.toString().equals(key)) return;
+        if (!id.toString().equals(key)) return Optional.empty();
 
-        lockDraft(userId, id).ifPresent(draft -> {
+        return lockDraft(userId, id).map(draft -> {
             if ((draft.discarded() || hasSuccessor(draft.entryId())) && !wasConfirmed(userId, id)) {
                 throw new TransactionChatException(DRAFT_UNAVAILABLE);
             }
+            return draft.suggestedCategoryId();
         });
     }
 
@@ -251,10 +252,11 @@ public class TransactionChatHistory {
 
     private Optional<LockedDraft> lockDraft(UUID userId, UUID id) {
         return jdbc.query("""
-                SELECT draft.entry_id, draft.discarded
+                SELECT draft.entry_id, draft.discarded, draft.response_body::jsonb ->> 'categoriaId' AS suggested_category_id
                 FROM transaction_chat_drafts draft JOIN transaction_chat_history chat ON chat.id = draft.entry_id
                 WHERE draft.id = ? AND chat.user_id = ? FOR UPDATE OF draft
-                """, (row, index) -> new LockedDraft(row.getObject("entry_id", UUID.class), row.getBoolean("discarded")),
+                """, (row, index) -> new LockedDraft(row.getObject("entry_id", UUID.class), row.getBoolean("discarded"),
+                row.getString("suggested_category_id")),
                 id, userId).stream().findFirst();
     }
 
@@ -297,7 +299,7 @@ public class TransactionChatHistory {
                 row.getBoolean("superseded"), row.getObject("request_id", UUID.class));
     }
 
-    private record LockedDraft(UUID entryId, boolean discarded) {
+    private record LockedDraft(UUID entryId, boolean discarded, String suggestedCategoryId) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -738,6 +738,82 @@ resposta da IA e seus rascunhos. A mensagem enviada e as transações confirmada
 permanecem. A operação retorna `204 No Content`. Repetir o envio com o mesmo
 `requestId` retorna a mensagem existente sem gerar a resposta novamente.
 
+### Piloto de categorização com histórico
+
+A [validação local](../docs/avaliacao-rag-transporte-2026-11-12.md) passou com dados
+fictícios: 19/20 categorias corretas com RAG contra 18/20 com catálogo. A flag
+padrão permanece desligada para ativação controlada dos usuários piloto.
+
+A geração usa um cliente Gemini compartilhado entre a aplicação e a avaliação:
+timeout HTTP de 30 s e até duas tentativas para HTTP 500, 502, 503 ou 504, timeout
+e falhas de transporte, com intervalo de 0,5 s. Um `RetryTemplate` explícito do
+modelo é a única camada de tentativas; o SDK faz uma tentativa por chamada.
+Erros 400, 401, 403 e 429, JSON inválido e interrupção não recebem nova tentativa
+por essa política. O caminho de embeddings
+mantém sua própria política de uma tentativa dentro do orçamento da busca.
+O limite HTTP é por tentativa; serialização, transporte e processamento também
+contribuem para o tempo total. Uma indisponibilidade persistente ainda retorna o
+erro controlado da API.
+
+Os logs de falha informam classificação, código HTTP quando disponível, classe
+da causa e duração, sem mensagem da exceção, stack trace ou texto da transação.
+`status=0` indica ausência de código HTTP identificado. O erro retornado ao cliente
+continua sem detalhes do provedor.
+
+O chat oferece ao Gemini as categorias cadastradas pelo usuário. Com o RAG
+habilitado para um usuário piloto, o chat também pode recuperar até três
+exemplos de lançamentos confirmados desse mesmo usuário. Uma busca vazia ou
+indisponível segue com o catálogo de categorias.
+O modelo pode sugerir categoria nula quando nenhuma opção representar o
+lançamento; o rascunho mantém os demais campos para revisão.
+
+Para testar com dados fictícios, habilite o provedor Gemini e configure o
+ambiente da API antes de reiniciá-la.
+
+```dotenv
+TRANSACTION_CHAT_RAG_ENABLED=true
+TRANSACTION_CHAT_RAG_PILOT_USER_IDS=11111111-1111-4111-8111-111111111111
+TRANSACTION_CHAT_RAG_SEARCH_TIMEOUT=2s
+TRANSACTION_CHAT_RAG_MIN_SIMILARITY=0.55
+```
+
+Troque o UUID pelo ID de um usuário de teste. Separe vários IDs por vírgulas.
+A flag começa desligada e uma lista vazia mantém o histórico inativo para
+todos. O primeiro processamento inclui até 100 lançamentos elegíveis por
+usuário piloto e acompanha os lançamentos novos em segundo plano. A busca usa
+somente vetores atualizados. A exclusão da transação remove o vetor.
+
+O PostgreSQL precisa ter a extensão `vector` disponível para o Flyway. Antes
+de trocar a imagem do banco local, faça um backup lógico do banco existente.
+Se a nova imagem não conseguir abrir esse volume, preserve-o e restaure o
+backup em um novo volume com `pgvector`. No Neon, valide a disponibilidade
+da extensão e a permissão da conta de migração em ambiente de teste.
+
+Antes de ativar para histórico real, confirme que a configuração do provedor
+é adequada aos dados e revise o aviso de privacidade da aplicação.
+
+Com o RAG habilitado, o backend atualiza a cobertura do índice a cada 30 segundos,
+mesmo quando a indexação está aguardando uma nova tentativa do provedor. Os
+indicadores Micrometer são agregados para a lista de pilotos, sem IDs de usuário:
+
+- `finance.manager.chat.rag.vectors`, com `state=ready|pending|skipped`: contagens
+  no recorte do backfill e dos lançamentos novos. Vetores de outra versão ou com
+  descrição alterada contam como pendentes; textos descartados contam como `skipped`.
+- `finance.manager.chat.rag.coverage`: `ready / (ready + pending)`, de 0 a 1.
+  Descrições descartadas ficam fora do denominador. Sem itens nesse denominador,
+  o valor é `NaN`, para não indicar cobertura completa de um índice vazio.
+- `finance.manager.chat.rag.coverage.updated`: instante Unix, em segundos, da
+  última leitura bem-sucedida. Em falha no banco, a amostra anterior é preservada
+  e `finance.manager.chat.rag.coverage.failures` é incrementado.
+
+As contagens incluem descrições ainda não processadas, mesmo sem linha auxiliar,
+e excluem transações sem descrição e anteriores ao recorte inicial. Até a primeira
+leitura, os gauges ficam em `NaN`. Esses indicadores ficam no `MeterRegistry`;
+a configuração padrão do Actuator expõe somente `health` por HTTP.
+
+[Plano de implementação](../docs/plano-rag-categorizacao.md) ·
+[Avaliação com casos fictícios](../docs/avaliacao-sugestoes-transacoes.md)
+
 ## Dashboard e relatórios
 
 Os endpoints de relatório exigem autenticação JWT:
