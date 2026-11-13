@@ -19,6 +19,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -30,6 +31,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -64,7 +67,7 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
 
     @MockitoBean(enforceOverride = true)
     private ChatModel chatModel;
-    @MockitoBean
+    @MockitoSpyBean
     private TransactionEmbeddingClient embeddingClient;
 
     @Test
@@ -73,8 +76,8 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
         var own = indexHistory(PILOT_ID, token, "Plantão", OWN_HISTORY);
         var foreign = user();
         indexHistory(UUID.fromString(foreign.id()), foreign.token(), "Lazer", FOREIGN_HISTORY);
-        when(embeddingClient.embedQuery(anyString(), any(Duration.class))).thenReturn(vector());
-        mockDraft(own.categoryId());
+        doReturn(vector()).when(embeddingClient).embedQuery(anyString(), any(Duration.class));
+        mockDraft();
 
         var payload = Map.of("description", DESCRIPTION, "requestId", UUID.randomUUID().toString());
         Reply suggestion = request("POST", CHAT, token, payload);
@@ -86,11 +89,8 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
         var prompt = ArgumentCaptor.forClass(Prompt.class);
         verify(chatModel).call(prompt.capture());
         var sent = JSON.readTree(userPrompt(prompt.getValue()));
-        assertThat(sent.get("historico").size()).isEqualTo(1);
-        assertThat(sent.get("historico").get(0).get("categoriaId").asString()).isEqualTo(own.categoryId());
-        assertThat(sent.get("historico").get(0).get("descricao").asString())
-                .contains("Corrida de Uber para o plantão").doesNotContain("pessoa@example.test");
-        assertThat(sent.toString()).doesNotContain(FOREIGN_HISTORY);
+        assertThat(sent.has("historico")).isFalse();
+        assertThat(sent.toString()).doesNotContain("Corrida de Uber", "pessoa@example.test", FOREIGN_HISTORY);
         var query = ArgumentCaptor.forClass(String.class);
         verify(embeddingClient).embedQuery(query.capture(), any(Duration.class));
         assertThat(query.getValue()).contains("Uber").doesNotContain("31,50");
@@ -111,9 +111,7 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
         var own = createConfirmedHistory(token, "Plantão", OWN_HISTORY);
         var foreign = user();
         var other = createConfirmedHistory(foreign.token(), "Lazer", FOREIGN_HISTORY);
-        when(embeddingClient.embedDocument(anyString())).thenReturn(vector());
-        when(embeddingClient.embedQuery(anyString(), any(Duration.class))).thenReturn(vector());
-        mockDraft(own.categoryId());
+        mockDraft();
 
         Object worker = context.getBean("transactionEmbeddingWorker");
         var scheduler = context.getBean(org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor.class);
@@ -131,7 +129,7 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
         suggestion.money("response.valor", "31.50");
         var prompt = ArgumentCaptor.forClass(Prompt.class);
         verify(chatModel).call(prompt.capture());
-        assertThat(JSON.readTree(userPrompt(prompt.getValue())).get("historico").size()).isOne();
+        assertThat(JSON.readTree(userPrompt(prompt.getValue())).has("historico")).isFalse();
 
         var body = new HashMap<>(transactionBody(own.accountId(), own.categoryId(), "EXPENSE", "31.50", LocalDate.now().minusDays(1)));
         body.put("description", "Uber para o plantão");
@@ -155,17 +153,18 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
     void fallsBackToTheCatalogueWhenQueryEmbeddingFails() throws Exception {
         String token = pilotToken();
         var own = indexHistory(PILOT_ID, token, "Plantão", OWN_HISTORY);
-        when(embeddingClient.embedQuery(anyString(), any(Duration.class)))
-                .thenThrow(new IllegalStateException("Fixture de indisponibilidade"));
-        mockDraft(own.categoryId());
+        doThrow(new IllegalStateException("Fixture de indisponibilidade"))
+                .when(embeddingClient).embedQuery(anyString(), any(Duration.class));
+        mockDraft();
 
         Reply suggestion = request("POST", CHAT, token, Map.of("description", DESCRIPTION));
         suggestion.status(200);
-        assertThat(suggestion.text("response.categoriaId")).isEqualTo(own.categoryId());
+        assertThat(suggestion.text("response.categoriaId")).isNull();
+        suggestion.money("response.valor", "31.50");
         var prompt = ArgumentCaptor.forClass(Prompt.class);
         verify(chatModel).call(prompt.capture());
         var sent = JSON.readTree(userPrompt(prompt.getValue()));
-        assertThat(sent.get("historico").size()).isZero();
+        assertThat(sent.has("historico")).isFalse();
         assertThat(sent.get("categorias").get(0).get("id").asString()).isEqualTo(own.categoryId());
         verify(embeddingClient, times(1)).embedQuery(anyString(), any(Duration.class));
     }
@@ -204,13 +203,13 @@ class TransactionChatRagRequestSpecTest extends HttpRequestSpec {
         return new History(accountId, categoryId, transaction.text("id"));
     }
 
-    private void mockDraft(String categoryId) {
+    private void mockDraft() {
         when(chatModel.getOptions()).thenReturn(GoogleGenAiChatOptions.builder().build());
         when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("""
                 {"status":"SUGESTAO","lancamentos":[
-                  {"descricao":"Uber para o plantão","valor":31.50,"tipo":"DESPESA","categoriaSugerida":"%s"}
+                  {"descricao":"Uber para o plantão","valor":31.50,"tipo":"DESPESA","categoriaSugerida":null}
                 ]}
-                """.formatted(categoryId))))));
+                """)))));
     }
 
     private String userPrompt(Prompt prompt) {

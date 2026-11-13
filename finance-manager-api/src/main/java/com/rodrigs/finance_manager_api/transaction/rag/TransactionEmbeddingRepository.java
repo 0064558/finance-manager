@@ -20,7 +20,6 @@ import java.util.function.Supplier;
 
 @Repository
 public class TransactionEmbeddingRepository {
-    private static final int VECTOR_DIMENSIONS = 768;
     private static final String DESCRIPTION_HASH = "encode(sha256(convert_to(t.description, 'UTF8')), 'hex')";
     private static final String READY_FILTER = """
             WHERE t.user_id = ? AND e.embedding_version = ? AND e.embedding IS NOT NULL
@@ -157,13 +156,13 @@ public class TransactionEmbeddingRepository {
                 vector, skipped, Math.max(0, delay.toMillis()), work.sourceHash(), work.version(), work.leaseToken()) == 1;
     }
 
-    public boolean hasReady(UUID userId, String version, Duration timeout) {
+    public boolean hasReady(UUID userId, String version, TransactionType type, Duration timeout) {
         return Boolean.TRUE.equals(readWithTimeout(timeout, () -> jdbc.queryForObject("""
                 SELECT EXISTS (
                     SELECT 1
                     FROM transaction_embeddings e
                     JOIN transactions t ON t.id = e.transaction_id
-                """ + READY_FILTER + ")", Boolean.class, userId, version)));
+                """ + READY_FILTER + " AND t.type = ?)", Boolean.class, userId, version, type.name())));
     }
 
     public Coverage coverage(Set<UUID> userIds, String version) {
@@ -195,20 +194,20 @@ public class TransactionEmbeddingRepository {
         }, arguments.toArray());
     }
 
-    public List<Match> search(UUID userId, String version, float[] vector, double minSimilarity, int limit,
+    public List<Match> search(UUID userId, String version, TransactionType type, float[] vector, double minSimilarity, int limit,
                               Duration timeout) {
         String literal = vectorLiteral(vector);
         return readWithTimeout(timeout, () -> jdbc.query("""
-                SELECT t.description, t.category_id, t.type
+                SELECT t.id, t.category_id
                 FROM transaction_embeddings e
                 JOIN transactions t ON t.id = e.transaction_id
                 CROSS JOIN (SELECT CAST(? AS vector) AS embedding) q
                 """ + READY_FILTER + """
-                  AND (e.embedding <=> q.embedding) <= ?
+                  AND t.type = ? AND (e.embedding <=> q.embedding) <= ?
                 ORDER BY e.embedding <=> q.embedding, t.id
                 LIMIT ?
-                """, (row, index) -> new Match(row.getString("description"), row.getObject("category_id", UUID.class),
-                TransactionType.valueOf(row.getString("type"))), literal, userId, version, 1 - minSimilarity, limit));
+                """, (row, index) -> new Match(row.getObject("id", UUID.class), row.getObject("category_id", UUID.class)),
+                literal, userId, version, type.name(), 1 - minSimilarity, limit));
     }
 
     private <T> T readWithTimeout(Duration timeout, Supplier<T> query) {
@@ -228,19 +227,17 @@ public class TransactionEmbeddingRepository {
     }
 
     private static String vectorLiteral(float[] values) {
-        if (values.length != VECTOR_DIMENSIONS) {
+        if (values.length != LocalTransactionEmbeddingClient.DIMENSIONS) {
             throw new IllegalArgumentException("Embedding has an unexpected dimension");
         }
         var literal = new StringJoiner(",", "[", "]");
-        boolean nonzero = false;
         for (float value : values) {
             if (!Float.isFinite(value)) {
                 throw new IllegalArgumentException("Embedding values must be finite");
             }
-            nonzero |= value != 0;
             literal.add(Float.toString(value));
         }
-        if (!nonzero) {
+        if (!TransactionEmbeddingClient.hasFeatures(values)) {
             throw new IllegalArgumentException("Embedding must have a nonzero norm");
         }
         return literal.toString();
@@ -249,7 +246,7 @@ public class TransactionEmbeddingRepository {
     public record Work(UUID transactionId, UUID userId, String description, String sourceHash, String version,
                        UUID leaseToken, int attempts) {}
 
-    public record Match(String description, UUID categoryId, TransactionType type) {}
+    public record Match(UUID transactionId, UUID categoryId) {}
 
     public record Coverage(long ready, long pending, long skipped) {
         public double ratio() {

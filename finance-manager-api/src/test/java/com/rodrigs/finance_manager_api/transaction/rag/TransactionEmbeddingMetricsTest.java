@@ -56,7 +56,7 @@ class TransactionEmbeddingMetricsTest {
     }
 
     private TransactionRagProperties properties(boolean enabled) {
-        return new TransactionRagProperties(enabled, Set.of(UUID.randomUUID()), "gemini-embedding-001",
+        return new TransactionRagProperties(enabled, Set.of(UUID.randomUUID()),
                 Duration.ofSeconds(2), 0.55, 3, 100, 20);
     }
 }

@@ -4,6 +4,7 @@ import com.rodrigs.finance_manager_api.shared.exception.TransactionSuggestionUna
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Status;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Tipo;
+import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.transaction.rag.TransactionEmbeddingClient;
 import com.rodrigs.finance_manager_api.transaction.rag.TransactionEmbeddingRepository;
 import com.rodrigs.finance_manager_api.transaction.rag.TransactionEmbeddingText;
@@ -135,7 +136,7 @@ class TransactionChatRagEvaluationTest {
         UUID privateCategory = category(other, "Categoria privada", "EXPENSE");
         var query = vector(1, 0);
         UUID first = transaction(owner, food, "EXPENSE", "Jantar no sushi");
-        transaction(owner, food, "EXPENSE", "Jantar no restaurante");
+        UUID restaurant = transaction(owner, food, "EXPENSE", "Jantar no restaurante");
         transaction(owner, food, "EXPENSE", "Bicicleta");
         transaction(other, privateCategory, "EXPENSE", "Jantar privado");
         indexHistory(owner, description -> switch (description) {
@@ -145,18 +146,18 @@ class TransactionChatRagEvaluationTest {
         }, 3);
         indexHistory(other, description -> query, 1);
 
-        assertThat(matches(owner, query)).extracting(TransactionEmbeddingRepository.Match::description)
-                .containsExactly("Jantar no sushi", "Jantar no restaurante");
+        assertThat(matches(owner, query)).extracting(TransactionEmbeddingRepository.Match::transactionId)
+                .containsExactly(first, restaurant);
 
         jdbc.update("UPDATE transactions SET category_id = ? WHERE id = ?", work, first);
         assertThat(matches(owner, query).getFirst().categoryId()).isEqualTo(work);
         jdbc.update("UPDATE transactions SET description = ? WHERE id = ?", "Almoço no sushi", first);
         assertThat(matches(owner, query)).hasSize(1);
         indexHistory(owner, description -> query, 1);
-        assertThat(matches(owner, query).getFirst().description()).isEqualTo("Almoço no sushi");
+        assertThat(matches(owner, query).getFirst().transactionId()).isEqualTo(first);
         jdbc.update("DELETE FROM transactions WHERE id = ?", first);
-        assertThat(matches(owner, query)).extracting(TransactionEmbeddingRepository.Match::description)
-                .containsExactly("Jantar no restaurante");
+        assertThat(matches(owner, query)).extracting(TransactionEmbeddingRepository.Match::transactionId)
+                .containsExactly(restaurant);
         assertThat(matches(user(UUID.randomUUID()), query)).isEmpty();
     }
 
@@ -263,7 +264,7 @@ class TransactionChatRagEvaluationTest {
                     .anyMatch(result -> result.variant() == variant && !result.chatFailed());
         }
         if (selectedCase == null) {
-            assertThat(results).as("Ao menos uma recuperação real por embeddings deve chegar ao Gemini")
+            assertThat(results).as("Ao menos uma busca local por embeddings deve recuperar exemplos")
                     .anyMatch(result -> result.variant() == Variant.RAG && result.examples() > 0 && !result.chatFailed());
         }
         if (Boolean.getBoolean("transaction.chat.rag.acceptance")) {
@@ -402,7 +403,7 @@ class TransactionChatRagEvaluationTest {
     }
 
     private List<TransactionEmbeddingRepository.Match> matches(User user, float[] vector) {
-        return history.search(user.id(), ragSettings.version(), vector, ragSettings.minSimilarity(),
+        return history.search(user.id(), ragSettings.version(), TransactionType.EXPENSE, vector, ragSettings.minSimilarity(),
                 ragSettings.maxExamples(), ragSettings.searchTimeout());
     }
 

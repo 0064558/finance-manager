@@ -6,20 +6,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.UUID;
 
 final class TransactionEmbeddingWorker {
     private static final Logger LOG = LoggerFactory.getLogger(TransactionEmbeddingWorker.class);
     private static final Duration LEASE = Duration.ofSeconds(30);
-    private static final Duration CONFIGURATION_RETRY_DELAY = Duration.ofMinutes(5);
     private static final String INDEXING_METRIC = "finance.manager.chat.rag.indexing";
 
     private final TransactionRagProperties properties;
     private final TransactionEmbeddingRepository repository;
     private final TransactionEmbeddingClient client;
     private final MeterRegistry meters;
-    private Instant providerRetryAt = Instant.EPOCH;
 
     TransactionEmbeddingWorker(TransactionRagProperties properties, TransactionEmbeddingRepository repository,
             TransactionEmbeddingClient client, MeterRegistry meters) {
@@ -36,9 +33,6 @@ final class TransactionEmbeddingWorker {
             return;
         }
         for (UUID userId : properties.pilotUserIds()) {
-            if (Instant.now().isBefore(providerRetryAt)) {
-                return;
-            }
             try {
                 indexBatch(userId);
             } catch (RuntimeException exception) {
@@ -55,39 +49,30 @@ final class TransactionEmbeddingWorker {
             if (claimed.isEmpty()) {
                 break;
             }
-            if (!index(claimed.get())) {
-                break;
-            }
+            index(claimed.get());
         }
     }
 
-    private boolean index(TransactionEmbeddingRepository.Work work) {
+    private void index(TransactionEmbeddingRepository.Work work) {
         String text = TransactionEmbeddingText.normalize(work.description());
         if (text.isEmpty()) {
             record(repository.skip(work) ? "skipped" : "stale");
-            return true;
+            return;
         }
-
         float[] vector;
         try {
             vector = client.embedDocument(text);
-        } catch (TransactionEmbeddingException exception) {
+        } catch (RuntimeException exception) {
             long seconds = Math.min(3600, 30L << Math.clamp(work.attempts() - 1, 0, 7));
-            Duration delay = exception.configurationFailure() ? CONFIGURATION_RETRY_DELAY : Duration.ofSeconds(seconds);
-            boolean pause = exception.configurationFailure() || exception.statusCode().orElse(0) == 429;
-            if (pause) {
-                providerRetryAt = Instant.now().plus(delay);
-            }
-            record(repository.retry(work, delay) ? "retry" : "stale");
-            if (exception.statusCode().isPresent()) {
-                LOG.warn("Transaction embedding unavailable (HTTP {})", exception.statusCode().getAsInt());
-            } else {
-                LOG.warn("Transaction embedding unavailable");
-            }
-            return !pause;
+            record(repository.retry(work, Duration.ofSeconds(seconds)) ? "retry" : "stale");
+            LOG.warn("Local transaction embedding failed ({})", exception.getClass().getSimpleName());
+            return;
         }
-        record(repository.complete(work, vector) ? "indexed" : "stale");
-        return true;
+        if (TransactionEmbeddingClient.hasFeatures(vector)) {
+            record(repository.complete(work, vector) ? "indexed" : "stale");
+        } else {
+            record(repository.skip(work) ? "skipped" : "stale");
+        }
     }
 
     private void record(String outcome) {

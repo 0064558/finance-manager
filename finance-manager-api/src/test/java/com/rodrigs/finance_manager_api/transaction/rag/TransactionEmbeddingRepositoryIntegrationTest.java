@@ -68,7 +68,7 @@ class TransactionEmbeddingRepositoryIntegrationTest extends PostgresIntegrationT
         Account owner = account();
         Account other = account();
         UUID closest = transaction(owner, "Corrida para o plantão", 1);
-        transaction(owner, "Corrida para o turno", 2);
+        UUID second = transaction(owner, "Corrida para o turno", 2);
         transaction(owner, "Curso de Java", 3);
         transaction(other, "Corrida privada para o plantão", 1);
 
@@ -79,21 +79,22 @@ class TransactionEmbeddingRepositoryIntegrationTest extends PostgresIntegrationT
         completeNext(owner, vector(1, 0));
         completeNext(other, vector(1, 0));
 
-        assertThat(repository.hasReady(owner.userId(), VERSION, LOOKUP_TIMEOUT)).isTrue();
-        assertThat(repository.hasReady(owner.userId(), "embedding-v2", LOOKUP_TIMEOUT)).isFalse();
-        assertThat(search(owner, 3)).extracting(TransactionEmbeddingRepository.Match::description)
-                .containsExactly("Corrida para o plantão", "Corrida para o turno");
-        assertThat(search(owner, 1)).extracting(TransactionEmbeddingRepository.Match::description)
-                .containsExactly("Corrida para o plantão");
+        assertThat(repository.hasReady(owner.userId(), VERSION, TransactionType.EXPENSE, LOOKUP_TIMEOUT)).isTrue();
+        assertThat(repository.hasReady(owner.userId(), "embedding-v2", TransactionType.EXPENSE, LOOKUP_TIMEOUT)).isFalse();
+        assertThat(search(owner, 3)).extracting(TransactionEmbeddingRepository.Match::transactionId)
+                .containsExactly(closest, second);
+        assertThat(search(owner, 1)).extracting(TransactionEmbeddingRepository.Match::transactionId)
+                .containsExactly(closest);
 
         UUID income = category(owner.userId(), "Reembolsos", TransactionType.INCOME);
         jdbc.update("UPDATE transactions SET category_id = ?, type = 'INCOME' WHERE id = ?", income, closest);
-        assertThat(search(owner, 1)).containsExactly(
-                new TransactionEmbeddingRepository.Match("Corrida para o plantão", income, TransactionType.INCOME));
+        assertThat(search(owner, 1)).extracting(TransactionEmbeddingRepository.Match::transactionId).containsExactly(second);
+        assertThat(repository.search(owner.userId(), VERSION, TransactionType.INCOME, vector(1, 0), 0.55, 1, LOOKUP_TIMEOUT))
+                .containsExactly(new TransactionEmbeddingRepository.Match(closest, income));
 
         jdbc.update("UPDATE transactions SET description = 'Reembolso do plantão' WHERE id = ?", closest);
-        assertThat(search(owner, 3)).extracting(TransactionEmbeddingRepository.Match::description)
-                .containsExactly("Corrida para o turno");
+        assertThat(repository.search(owner.userId(), VERSION, TransactionType.INCOME, vector(1, 0), 0.55, 1, LOOKUP_TIMEOUT))
+                .isEmpty();
     }
 
     @Test
@@ -163,7 +164,7 @@ class TransactionEmbeddingRepositoryIntegrationTest extends PostgresIntegrationT
         assertThat(retried.attempts()).isEqualTo(3);
         assertThat(repository.complete(original, vector(1, 0))).isFalse();
         assertThat(repository.complete(retried, vector(1, 0))).isTrue();
-        assertThat(repository.hasReady(owner.userId(), VERSION, LOOKUP_TIMEOUT)).isTrue();
+        assertThat(repository.hasReady(owner.userId(), VERSION, TransactionType.EXPENSE, LOOKUP_TIMEOUT)).isTrue();
     }
 
     @Test
@@ -228,7 +229,7 @@ class TransactionEmbeddingRepositoryIntegrationTest extends PostgresIntegrationT
     }
 
     private List<TransactionEmbeddingRepository.Match> search(Account account, int limit) {
-        return repository.search(account.userId(), VERSION, vector(1, 0), 0.55, limit, LOOKUP_TIMEOUT);
+        return repository.search(account.userId(), VERSION, TransactionType.EXPENSE, vector(1, 0), 0.55, limit, LOOKUP_TIMEOUT);
     }
 
     private static float[] vector(float first, float second) {
