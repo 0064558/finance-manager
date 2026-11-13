@@ -47,7 +47,7 @@ class TransactionEmbeddingWorkerTest {
         Work eligible = work("Ônibus para o centro", 1);
         float[] vector = {0.1f};
         when(repository.claim(USER, properties.version(), LEASE)).thenReturn(Optional.of(failed), Optional.of(eligible));
-        when(client.embedDocument("Uber para o mercado")).thenThrow(new TransactionEmbeddingException(503));
+        when(client.embedDocument("Uber para o mercado")).thenThrow(new IllegalStateException());
         when(client.embedDocument("Ônibus para o centro")).thenReturn(vector);
         when(repository.retry(failed, Duration.ofMinutes(1))).thenReturn(true);
         when(repository.complete(eligible, vector)).thenReturn(true);
@@ -60,19 +60,16 @@ class TransactionEmbeddingWorkerTest {
     }
 
     @Test
-    void pausesTheBatchAndSubsequentTicksWhenCredentialsAreRejected() {
-        Work failed = work("Uber para o mercado", 1);
-        when(repository.claim(USER, properties.version(), LEASE)).thenReturn(Optional.of(failed));
-        when(client.embedDocument("Uber para o mercado")).thenThrow(new TransactionEmbeddingException(403));
-        when(repository.retry(failed, Duration.ofMinutes(5))).thenReturn(true);
+    void skipsDescriptionsWithoutAnyEmbeddingFeatures() {
+        Work skipped = work("Paguei", 1);
+        when(repository.claim(USER, properties.version(), LEASE)).thenReturn(Optional.of(skipped), Optional.empty());
+        when(client.embedDocument("Paguei")).thenReturn(new float[768]);
+        when(repository.skip(skipped)).thenReturn(true);
 
         worker.run();
-        worker.run();
 
-        verify(client).embedDocument("Uber para o mercado");
-        verify(repository).reconcile(USER, properties.version(), 100, 2);
-        verify(repository).retry(failed, Duration.ofMinutes(5));
-        assertThat(indexed("retry")).isEqualTo(1);
+        verify(repository).skip(skipped);
+        assertThat(indexed("skipped")).isEqualTo(1);
     }
 
     @Test
@@ -87,7 +84,7 @@ class TransactionEmbeddingWorkerTest {
     }
 
     private TransactionRagProperties properties(boolean enabled) {
-        return new TransactionRagProperties(enabled, Set.of(USER), "gemini-embedding-001", Duration.ofSeconds(2), 0.55, 3, 100, 2);
+        return new TransactionRagProperties(enabled, Set.of(USER), Duration.ofSeconds(2), 0.55, 3, 100, 2);
     }
 
     private Work work(String text, int attempts) {

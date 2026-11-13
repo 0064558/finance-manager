@@ -23,6 +23,13 @@ assumptions:
     verification: Six TransactionGeminiSimulationTest cases passed on 2026-11-12 with the real SDK and service against localhost port 4517. The control endpoint confirmed two calls for connection recovery, repeated HTTP 503 and a delayed response; HTTP 400 and 429 made one call. InterruptedIOException was classified as timeout. This is local evidence, not an availability guarantee for Gemini.
     source: finance-manager-api/src/test/java/com/rodrigs/finance_manager_api/transaction/service/TransactionGeminiSimulationTest.java; postman/mocks/gemini-diagnostics/default.js
     updated_at: '2026-11-12'
+  - id: generation-transport-with-local-history
+    status: supported
+    claim: The existing generation transport still handles the six simulated scenarios after moving history retrieval into the API.
+    reason: The local RAG no longer calls the Gemini embedding endpoint or passes transaction matches into generation.
+    verification: All six TransactionGeminiSimulationTest cases passed against the local mock, whose request events recorded generateContent traffic. TransactionChatRagRequestSpecTest independently inspected the generated prompt and verified that historical descriptions are absent while a matching category is applied locally.
+    source: finance-manager-api/src/test/java/com/rodrigs/finance_manager_api/transaction/service/TransactionGeminiSimulationTest.java; finance-manager-api/src/test/java/com/rodrigs/finance_manager_api/transaction/controller/TransactionChatRagRequestSpecTest.java
+    updated_at: '2026-11-12'
 fingerprints:
   - id: local-gemini-diagnostics
     date: '2026-11-12'

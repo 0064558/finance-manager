@@ -740,17 +740,18 @@ permanecem. A operação retorna `204 No Content`. Repetir o envio com o mesmo
 
 ### Piloto de categorização com histórico
 
-A [validação local](../docs/avaliacao-rag-transporte-2026-11-12.md) passou com dados
-fictícios: 19/20 categorias corretas com RAG contra 18/20 com catálogo. A flag
-padrão permanece desligada para ativação controlada dos usuários piloto.
+A flag padrão permanece desligada para ativação controlada dos usuários piloto.
+O Finance Manager calcula vetores de 768 dimensões localmente, a partir de palavras
+e trechos de palavras. Esse método favorece descrições com termos parecidos e
+pode deixar a categoria em aberto quando só houver sinônimos. O resultado da
+[avaliação anterior](../docs/avaliacao-rag-transporte-2026-11-12.md) usava embeddings do Gemini.
 
 A geração usa um cliente Gemini compartilhado entre a aplicação e a avaliação:
 timeout HTTP de 30 s e até duas tentativas para HTTP 500, 502, 503 ou 504, timeout
 e falhas de transporte, com intervalo de 0,5 s. Um `RetryTemplate` explícito do
 modelo é a única camada de tentativas; o SDK faz uma tentativa por chamada.
 Erros 400, 401, 403 e 429, JSON inválido e interrupção não recebem nova tentativa
-por essa política. O caminho de embeddings
-mantém sua própria política de uma tentativa dentro do orçamento da busca.
+por essa política.
 O limite HTTP é por tentativa; serialização, transporte e processamento também
 contribuem para o tempo total. Uma indisponibilidade persistente ainda retorna o
 erro controlado da API.
@@ -760,12 +761,15 @@ da causa e duração, sem mensagem da exceção, stack trace ou texto da transa�
 `status=0` indica ausência de código HTTP identificado. O erro retornado ao cliente
 continua sem detalhes do provedor.
 
-O chat oferece ao Gemini as categorias cadastradas pelo usuário. Com o RAG
-habilitado para um usuário piloto, o chat também pode recuperar até três
-exemplos de lançamentos confirmados desse mesmo usuário. Uma busca vazia ou
-indisponível segue com o catálogo de categorias.
-O modelo pode sugerir categoria nula quando nenhuma opção representar o
-lançamento; o rascunho mantém os demais campos para revisão.
+O chat envia ao Gemini o texto da conversa e o catálogo de categorias cadastrado
+pelo usuário para gerar o rascunho. Para um lançamento individual com categoria
+em branco, o backend pode buscar até três lançamentos confirmados do mesmo
+usuário e tipo. Preenche a categoria quando os resultados concordam e a categoria
+ainda consta no catálogo. Uma busca vazia, ambígua ou indisponível mantém o
+rascunho com a categoria em branco para revisão. As descrições de transações
+antigas e seus vetores ficam no Finance Manager e no Neon. A busca local dispensa
+chave e faturamento para embeddings. O uso do Gemini para o chat continua sujeito
+aos [termos do provedor](https://ai.google.dev/gemini-api/terms).
 
 Para testar com dados fictícios, habilite o provedor Gemini e configure o
 ambiente da API antes de reiniciá-la.
@@ -789,8 +793,9 @@ Se a nova imagem não conseguir abrir esse volume, preserve-o e restaure o
 backup em um novo volume com `pgvector`. No Neon, valide a disponibilidade
 da extensão e a permissão da conta de migração em ambiente de teste.
 
-Antes de ativar para histórico real, confirme que a configuração do provedor
-é adequada aos dados e revise o aviso de privacidade da aplicação.
+Para acompanhar a ativação, `TRANSACTION_CHAT_RAG_LOG_LEVEL=DEBUG` registra o
+resultado da busca e se a categoria foi preenchida localmente. Os logs não
+incluem conteúdo da conversa, descrições, identificadores nem vetores.
 
 Com o RAG habilitado, o backend atualiza a cobertura do índice a cada 30 segundos,
 mesmo quando a indexação está aguardando uma nova tentativa do provedor. Os
@@ -811,6 +816,7 @@ e excluem transações sem descrição e anteriores ao recorte inicial. Até a p
 leitura, os gauges ficam em `NaN`. Esses indicadores ficam no `MeterRegistry`;
 a configuração padrão do Actuator expõe somente `health` por HTTP.
 
+[Ativação em produção e rollback](../docs/deploy-rag-producao.md) ·
 [Plano de implementação](../docs/plano-rag-categorizacao.md) ·
 [Avaliação com casos fictícios](../docs/avaliacao-sugestoes-transacoes.md)
 

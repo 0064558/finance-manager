@@ -40,8 +40,8 @@ class TransactionRagRetrieverTest {
     @Test
     void skipsDisabledAndNonPilotUsersWithoutCallingDependencies() {
         try (var disabled = retriever(false, SEARCH_BUDGET); var enabled = retriever(true, SEARCH_BUDGET)) {
-            assertThat(disabled.findExamples(userId, QUERY)).isEmpty();
-            assertThat(enabled.findExamples(UUID.randomUUID(), QUERY)).isEmpty();
+            assertThat(disabled.findExamples(userId, TransactionType.EXPENSE, QUERY)).isEmpty();
+            assertThat(enabled.findExamples(UUID.randomUUID(), TransactionType.EXPENSE, QUERY)).isEmpty();
         }
         verifyNoInteractions(repository, client);
         assertThat(metrics.find(SEARCH_METRIC).timers()).isEmpty();
@@ -50,35 +50,36 @@ class TransactionRagRetrieverTest {
     @Test
     void skipsEmbeddingsWhenTheUserHasNoReadyHistory() {
         try (var enabled = retriever(true, SEARCH_BUDGET)) {
-            assertThat(enabled.findExamples(userId, QUERY)).isEmpty();
+            assertThat(enabled.findExamples(userId, TransactionType.EXPENSE, QUERY)).isEmpty();
         }
-        verify(repository).hasReady(eq(userId), eq(properties(true, SEARCH_BUDGET).version()), any(Duration.class));
+        verify(repository).hasReady(eq(userId), eq(properties(true, SEARCH_BUDGET).version()), eq(TransactionType.EXPENSE), any(Duration.class));
         verifyNoInteractions(client);
         assertThat(outcomeCount("empty_history")).isOne();
     }
 
     @Test
-    void minimizesQueryAndExamplesAndPassesTheRemainingBudgetToEachDependency() {
+    void minimizesQueryAndPassesTheRemainingBudgetToEachDependency() {
         var version = properties(true, SEARCH_BUDGET).version();
         var vector = new float[768];
         vector[0] = 1;
+        UUID transactionId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
-        when(repository.hasReady(eq(userId), eq(version), any(Duration.class))).thenReturn(true);
+        when(repository.hasReady(eq(userId), eq(version), eq(TransactionType.EXPENSE), any(Duration.class))).thenReturn(true);
         when(client.embedQuery(eq("Paguei no mercado"), any(Duration.class))).thenReturn(vector);
-        when(repository.search(eq(userId), eq(version), same(vector), eq(0.55), eq(3), any(Duration.class)))
-                .thenReturn(List.of(new Match("Compra no mercado por R$ 18,00", categoryId, TransactionType.EXPENSE)));
+        when(repository.search(eq(userId), eq(version), eq(TransactionType.EXPENSE), same(vector), eq(0.55), eq(3), any(Duration.class)))
+                .thenReturn(List.of(new Match(transactionId, categoryId)));
 
         try (var enabled = retriever(true, SEARCH_BUDGET)) {
-            assertThat(enabled.findExamples(userId, QUERY)).containsExactly(
-                    new Match("Compra no mercado por", categoryId, TransactionType.EXPENSE));
+            assertThat(enabled.findExamples(userId, TransactionType.EXPENSE, QUERY)).containsExactly(
+                    new Match(transactionId, categoryId));
         }
 
         var readyBudget = ArgumentCaptor.forClass(Duration.class);
         var embeddingBudget = ArgumentCaptor.forClass(Duration.class);
         var searchBudget = ArgumentCaptor.forClass(Duration.class);
-        verify(repository).hasReady(eq(userId), eq(version), readyBudget.capture());
+        verify(repository).hasReady(eq(userId), eq(version), eq(TransactionType.EXPENSE), readyBudget.capture());
         verify(client).embedQuery(eq("Paguei no mercado"), embeddingBudget.capture());
-        verify(repository).search(eq(userId), eq(version), same(vector), eq(0.55), eq(3), searchBudget.capture());
+        verify(repository).search(eq(userId), eq(version), eq(TransactionType.EXPENSE), same(vector), eq(0.55), eq(3), searchBudget.capture());
         assertThat(readyBudget.getValue()).isLessThanOrEqualTo(SEARCH_BUDGET);
         assertThat(embeddingBudget.getValue()).isLessThanOrEqualTo(readyBudget.getValue());
         assertThat(searchBudget.getValue()).isLessThanOrEqualTo(embeddingBudget.getValue());
@@ -87,13 +88,13 @@ class TransactionRagRetrieverTest {
     }
 
     @Test
-    void usesEmptyHistoryOnProviderError() {
-        when(repository.hasReady(eq(userId), eq(properties(true, SEARCH_BUDGET).version()), any(Duration.class))).thenReturn(true);
+    void usesEmptyHistoryOnEmbeddingError() {
+        when(repository.hasReady(eq(userId), eq(properties(true, SEARCH_BUDGET).version()), eq(TransactionType.EXPENSE), any(Duration.class))).thenReturn(true);
         when(client.embedQuery(eq("Paguei no mercado"), any(Duration.class)))
-                .thenThrow(new TransactionEmbeddingException(503));
+                .thenThrow(new IllegalStateException());
 
         try (var enabled = retriever(true, SEARCH_BUDGET)) {
-            assertThat(enabled.findExamples(userId, QUERY)).isEmpty();
+            assertThat(enabled.findExamples(userId, TransactionType.EXPENSE, QUERY)).isEmpty();
         }
         assertThat(outcomeCount("failed")).isOne();
     }
@@ -102,7 +103,7 @@ class TransactionRagRetrieverTest {
     void boundsTheWholeLookupAndCancelsSlowWork() throws InterruptedException {
         Duration budget = Duration.ofMillis(300);
         var interrupted = new CountDownLatch(1);
-        when(repository.hasReady(eq(userId), eq(properties(true, budget).version()), any(Duration.class))).thenAnswer(call -> {
+        when(repository.hasReady(eq(userId), eq(properties(true, budget).version()), eq(TransactionType.EXPENSE), any(Duration.class))).thenAnswer(call -> {
             try {
                 Thread.sleep(10_000);
             } catch (InterruptedException exception) {
@@ -113,7 +114,7 @@ class TransactionRagRetrieverTest {
         });
 
         try (var enabled = retriever(true, budget)) {
-            assertTimeout(SEARCH_BUDGET, () -> assertThat(enabled.findExamples(userId, QUERY)).isEmpty());
+            assertTimeout(SEARCH_BUDGET, () -> assertThat(enabled.findExamples(userId, TransactionType.EXPENSE, QUERY)).isEmpty());
             assertThat(interrupted.await(1, TimeUnit.SECONDS)).isTrue();
         }
         verifyNoInteractions(client);
@@ -127,7 +128,7 @@ class TransactionRagRetrieverTest {
     }
 
     private TransactionRagProperties properties(boolean enabled, Duration timeout) {
-        return new TransactionRagProperties(enabled, Set.of(userId), "gemini-embedding-001", timeout, 0.55, 3, 100, 20);
+        return new TransactionRagProperties(enabled, Set.of(userId), timeout, 0.55, 3, 100, 20);
     }
 
     private long outcomeCount(String outcome) {

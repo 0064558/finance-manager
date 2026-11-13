@@ -23,7 +23,7 @@ class TransactionRagPropertiesTest {
         assertThat(defaults.minSimilarity()).isEqualTo(0.55);
         assertThat(defaults.maxExamples()).isEqualTo(3);
         assertThat(defaults.backfillLimit()).isEqualTo(100);
-        assertThat(defaults.version()).isEqualTo("gemini-embedding-001:768:normalized-v1");
+        assertThat(defaults.version()).isEqualTo("local-ptbr-hash-v1:768:normalized-v1");
 
         var emptyPilot = bind(Map.of(PREFIX + ".enabled", "true", PREFIX + ".pilot-user-ids", ""));
         assertThat(emptyPilot.permits(FIRST)).isFalse();

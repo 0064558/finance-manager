@@ -1,8 +1,8 @@
 package com.rodrigs.finance_manager_api.transaction.rag;
 
+import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.transaction.rag.TransactionEmbeddingRepository.Match;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +26,12 @@ public class TransactionRagRetriever implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TransactionRagRetriever.class);
     private static final String SEARCH_METRIC = "finance.manager.chat.rag.search";
     private static final String EXAMPLES_METRIC = "finance.manager.chat.rag.examples";
-    private static final String CHAT_METRIC = "finance.manager.chat.rag.suggestion";
 
     private final TransactionRagProperties properties;
     private final TransactionEmbeddingRepository repository;
     private final ObjectProvider<TransactionEmbeddingClient> clients;
     private final MeterRegistry metrics;
-    private final Timer catalogueChat;
-    private final Timer ragChat;
-    // A slow provider or JDBC connection can consume a slot, so the chat never queues more work.
+    // A slow JDBC connection can consume a slot, so the chat never queues more work.
     private final ThreadPoolExecutor searches = new ThreadPoolExecutor(0, 4, 30, TimeUnit.SECONDS,
             new SynchronousQueue<>(), Thread.ofPlatform().daemon().name("transaction-rag-search-", 1).factory());
 
@@ -44,11 +41,9 @@ public class TransactionRagRetriever implements AutoCloseable {
         this.repository = repository;
         this.clients = clients;
         this.metrics = meters.getIfAvailable();
-        this.catalogueChat = chatTimer("catalogue");
-        this.ragChat = chatTimer("rag");
     }
 
-    public List<Match> findExamples(UUID userId, String input) {
+    public List<Match> findExamples(UUID userId, TransactionType type, String input) {
         if (!properties.permits(userId)) {
             return List.of();
         }
@@ -61,7 +56,7 @@ public class TransactionRagRetriever implements AutoCloseable {
 
         final Future<SearchResult> search;
         try {
-            search = searches.submit(() -> search(userId, query, deadline));
+            search = searches.submit(() -> search(userId, type, query, deadline));
         } catch (RejectedExecutionException exception) {
             return record(started, SearchResult.empty("busy"));
         }
@@ -85,9 +80,9 @@ public class TransactionRagRetriever implements AutoCloseable {
         }
     }
 
-    private SearchResult search(UUID userId, String query, long deadline) throws TimeoutException {
+    private SearchResult search(UUID userId, TransactionType type, String query, long deadline) throws TimeoutException {
         String version = properties.version();
-        if (!repository.hasReady(userId, version, remaining(deadline))) {
+        if (!repository.hasReady(userId, version, type, remaining(deadline))) {
             return SearchResult.empty("empty_history");
         }
         TransactionEmbeddingClient client = clients.getIfAvailable();
@@ -95,11 +90,11 @@ public class TransactionRagRetriever implements AutoCloseable {
             return SearchResult.empty("failed");
         }
         float[] vector = client.embedQuery(query, remaining(deadline));
-        List<Match> matches = repository.search(userId, version, vector, properties.minSimilarity(),
-                        properties.maxExamples(), remaining(deadline)).stream()
-                .map(match -> new Match(TransactionEmbeddingText.normalize(match.description()), match.categoryId(), match.type()))
-                .filter(match -> !match.description().isEmpty())
-                .toList();
+        if (!TransactionEmbeddingClient.hasFeatures(vector)) {
+            return SearchResult.empty("empty_query");
+        }
+        List<Match> matches = repository.search(userId, version, type, vector, properties.minSimilarity(),
+                properties.maxExamples(), remaining(deadline));
         return new SearchResult(matches.isEmpty() ? "no_match" : "hit", matches);
     }
 
@@ -116,9 +111,12 @@ public class TransactionRagRetriever implements AutoCloseable {
     }
 
     private List<Match> record(long started, SearchResult result) {
+        long elapsedNanos = System.nanoTime() - started;
+        LOGGER.debug("Transaction RAG search outcome={} examples={} durationMs={}",
+                result.outcome(), result.matches().size(), TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
         if (metrics != null) {
             metrics.timer(SEARCH_METRIC, "outcome", result.outcome())
-                    .record(System.nanoTime() - started, TimeUnit.NANOSECONDS);
+                    .record(elapsedNanos, TimeUnit.NANOSECONDS);
             if ("hit".equals(result.outcome())) {
                 metrics.summary(EXAMPLES_METRIC).record(result.matches().size());
             }
@@ -126,17 +124,10 @@ public class TransactionRagRetriever implements AutoCloseable {
         return result.matches();
     }
 
-    private Timer chatTimer(String context) {
-        return metrics == null ? null : Timer.builder(CHAT_METRIC)
-                .tag("context", context)
-                .publishPercentiles(0.50, 0.95)
-                .register(metrics);
-    }
-
-    public void recordChatLatency(long elapsedNanos, boolean historyIncluded) {
-        Timer timer = historyIncluded ? ragChat : catalogueChat;
-        if (timer != null) {
-            timer.record(elapsedNanos, TimeUnit.NANOSECONDS);
+    public void recordHistoryCategoryApplied() {
+        LOGGER.debug("Transaction chat applied local RAG category");
+        if (metrics != null) {
+            metrics.counter("finance.manager.chat.rag.category.applied").increment();
         }
     }
 

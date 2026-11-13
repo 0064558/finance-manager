@@ -170,36 +170,17 @@ public class TransactionSuggestionService {
 
     private List<TransactionSuggestionResponseDTO> suggestChatWithCatalogue(UUID userId, List<ChatMessage> messages,
                                                                            boolean allowHistory) {
-        long started = System.nanoTime();
-        List<ChatCategoryContext.Example> examples = List.of();
-        try {
-            var categories = categoryService.findAllCategories(userId);
-            if (allowHistory && ragRetriever != null && !categories.isEmpty() && isHistoryCandidate(messages)) {
-                examples = ragRetriever.findExamples(userId, messages.getFirst().text()).stream()
-                        .filter(match -> categories.stream().anyMatch(category ->
-                                category.id().equals(match.categoryId()) && category.transactionType() == match.type()))
-                        .map(match -> new ChatCategoryContext.Example(match.description(), match.categoryId(), match.type()))
-                        .toList();
-            }
-            return suggestChat(userId, messages, new ChatCategoryContext(true, categories, examples));
-        } finally {
-            if (ragRetriever != null) {
-                ragRetriever.recordChatLatency(System.nanoTime() - started, !examples.isEmpty());
-            }
-        }
-    }
-
-    private boolean isHistoryCandidate(List<ChatMessage> messages) {
-        if (messages.size() != 1) {
-            return false;
-        }
-        String textWithoutDates = TransactionChatDates.withoutDates(messages.getFirst().text());
-        return hasAmountCandidate(textWithoutDates) && !hasSeparateExpensePrices(textWithoutDates, true)
-                && !hasAlternativeAmounts(textWithoutDates);
+        var categories = categoryService.findAllCategories(userId);
+        return suggestChat(userId, messages, new ChatCategoryContext(true, categories), allowHistory);
     }
 
     List<TransactionSuggestionResponseDTO> suggestChat(UUID userId, List<ChatMessage> messages,
                                                         ChatCategoryContext categoryContext) {
+        return suggestChat(userId, messages, categoryContext, false);
+    }
+
+    private List<TransactionSuggestionResponseDTO> suggestChat(UUID userId, List<ChatMessage> messages,
+            ChatCategoryContext categoryContext, boolean allowHistory) {
         String transcript = messages.stream()
                 .map(ChatMessage::text)
                 .collect(Collectors.joining("\n\n--- próxima mensagem ---\n\n"));
@@ -216,14 +197,15 @@ public class TransactionSuggestionService {
             return chatClarification(Motivo.LIMITE_DE_LANCAMENTOS);
         }
         if (response.lancamentos().size() == 1) {
-            return suggestSingleChatDraft(userId, messages, response.lancamentos().getFirst(), categoryContext);
+            return suggestSingleChatDraft(userId, messages, response.lancamentos().getFirst(), categoryContext, allowHistory);
         }
         return suggestChatBatch(userId, messages.getLast(), response.lancamentos(), categoryContext);
     }
 
     private List<TransactionSuggestionResponseDTO> suggestSingleChatDraft(UUID userId, List<ChatMessage> messages,
                                                                           ModelChatDraft draft,
-                                                                          ChatCategoryContext categoryContext) {
+                                                                          ChatCategoryContext categoryContext,
+                                                                          boolean allowHistory) {
         requireChatDraftFields(draft);
         LocalDate referenceDate = messages.getLast().referenceDate();
         LocalDate date = null;
@@ -245,7 +227,27 @@ public class TransactionSuggestionService {
         if (!hasValidAmount(amountText, draft.valor(), true)) {
             return chatClarification(Motivo.DADOS_AMBIGUOS);
         }
-        return List.of(chatSuggestion(userId, draft, date, categoryContext, currentChatCategories(userId, categoryContext)));
+        var currentCategories = currentChatCategories(userId, categoryContext);
+        var suggestion = chatSuggestion(userId, draft, date, categoryContext, currentCategories);
+        if (!allowHistory || ragRetriever == null || messages.size() != 1 || suggestion.categoriaId() != null
+                || currentCategories.isEmpty()) {
+            return List.of(suggestion);
+        }
+
+        var matches = ragRetriever.findExamples(userId, draft.tipo().transactionType(), messages.getFirst().text());
+        if (matches.isEmpty()) {
+            return List.of(suggestion);
+        }
+        UUID categoryId = matches.getFirst().categoryId();
+        if (matches.stream().anyMatch(match -> !categoryId.equals(match.categoryId()))) {
+            return List.of(suggestion);
+        }
+        var category = categoryContext.findCategory(draft.tipo(), categoryId.toString(), currentCategories);
+        if (category == null) {
+            return List.of(suggestion);
+        }
+        ragRetriever.recordHistoryCategoryApplied();
+        return List.of(suggestion(draft.descricao(), draft.tipo(), draft.valor(), category, date));
     }
 
     private List<TransactionSuggestionResponseDTO> suggestChatBatch(UUID userId, ChatMessage message,

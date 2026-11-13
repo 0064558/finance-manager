@@ -11,7 +11,6 @@ import java.util.UUID;
 public record TransactionRagProperties(
         @DefaultValue("false") boolean enabled,
         Set<UUID> pilotUserIds,
-        @DefaultValue("gemini-embedding-001") String model,
         @DefaultValue("2s") Duration searchTimeout,
         @DefaultValue("0.55") double minSimilarity,
         @DefaultValue("3") int maxExamples,
@@ -20,9 +19,6 @@ public record TransactionRagProperties(
 ) {
     public TransactionRagProperties {
         pilotUserIds = pilotUserIds == null ? Set.of() : Set.copyOf(pilotUserIds);
-        if (model == null || model.isBlank()) {
-            throw new IllegalArgumentException("RAG embedding model must be configured");
-        }
         if (searchTimeout == null || searchTimeout.toMillis() < 1) {
             throw new IllegalArgumentException("RAG search timeout must be at least one millisecond");
         }
@@ -39,6 +35,6 @@ public record TransactionRagProperties(
     }
 
     public String version() {
-        return model + ":768:normalized-v1";
+        return "local-ptbr-hash-v1:768:normalized-v1";
     }
 }
