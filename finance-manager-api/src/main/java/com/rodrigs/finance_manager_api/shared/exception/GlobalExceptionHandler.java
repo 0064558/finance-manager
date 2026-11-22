@@ -109,7 +109,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IdempotencyConflictException.class)
     public ProblemDetail handleIdempotencyConflict(IdempotencyConflictException exception, HttpServletRequest request) {
         return problem(HttpStatus.CONFLICT, "Idempotency key already used",
-                "This key was already used with different transaction data.", "IDEMPOTENCY_CONFLICT", request);
+                "This key was already used with different request data.", "IDEMPOTENCY_CONFLICT", request);
+    }
+
+    @ExceptionHandler(SameTransferAccountException.class)
+    public ProblemDetail handleSameTransferAccount(SameTransferAccountException exception, HttpServletRequest request) {
+        return problem(HttpStatus.BAD_REQUEST, "Same transfer account",
+                "The source and destination accounts must be different.", "SAME_TRANSFER_ACCOUNT", request);
     }
 
     @ExceptionHandler(InvalidIdempotencyKeyException.class)

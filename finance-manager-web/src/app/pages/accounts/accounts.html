@@ -8,10 +8,17 @@
       </p>
     </div>
 
-    <button class="primary-button fm-button" type="button" (click)="openCreateForm()">
-      <svg lucidePlus aria-hidden="true"></svg>
-      Nova conta
-    </button>
+    <div class="page-actions">
+      @if (!isLoading() && !errorMessage() && accounts().length >= 2) {
+      <button class="secondary-button fm-button" type="button" (click)="isTransferOpen.set(true)">
+        Transferir entre contas
+      </button>
+      }
+      <button class="primary-button fm-button" type="button" (click)="openCreateForm()">
+        <svg lucidePlus aria-hidden="true"></svg>
+        Nova conta
+      </button>
+    </div>
   </div>
 
   @if (!isLoading() && !errorMessage() && accounts().length > 0) {
@@ -83,7 +90,7 @@
         </span>
 
         <div class="account-heading">
-          <h2>{{ account.name }}</h2>
+          <h2>{{ accountNames().get(account.id) }}</h2>
           <span>{{ accountTypeLabel(account.type) }}</span>
         </div>
 
@@ -117,7 +124,55 @@
   </div>
 
   }
+
+  @if (!isLoading() && !errorMessage() && accounts().length >= 2) {
+  <section class="transfer-history account-card" aria-labelledby="transfer-history-title" [attr.aria-busy]="transfersLoading()">
+    <h2 id="transfer-history-title">Transferências</h2>
+    @if (transfersError()) {
+      <p class="form-error" role="alert">Não foi possível carregar o histórico de transferências.</p>
+      <button class="secondary-button fm-button" type="button" (click)="loadTransfers(transferPage)">
+        Tentar novamente
+      </button>
+    }
+    @if (transferHistory(); as history) {
+      @if (history.empty) {
+        <p>Nenhuma transferência registrada.</p>
+      } @else {
+        <ul class="transfer-list">
+          @for (transfer of history.content; track transfer.id) {
+            <li>
+              <div>
+                <strong>{{ accountNames().get(transfer.sourceAccountId) }} → {{ accountNames().get(transfer.destinationAccountId) }}</strong>
+                <small>
+                  <time [attr.datetime]="transfer.occurredOn">{{ transfer.occurredOn | date: 'dd/MM/yyyy' }}</time>
+                  @if (transfer.description) { · {{ transfer.description }} }
+                </small>
+              </div>
+              <span>{{ transfer.amount | privateCurrency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</span>
+            </li>
+          }
+        </ul>
+        @if (history.totalPages > 1) {
+          <nav class="transfer-pagination" aria-label="Paginação de transferências">
+            <button class="secondary-button fm-button" type="button" (click)="loadTransfers(history.number - 1)"
+              [disabled]="history.first || transfersLoading()">Anterior</button>
+            <span>{{ history.number + 1 }} de {{ history.totalPages }}</span>
+            <button class="secondary-button fm-button" type="button" (click)="loadTransfers(history.number + 1)"
+              [disabled]="history.last || transfersLoading()">Próxima</button>
+          </nav>
+        }
+      }
+    } @else if (transfersLoading()) {
+      <p role="status">Carregando transferências…</p>
+    }
+  </section>
+  }
 </section>
+
+@if (isTransferOpen()) {
+  <app-account-transfer-dialog [accounts]="accounts()" [accountNames]="accountNames()"
+    (closed)="isTransferOpen.set(false)" (saved)="transferSaved()" />
+}
 
 @if (isFormOpen()) {
 <div class="modal-backdrop fm-modal-backdrop" (click)="closeAccountForm()">

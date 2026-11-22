@@ -24,7 +24,7 @@ export interface TransactionFormValues {
 export const chatAmountPrecisionLimit = 2 ** 46;
 export const chatAmountPrecisionMessage = 'Este valor excede a precisão do chat. Confira o valor original antes de registrar manualmente.';
 
-function notFutureDate(control: AbstractControl): ValidationErrors | null {
+export function notFutureDate(control: AbstractControl): ValidationErrors | null {
   const value = control.value;
   return !value || value <= formatLocalDate(new Date()) ? null : { futureDate: true };
 }

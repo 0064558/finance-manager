@@ -7,9 +7,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin, finalize, Subscription } from 'rxjs';
 
 import { HttpErrorResponse } from '@angular/common/http';
+import { DatePipe } from '@angular/common';
 
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import {
+  AccountTransfer,
   AccountType,
   FinancialAccount,
 } from '../../core/financial-account.models';
@@ -17,6 +19,8 @@ import { Report } from '../../core/report';
 import { ActivatedRoute } from '@angular/router';
 import { Notifications } from '../../core/notifications';
 import { TransactionChanges } from '../../core/transaction-changes';
+import { PageResponse } from '../../core/transaction.models';
+import { AccountTransferDialog } from './account-transfer-dialog';
 
 import {
   LucideAlertCircle,
@@ -37,6 +41,8 @@ interface AccountViewModel extends FinancialAccount {
 @Component({
   selector: 'app-accounts',
   imports: [
+    AccountTransferDialog,
+    DatePipe,
     EmptyState,
     AnimatedNumber,
     PrivateCurrency,
@@ -68,6 +74,7 @@ export class Accounts implements OnInit {
   private readonly transactionChanges = inject(TransactionChanges);
   private readonly destroyRef = inject(DestroyRef);
   private accountsSubscription?: Subscription;
+  private transfersSubscription?: Subscription;
 
   // Sinais para gerenciar o estado do componente, incluindo a lista de contas, o estado de carregamento e mensagens de erro.
   protected readonly accounts = signal<AccountViewModel[]>([]);
@@ -76,6 +83,19 @@ export class Accounts implements OnInit {
   protected readonly isFormOpen = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly formError = signal('');
+  protected readonly isTransferOpen = signal(false);
+  protected readonly transferHistory = signal<PageResponse<AccountTransfer> | null>(null);
+  protected readonly transfersLoading = signal(false);
+  protected readonly transfersError = signal(false);
+  protected transferPage = 0;
+  protected readonly accountNames = computed(() => {
+    const accounts = this.accounts();
+    const names = new Set(accounts.map(({ name }) => name));
+    const hasDuplicateNames = names.size < accounts.length;
+    return new Map(accounts.map(({ id, name }, index) => [
+      id, hasDuplicateNames ? `${index + 1}. ${name}` : name,
+    ]));
+  });
   protected readonly totalBalance = computed(() =>
     this.accounts().reduce((total, account) => total + account.currentBalance, 0),
   );
@@ -97,7 +117,28 @@ export class Accounts implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.loadAccounts());
     this.loadAccounts();
+    this.loadTransfers(0);
     if (this.route?.snapshot.queryParamMap.get('action') === 'create') this.openCreateForm();
+  }
+
+  protected loadTransfers(page: number): void {
+    this.transfersSubscription?.unsubscribe();
+    this.transferPage = page;
+    this.transfersLoading.set(true);
+    this.transfersError.set(false);
+    this.transfersSubscription = this.accountApi.getTransfers(page)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.transfersLoading.set(false)))
+      .subscribe({
+        next: (history) => this.transferHistory.set(history),
+        error: () => this.transfersError.set(true),
+      });
+  }
+
+  protected transferSaved(): void {
+    this.isTransferOpen.set(false);
+    this.notifications.success('Transferência registrada com sucesso.');
+    this.transactionChanges.notifySaved();
+    this.loadTransfers(0);
   }
 
   // Método protegido para carregar as contas financeiras e seus saldos atuais, 
@@ -255,7 +296,7 @@ export class Accounts implements OnInit {
             error.error?.code === 'FINANCIAL_ACCOUNT_HAS_TRANSACTIONS'
           ) {
             this.deleteError.set(
-              'Esta conta possui transações e não pode ser excluída.',
+              'Esta conta possui movimentações e não pode ser excluída.',
             );
             return;
           }
@@ -302,7 +343,7 @@ export class Accounts implements OnInit {
             error.error?.code === 'FINANCIAL_ACCOUNT_HAS_TRANSACTIONS'
           ) {
             this.formError.set(
-              'O saldo inicial não pode ser alterado porque esta conta possui transações.',
+              'O saldo inicial não pode ser alterado porque esta conta possui movimentações.',
             );
             return;
           }

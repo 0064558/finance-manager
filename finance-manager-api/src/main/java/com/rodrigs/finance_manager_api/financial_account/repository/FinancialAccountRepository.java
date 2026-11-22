@@ -23,6 +23,14 @@ public interface FinancialAccountRepository extends JpaRepository<FinancialAccou
     @Query("SELECT a FROM FinancialAccount a WHERE a.id = :accountId AND a.user.id = :userId")
     Optional<FinancialAccount> findOwnedForUpdate(@Param("accountId") UUID accountId, @Param("userId") UUID userId);
 
+    @Query("""
+            SELECT EXISTS (
+                SELECT 1 FROM AccountTransfer transfer
+                WHERE transfer.sourceAccountId = :accountId OR transfer.destinationAccountId = :accountId
+            )
+            """)
+    boolean hasTransfers(@Param("accountId") UUID accountId);
+
     // busca todas as contas de um usuário, ordenadas pela data de criação (crescente)
     List<FinancialAccount> findAllByUserIdOrderByCreatedAtAsc(UUID userId);
 
@@ -46,6 +54,14 @@ public interface FinancialAccountRepository extends JpaRepository<FinancialAccou
                     THEN tx.amount
                     ELSE 0
                 END
+            ), 0)
+            + COALESCE((
+                SELECT SUM(incoming.amount) FROM AccountTransfer incoming
+                WHERE incoming.destinationAccountId = account.id
+            ), 0)
+            - COALESCE((
+                SELECT SUM(outgoing.amount) FROM AccountTransfer outgoing
+                WHERE outgoing.sourceAccountId = account.id
             ), 0) AS balance
 
     FROM FinancialAccount account

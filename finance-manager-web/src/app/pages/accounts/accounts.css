@@ -16,6 +16,66 @@
   margin-bottom: 1.5rem;
 }
 
+.page-actions,
+.transfer-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.transfer-history {
+  margin-top: 1.25rem;
+}
+
+.transfer-history h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.transfer-history p,
+.transfer-list small,
+.transfer-pagination {
+  color: var(--fm-muted);
+  font-size: 0.8rem;
+}
+
+.transfer-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transfer-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--fm-line);
+  font-size: 0.9rem;
+}
+
+.transfer-list li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.transfer-list small {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.transfer-history .secondary-button {
+  width: auto;
+  margin-left: 0;
+}
+
+.transfer-history .secondary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .eyebrow {
   display: flex;
   align-items: center;
@@ -756,8 +816,17 @@
     margin-bottom: 1.45rem;
   }
 
-  .page-heading>.primary-button {
+  .page-actions {
     width: 100%;
+  }
+
+  .page-actions > button {
+    flex: 1 0 auto;
+  }
+
+  .page-actions > .secondary-button {
+    width: auto;
+    justify-content: center;
   }
 
   .accounts-overview {
