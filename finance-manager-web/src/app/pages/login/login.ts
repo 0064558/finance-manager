@@ -27,11 +27,10 @@ export class Login {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  protected readonly successMessage = signal(
-    this.route.snapshot.queryParamMap.get('registered') === 'true'
-      ? 'Cadastro realizado com sucesso. Faça login para continuar.'
-      : '',
-  );
+  protected readonly sessionExpired = this.route.snapshot.queryParamMap.get('expired') === 'true';
+  protected readonly successMessage = this.route.snapshot.queryParamMap.get('registered') === 'true'
+    ? 'Cadastro realizado com sucesso. Faça login para continuar.'
+    : '';
 
   // Cria o formulário de login com validação para os campos de email e senha
   protected readonly loginForm = this.formBuilder.nonNullable.group({
@@ -59,8 +58,10 @@ export class Login {
       // Assina o Observable retornado pelo método de login para lidar com a resposta ou erro
       .subscribe({
         // Se o login for bem-sucedido, exibe informações do usuário e do token no console
-        next: (response) => {
-          this.router.navigateByUrl('/dashboard');
+        next: () => {
+          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '';
+          const isProtectedRoute = /^\/(?:dashboard|accounts|categories|transactions|reports|settings)(?:[?#]|$)/.test(returnUrl);
+          void this.router.navigateByUrl(isProtectedRoute ? returnUrl : '/dashboard', { replaceUrl: true });
         },
         // Se ocorrer um erro durante o login, verifica o status e o código do erro para definir a mensagem de erro apropriada
         error: (error) => {

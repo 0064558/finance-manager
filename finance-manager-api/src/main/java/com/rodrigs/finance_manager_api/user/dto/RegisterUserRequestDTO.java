@@ -1,6 +1,7 @@
 package com.rodrigs.finance_manager_api.user.dto;
 
 import com.rodrigs.finance_manager_api.shared.validation.TrimmedSize;
+import com.rodrigs.finance_manager_api.shared.validation.Utf8MaxSize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -19,9 +20,10 @@ public record RegisterUserRequestDTO(
     @Size(max = 254)
     String email,
 
-    @Schema(description = "Senha em texto puro usada somente para autenticação", example = "senha1234", format = "password", minLength = 8, maxLength = 72)
+    @Schema(description = "Senha em texto puro usada somente para autenticação, limitada a 72 bytes em UTF-8", example = "senha1234", format = "password", minLength = 8, maxLength = 72)
     @NotBlank
-    @Size(min = 8, max = 72)
+    @Size(min = 8)
+    @Utf8MaxSize(72)
     @Pattern(
             regexp = "^(?=.*[A-Za-z])(?=.*\\d).*$",
             message = "A senha deve conter ao menos uma letra e um número"

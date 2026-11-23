@@ -14,6 +14,7 @@ import com.rodrigs.finance_manager_api.report.repository.AccountBalanceProjectio
 import com.rodrigs.finance_manager_api.report.repository.CashFlowProjection;
 import com.rodrigs.finance_manager_api.report.repository.ReportTotalsProjection;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
+import com.rodrigs.finance_manager_api.shared.exception.CashFlowPeriodTooLongException;
 import com.rodrigs.finance_manager_api.shared.exception.InvalidTransactionDateRangeException;
 import com.rodrigs.finance_manager_api.transaction.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -21,15 +22,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 @Service
 public class ReportService {
+
+    private static final int MAX_CASH_FLOW_DAYS = 366;
 
     private final TransactionRepository transactionRepository;
     private final FinancialAccountRepository financialAccountRepository;
@@ -98,6 +103,10 @@ public class ReportService {
     @Transactional(readOnly = true)
     public CashFlowResponseDTO getCashFlow(UUID authenticatedUserId, LocalDate startDate, LocalDate endDate) {
         validateDateRange(startDate, endDate);
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        if (days > MAX_CASH_FLOW_DAYS) {
+            throw new CashFlowPeriodTooLongException(MAX_CASH_FLOW_DAYS);
+        }
 
         List<CashFlowProjection> groupedPoints = transactionRepository.findCashFlowByUserAndPeriod(
                 authenticatedUserId,
@@ -110,7 +119,7 @@ public class ReportService {
         Map<LocalDate, CashFlowProjection> pointsByDate = groupedPoints.stream()
                 .collect(Collectors.toMap(CashFlowProjection::getOccurredOn, Function.identity()));
 
-        List<CashFlowPointResponseDTO> points = startDate.datesUntil(endDate.plusDays(1))
+        List<CashFlowPointResponseDTO> points = LongStream.range(0, days).mapToObj(startDate::plusDays)
                 .map(date -> {
                     CashFlowProjection point = pointsByDate.get(date);
                     BigDecimal totalIncome = point == null ? BigDecimal.ZERO : point.getTotalIncome();

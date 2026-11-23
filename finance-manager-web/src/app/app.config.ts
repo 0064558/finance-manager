@@ -26,7 +26,7 @@ export const appConfig: ApplicationConfig = {
     // Configura o provedor de cliente HTTP com os interceptadores de URL da API e autenticação
     // O interceptor de URL da API adiciona a URL base da API às requisições
     // O interceptor de autenticação adiciona o token de autenticação aos cabeçalhos das requisições
-    provideHttpClient(withInterceptors([apiUrlInterceptor, authInterceptor, slowApiLoadingInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, apiUrlInterceptor, slowApiLoadingInterceptor])),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),

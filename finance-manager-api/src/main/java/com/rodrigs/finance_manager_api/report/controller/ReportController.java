@@ -102,11 +102,11 @@ public class ReportController {
 
     @Operation(
             summary = "Consulta o fluxo de caixa diário",
-            description = "Retorna receitas, despesas e saldo líquido agrupados por dia no período informado. Dias sem movimentação são retornados com valores zerados."
+            description = "Retorna receitas, despesas e saldo líquido por dia em um intervalo inclusivo de até 366 dias. Dias sem movimentação são retornados com valores zerados."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Fluxo de caixa retornado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Datas ausentes, inválidas ou intervalo invertido"),
+            @ApiResponse(responseCode = "400", description = "Datas ausentes, inválidas, intervalo invertido ou acima de 366 dias"),
             @ApiResponse(responseCode = "401", description = "Token ausente ou inválido")
     })
     @GetMapping("/cash-flow")

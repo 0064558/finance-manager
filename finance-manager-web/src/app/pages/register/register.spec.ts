@@ -21,4 +21,17 @@ describe('Register', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('aceita 72 bytes e exibe o aviso ao ultrapassar o limite usando Unicode', () => {
+    const password = component['registerForm'].controls.password;
+    password.setValue('A1' + 'é'.repeat(35));
+    expect(password.valid).toBe(true);
+    password.setValue('A1' + 'é'.repeat(33) + '😀');
+    expect(password.valid).toBe(true);
+    password.setValue(password.value + 'a');
+    password.markAsTouched();
+    fixture.detectChanges();
+    expect(password.hasError('maxBytes')).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('72 bytes em UTF-8');
+  });
 });

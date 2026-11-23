@@ -230,9 +230,9 @@
             }
             @if (
               registerForm.controls.password.touched &&
-              registerForm.controls.password.hasError('maxlength')
+              registerForm.controls.password.hasError('maxBytes')
             ) {
-              <p class="field-error">A senha deve ter no máximo 72 caracteres.</p>
+              <p class="field-error">A senha deve ter no máximo 72 bytes em UTF-8. Acentos e emojis podem ocupar mais de um byte.</p>
             }
             @if (
               registerForm.controls.password.touched &&

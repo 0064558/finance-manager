@@ -3,9 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AfterViewInit, Component, computed, DestroyRef, ElementRef, inject, input, OnDestroy, OnInit, output, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { finalize, map } from 'rxjs';
-import { Auth } from '../../../core/auth';
 import { Category } from '../../../core/category.models';
 import { FinancialAccount } from '../../../core/financial-account.models';
 import { Notifications } from '../../../core/notifications';
@@ -42,8 +40,6 @@ export class ReportExportDialog implements OnInit, AfterViewInit, OnDestroy {
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
   private readonly api = inject(ReportExportApi);
-  private readonly auth = inject(Auth);
-  private readonly router = inject(Router);
   private readonly notifications = inject(Notifications);
   protected readonly privacy = inject(ValuePrivacy);
   protected readonly slowLoading = inject(SlowApiLoading);
@@ -134,12 +130,6 @@ export class ReportExportDialog implements OnInit, AfterViewInit, OnDestroy {
         }
       },
       error: (error: unknown) => {
-        if (error instanceof HttpErrorResponse && error.status === 401) {
-          this.auth.logout();
-          this.notifications.error('Sua sessão expirou. Entre novamente para exportar.');
-          void this.router.navigateByUrl('/login');
-          return;
-        }
         const status = error instanceof HttpErrorResponse ? error.status : undefined;
         const code = error instanceof HttpErrorResponse ? error.error?.code : undefined;
         this.errorMessage.set(code === 'REPORT_EXPORT_LIMIT_EXCEEDED'

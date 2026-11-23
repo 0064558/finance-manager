@@ -23,6 +23,13 @@ function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   return password === confirmPassword ? null : { passwordsMismatch: true };
 }
 
+const maxPasswordBytes = 72;
+const passwordEncoder = new TextEncoder();
+
+function passwordByteLimit(control: AbstractControl<string>): ValidationErrors | null {
+  return passwordEncoder.encode(control.value).length > maxPasswordBytes ? { maxBytes: true } : null;
+}
+
 @Component({
   imports: [ReactiveFormsModule, RouterLink, LoginBrandPreview, GradientWave],
   selector: 'app-register',
@@ -55,7 +62,7 @@ export class Register {
         [
           Validators.required,
           Validators.minLength(8),
-          Validators.maxLength(72),
+          passwordByteLimit,
           Validators.pattern(/^(?=.*[A-Za-z])(?=.*\d).*$/),
         ],
       ],
@@ -100,6 +107,14 @@ export class Register {
           if (error.status === 409 && error.error?.code === 'EMAIL_ALREADY_REGISTERED') {
             this.errorMessage.set('Este e-mail já está cadastrado.');
             return;
+          }
+
+          if (error.status === 400 && error.error?.code === 'VALIDATION_FAILED' && Array.isArray(error.error.fields)) {
+            const passwordError = error.error.fields.find((field: { field: string }) => field.field === 'password');
+            if (typeof passwordError?.message === 'string') {
+              this.errorMessage.set(passwordError.message);
+              return;
+            }
           }
 
           this.errorMessage.set('Não foi possível criar sua conta. Tente novamente.');

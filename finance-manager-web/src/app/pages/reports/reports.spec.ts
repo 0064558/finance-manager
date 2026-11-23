@@ -1,9 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
-import { Router, provideRouter } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
-import { Auth } from '../../core/auth';
 import { CategoryApi } from '../../core/categories';
 import { FinancialAccountApi } from '../../core/financial-accounts';
 import { ReportExportApi } from '../../core/report-export';
@@ -15,7 +14,6 @@ describe('Reports', () => {
   const getCategories = vi.fn();
   const download = vi.fn();
   const save = vi.fn();
-  const logout = vi.fn();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -36,7 +34,6 @@ describe('Reports', () => {
       { provide: FinancialAccountApi, useValue: { getAll: getAccounts } },
       { provide: CategoryApi, useValue: { getAll: getCategories } },
       { provide: ReportExportApi, useValue: { download, save } },
-      { provide: Auth, useValue: { logout } },
     ] });
   });
   afterEach(() => { fixture?.destroy(); vi.restoreAllMocks(); });
@@ -82,14 +79,6 @@ describe('Reports', () => {
     expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
     fixture.nativeElement.querySelector('.export-button').click(); refresh();
     expect(fixture.nativeElement.querySelector('dialog')).not.toBeNull();
-  });
-
-  it('returns to login when loading options finds an expired session', () => {
-    getAccounts.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
-    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
-    render();
-    expect(logout).toHaveBeenCalledOnce();
-    expect(navigate).toHaveBeenCalledWith('/login');
   });
 
   it('cancels pending options requests on leaving the page', () => {

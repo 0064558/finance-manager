@@ -130,6 +130,12 @@ public class GlobalExceptionHandler {
                 "The authenticated user was not found.", "USER_NOT_FOUND", request);
     }
 
+    @ExceptionHandler(CashFlowPeriodTooLongException.class)
+    public ProblemDetail handleCashFlowPeriodTooLong(CashFlowPeriodTooLongException exception, HttpServletRequest request) {
+        return problem(HttpStatus.BAD_REQUEST, "Cash flow period too long",
+                exception.getMessage(), "CASH_FLOW_PERIOD_TOO_LONG", request);
+    }
+
     @ExceptionHandler(InvalidTransactionDateRangeException.class)
     public ProblemDetail handleInvalidTransactionDateRange(InvalidTransactionDateRangeException exception, HttpServletRequest request) {
         return problem(HttpStatus.BAD_REQUEST, "Invalid transaction date range",
