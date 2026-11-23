@@ -9,17 +9,22 @@
     </div>
 
     <div class="page-actions">
-      @if (!isLoading() && !errorMessage() && accounts().length >= 2) {
-      <button class="secondary-button fm-button" type="button" (click)="isTransferOpen.set(true)">
+      <button class="secondary-button fm-button" type="button"
+        [disabled]="isLoading() || !!errorMessage() || accounts().length < 2"
+        [attr.aria-describedby]="!isLoading() && !errorMessage() && accounts().length < 2 ? 'transfer-account-hint' : null"
+        (click)="isTransferOpen.set(true)">
         Transferir entre contas
       </button>
-      }
       <button class="primary-button fm-button" type="button" (click)="openCreateForm()">
         <svg lucidePlus aria-hidden="true"></svg>
         Nova conta
       </button>
     </div>
   </div>
+
+  @if (!isLoading() && !errorMessage() && accounts().length < 2) {
+    <p id="transfer-account-hint" class="page-description">Cadastre pelo menos duas contas para fazer uma transferência.</p>
+  }
 
   @if (!isLoading() && !errorMessage() && accounts().length > 0) {
   <section class="accounts-overview" aria-label="Resumo das contas">

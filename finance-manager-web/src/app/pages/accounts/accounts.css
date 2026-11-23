@@ -71,7 +71,7 @@
   margin-left: 0;
 }
 
-.transfer-history .secondary-button:disabled {
+.secondary-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -498,7 +498,7 @@
   white-space: nowrap;
 }
 
-.secondary-button:hover {
+.secondary-button:not(:disabled):hover {
   background: #eaf6ef;
 }
 

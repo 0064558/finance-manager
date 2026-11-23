@@ -61,6 +61,18 @@ describe('Transferências entre contas', () => {
     });
   }
 
+  it('mostra por que a transferência está indisponível com apenas uma conta', () => {
+    flushBalances(100, 0, accounts.slice(0, 1));
+    http.expectOne(transfers + '?page=0').flush({ content: [], empty: true });
+    fixture.detectChanges();
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.page-actions .secondary-button');
+    expect(button.textContent).toContain('Transferir entre contas');
+    expect(button.disabled).toBe(true);
+    const hint = fixture.nativeElement.querySelector('#transfer-account-hint');
+    expect(hint.textContent).toContain('Cadastre pelo menos duas contas');
+    expect(button.getAttribute('aria-describedby')).toBe(hint.id);
+  });
+
   function fill(selector: string, value: string, event: 'input' | 'change'): void {
     const control = field<HTMLInputElement>(selector);
     control.value = value;
