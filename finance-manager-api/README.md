@@ -818,7 +818,8 @@ a configuração padrão do Actuator expõe somente `health` por HTTP.
 
 [Ativação em produção e rollback](../docs/deploy-rag-producao.md) ·
 [Plano de implementação](../docs/plano-rag-categorizacao.md) ·
-[Avaliação com casos fictícios](../docs/avaliacao-sugestoes-transacoes.md)
+[Avaliação com casos fictícios](../docs/avaliacao-sugestoes-transacoes.md) ·
+[Comparação offline com o RAG local](../docs/avaliacao-rag-local-2026-11-22.md)
 
 ## Transferências entre contas próprias
 
@@ -847,6 +848,9 @@ Conta inexistente ou de outro usuário recebe `404`.
 ## Dashboard e relatórios
 
 Os endpoints de relatório exigem autenticação JWT:
+
+O fluxo de caixa diário aceita até 366 dias, incluindo a data inicial e a final.
+Períodos maiores retornam `400` com o código `CASH_FLOW_PERIOD_TOO_LONG`.
 
 ```http
 Authorization: Bearer seu_access_token

@@ -57,9 +57,11 @@
             </div>
           }
 
-          @if (successMessage()) {
+            @if (sessionExpired) {
+              <div class="alert" role="status">Sua sessão expirou. Entre novamente para voltar à tela em que estava.</div>
+            } @else if (successMessage) {
             <div class="success-alert" role="status" aria-live="polite">
-              {{ successMessage() }}
+                {{ successMessage }}
             </div>
           }
 

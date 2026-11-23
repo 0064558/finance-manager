@@ -11,6 +11,7 @@ import com.rodrigs.finance_manager_api.report.repository.CategoryTotalProjection
 import com.rodrigs.finance_manager_api.report.repository.ReportTotalsProjection;
 import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.InvalidTransactionDateRangeException;
+import com.rodrigs.finance_manager_api.shared.exception.CashFlowPeriodTooLongException;
 import com.rodrigs.finance_manager_api.transaction.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -227,6 +228,22 @@ class ReportServiceTest {
         assertThat(response.points().get(1).totalExpense()).isEqualByComparingTo("80.00");
         assertThat(response.points().get(1).netBalance()).isEqualByComparingTo("170.00");
         assertThat(response.points().get(2).netBalance()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    void shouldAccept366InclusiveDaysAndReject367BeforeQuerying() {
+        LocalDate startDate = LocalDate.of(2024, 1, 1);
+        LocalDate lastAllowed = startDate.plusDays(365);
+        LocalDate tooFar = lastAllowed.plusDays(1);
+        when(transactionRepository.findCashFlowByUserAndPeriod(
+                userId, startDate, lastAllowed, TransactionType.INCOME, TransactionType.EXPENSE
+        )).thenReturn(List.of());
+
+        assertThat(reportService.getCashFlow(userId, startDate, lastAllowed).points()).hasSize(366);
+        assertThatThrownBy(() -> reportService.getCashFlow(userId, startDate, tooFar))
+                .isInstanceOf(CashFlowPeriodTooLongException.class);
+        verify(transactionRepository, never()).findCashFlowByUserAndPeriod(
+                userId, startDate, tooFar, TransactionType.INCOME, TransactionType.EXPENSE);
     }
 
     @Test

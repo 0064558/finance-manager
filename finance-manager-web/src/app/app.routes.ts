@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { Login } from './pages/login/login';
 import { authGuard } from './core/auth-guard';
 import { Register } from './pages/register/register';
-import { AppShell } from './layout/app-shell/app-shell';
 
 export const routes: Routes = [
   {
@@ -22,9 +21,10 @@ export const routes: Routes = [
     // A rota raiz da aplicação é protegida pelo authGuard, garantindo que apenas usuários autenticados possam acessar as páginas filhas.
     path: '',
     // O componente AppShell serve como a moldura principal da aplicação, fornecendo uma barra lateral de navegação, um cabeçalho e um espaço para exibir o conteúdo das páginas filhas.
-    component: AppShell,
+    loadComponent: () => import('./layout/app-shell/app-shell').then((layout) => layout.AppShell),
     // Todas as páginas filhas desta moldura exigem autenticação.
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
       {
         path: 'dashboard',

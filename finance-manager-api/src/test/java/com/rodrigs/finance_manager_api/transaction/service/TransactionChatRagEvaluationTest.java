@@ -1,21 +1,25 @@
 package com.rodrigs.finance_manager_api.transaction.service;
 
+import com.rodrigs.finance_manager_api.category.service.CategoryService;
+import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.shared.exception.TransactionSuggestionUnavailableException;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Status;
 import com.rodrigs.finance_manager_api.transaction.dto.TransactionSuggestionResponseDTO.Tipo;
-import com.rodrigs.finance_manager_api.shared.enums.TransactionType;
 import com.rodrigs.finance_manager_api.transaction.rag.TransactionEmbeddingClient;
 import com.rodrigs.finance_manager_api.transaction.rag.TransactionEmbeddingRepository;
 import com.rodrigs.finance_manager_api.transaction.rag.TransactionEmbeddingText;
 import com.rodrigs.finance_manager_api.transaction.rag.TransactionRagProperties;
+import com.rodrigs.finance_manager_api.transaction.rag.TransactionRagRetriever;
 import com.rodrigs.finance_manager_api.transaction.service.TransactionSuggestionService.ChatMessage;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,6 +30,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -48,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TransactionChatRagEvaluationTest {
     private static final String LIVE_PROPERTY = "transaction.chat.rag.evaluate";
     private static final String POSTGRES_PROPERTY = "transaction.chat.rag.postgres";
+    private static final String REPLAY_PROPERTY = "transaction.chat.rag.local-replay";
     private static final long REQUEST_PAUSE_MS = 4_000;
     private static final LocalDate REFERENCE_DATE = LocalDate.of(2026, 11, 11);
     private static final UUID CORPUS_USER_ID = UUID.fromString("0e4352be-5c64-4ea4-b6c2-7eb5e327142c");
@@ -68,6 +74,12 @@ class TransactionChatRagEvaluationTest {
     private ObjectProvider<TransactionSuggestionService> chat;
     @Autowired
     private ObjectProvider<TransactionEmbeddingClient> embeddings;
+    @Autowired
+    private CategoryService categoryService;
+    @Autowired
+    private Validator validator;
+    @Autowired
+    private TransactionRagRetriever retriever;
 
     @Autowired
     private ObjectProvider<org.springframework.ai.chat.model.ChatModel> chatModels;
@@ -108,11 +120,23 @@ class TransactionChatRagEvaluationTest {
     }
 
     static boolean experimentEnabled() {
-        return Boolean.getBoolean(LIVE_PROPERTY) || Boolean.getBoolean(POSTGRES_PROPERTY);
+        return Boolean.getBoolean(LIVE_PROPERTY) || Boolean.getBoolean(POSTGRES_PROPERTY)
+                || Boolean.getBoolean(REPLAY_PROPERTY);
     }
 
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry registry) {
+        boolean replay = Boolean.getBoolean(REPLAY_PROPERTY);
+        boolean live = Boolean.getBoolean(LIVE_PROPERTY);
+        if (replay && (live || Boolean.getBoolean("transaction.chat.rag.diagnose"))) {
+            throw new IllegalArgumentException("A reprodução local precisa rodar sem geração remota");
+        }
+        if (replay) {
+            POSTGRES.withImagePullPolicy(image -> false);
+            registry.add("finance-manager.transaction-chat.rag.min-similarity", () -> "0.55");
+            registry.add("finance-manager.transaction-chat.rag.search-timeout", () -> "2s");
+            registry.add("finance-manager.transaction-chat.rag.max-examples", () -> 3);
+        }
         System.out.println("RAG local: iniciando o PostgreSQL descartável.");
         POSTGRES.start();
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
@@ -121,8 +145,8 @@ class TransactionChatRagEvaluationTest {
         registry.add("spring.flyway.url", POSTGRES::getJdbcUrl);
         registry.add("spring.flyway.user", POSTGRES::getUsername);
         registry.add("spring.flyway.password", POSTGRES::getPassword);
-        registry.add("spring.ai.model.chat", () -> Boolean.getBoolean(LIVE_PROPERTY) ? "google-genai" : "none");
-        registry.add("finance-manager.transaction-chat.rag.enabled", () -> Boolean.getBoolean(LIVE_PROPERTY));
+        registry.add("spring.ai.model.chat", () -> live ? "google-genai" : "none");
+        registry.add("finance-manager.transaction-chat.rag.enabled", () -> live || replay);
         registry.add("finance-manager.transaction-chat.rag.pilot-user-ids", () -> CORPUS_USER_ID + "," + EMPTY_HISTORY_USER_ID);
     }
 
@@ -168,6 +192,27 @@ class TransactionChatRagEvaluationTest {
         assertThat(evaluationKey).as("GEMINI_API_KEY deve estar configurada para a avaliação").isNotBlank();
         assertThat(evaluationKey.strip().equals(geminiClients.getObject().apiKey()))
                 .as("O cliente de geração deve usar a credencial fornecida no ambiente da avaliação").isTrue();
+        var cases = seedCorpus();
+        String selectedCase = System.getProperty("transaction.chat.rag.case");
+        if (selectedCase != null) {
+            cases = cases.stream().filter(example -> example.name().equals(selectedCase)).toList();
+            assertThat(cases).as("Caso configurado para avaliação").hasSize(1);
+        }
+
+        measureLiveCases(cases, selectedCase);
+    }
+
+    @Test
+    @EnabledIfSystemProperty(named = REPLAY_PROPERTY, matches = "true")
+    void measuresLocalRagWithReplayedCatalogueResponses() throws IOException {
+        var cases = seedCorpus();
+        var replay = new TransactionChatLocalRagReplay(meters);
+        var service = new TransactionSuggestionService(ChatClient.builder(replay.model()),
+                categoryService, validator, retriever);
+        replay.run(cases, REFERENCE_DATE, service, categoryService);
+    }
+
+    private List<Case> seedCorpus() {
         var owner = user(CORPUS_USER_ID);
         var emptyHistoryUser = user(EMPTY_HISTORY_USER_ID);
         UUID dining = category(owner, "Restaurantes", "EXPENSE");
@@ -207,12 +252,6 @@ class TransactionChatRagEvaluationTest {
                 new Case(emptyHistoryUser, "sem-categoria", "Paguei R$ 150,00 na consulta com a dentista",
                         null, "150.00", Tipo.DESPESA),
                 new Case(owner, "curso-sem-exemplo", "Paguei R$ 49,90 num curso online de Java", study, "49.90", Tipo.DESPESA));
-        String selectedCase = System.getProperty("transaction.chat.rag.case");
-        if (selectedCase != null) {
-            cases = cases.stream().filter(example -> example.name().equals(selectedCase)).toList();
-            assertThat(cases).as("Caso configurado para avaliação").hasSize(1);
-        }
-
         var corpus = List.of(
                 new SavedExample(dining, "EXPENSE", "Jantar no sushi"),
                 new SavedExample(market, "EXPENSE", "Feira de frutas e verduras"),
@@ -230,7 +269,10 @@ class TransactionChatRagEvaluationTest {
         }
         System.out.printf("RAG local: gerando embeddings para %d transações fictícias confirmadas.%n", corpus.size());
         indexHistory(owner, embeddings.getObject()::embedDocument, corpus.size());
+        return cases;
+    }
 
+    private void measureLiveCases(List<Case> cases, String selectedCase) throws InterruptedException {
         var results = new ArrayList<Measurement>();
         var comparisons = new EnumMap<CategoryComparison, Integer>(CategoryComparison.class);
         for (int index = 0; index < cases.size(); index++) {
@@ -416,9 +458,9 @@ class TransactionChatRagEvaluationTest {
 
     enum Variant { CURRENT, CATEGORIES, RAG }
     enum CategoryComparison { CORRIGIU, PIOROU, MANTEVE_ACERTO, MANTEVE_ERRO, INCONCLUSIVO }
-    private record User(UUID id, UUID accountId) {}
+    record User(UUID id, UUID accountId) {}
     private record SavedExample(UUID categoryId, String type, String description) {}
-    private record Case(User user, String name, String prompt, UUID categoryId, String amount, Tipo type) {}
+    record Case(User user, String name, String prompt, UUID categoryId, String amount, Tipo type) {}
     private record RetrievalMetrics(long failures, double examples) {}
     record Measurement(Variant variant, String name, String categoryLabel, boolean categoryCorrect, boolean wrongCategory,
                                boolean extractionCorrect, boolean chatFailed, boolean retrievalFailed,

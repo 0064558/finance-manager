@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import { finalize, forkJoin, Subscription } from 'rxjs';
+import { finalize, forkJoin, of, Subscription, switchMap } from 'rxjs';
 
 import { CategoryApi } from '../../core/categories';
 import { FinancialAccountApi } from '../../core/financial-accounts';
@@ -147,6 +147,8 @@ export class Transactions implements OnInit {
     this.errorMessage.set(null);
 
     const filters = this.appliedFilters();
+    const page = this.currentPage();
+    const size = 10;
 
     // forkJoin é usado para criar um único observable que aguarda a conclusão de várias requisições HTTP simultâneas, 
     // que emite um objeto contendo os resultados de todas as requisições quando todas forem concluídas.
@@ -154,11 +156,14 @@ export class Transactions implements OnInit {
     const request$ = forkJoin({
       accounts: this.accountApi.getAll(),
       categories: this.categoryApi.getAll(),
-      transactionsPage: this.transactionApi.getAll({
-        ...filters,
-        page: this.currentPage(),
-        size: 10
-      }),
+      transactionsPage: this.transactionApi.getAll({ ...filters, page, size }).pipe(
+        switchMap((result) => {
+          const lastPage = Math.max(0, result.totalPages - 1);
+          return page > lastPage
+            ? this.transactionApi.getAll({ ...filters, page: lastPage, size })
+            : of(result);
+        }),
+      ),
     });
 
     // Assina o Observable resultante para processar os dados recebidos.
@@ -322,8 +327,13 @@ export class Transactions implements OnInit {
   }
 
   protected onTransactionSaved(): void {
+    const wasEditing = !!this.transactionForm()?.transactionId;
     this.transactionForm.set(null);
-    this.clearFilters();
+    if (wasEditing) {
+      this.loadTransactions();
+    } else {
+      this.clearFilters();
+    }
   }
 
   protected openDeleteConfirmation(transaction: TransactionViewModel): void {

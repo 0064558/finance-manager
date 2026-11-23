@@ -1,5 +1,4 @@
 import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, finalize, map } from 'rxjs';
@@ -183,11 +182,7 @@ export class AppShell implements OnInit {
           this.navigateToOnboardingStep(0);
         }
       },
-      error: (error: HttpErrorResponse) => {
-        if (error.status === 401) {
-          this.logout();
-        }
-      },
+      error: () => this.currentUser.set(null),
     });
   }
 

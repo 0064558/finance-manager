@@ -1,9 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
-import { Auth } from '../../../core/auth';
 import { Notifications } from '../../../core/notifications';
 import { ReportExportApi } from '../../../core/report-export';
 import { SlowApiLoading } from '../../../core/slow-api-loading';
@@ -17,9 +15,6 @@ describe('ReportExportDialog', () => {
   const download = vi.fn();
   const save = vi.fn();
   const success = vi.fn();
-  const notifyError = vi.fn();
-  const logout = vi.fn();
-  const navigateByUrl = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -38,8 +33,7 @@ describe('ReportExportDialog', () => {
     });
     TestBed.configureTestingModule({ imports: [ReportExportDialog], providers: [
       { provide: ReportExportApi, useValue: { download, save } },
-      { provide: Notifications, useValue: { success, error: notifyError } },
-      { provide: Auth, useValue: { logout } }, { provide: Router, useValue: { navigateByUrl } },
+      { provide: Notifications, useValue: { success } },
     ] });
     trigger = document.createElement('button');
     document.body.appendChild(trigger); trigger.focus();
@@ -151,13 +145,6 @@ describe('ReportExportDialog', () => {
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain(message);
     expect(component['submitting']()).toBe(false);
     expect(HTMLDialogElement.prototype.close).not.toHaveBeenCalled();
-  });
-
-  it('logs out and returns to login when the session expires', () => {
-    download.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
-    const component = render(); component['submit']();
-    expect(logout).toHaveBeenCalled(); expect(navigateByUrl).toHaveBeenCalledWith('/login');
-    expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('sessão expirou'));
   });
 
   it('closes with Escape when idle and cancels a pending request on destruction', () => {

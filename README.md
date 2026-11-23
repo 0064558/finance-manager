@@ -63,6 +63,12 @@ integrações bancárias, recorrência automática ou múltiplas moedas.
 
 ![Gerenciamento de contas financeiras](docs/images/contas.png)
 
+Em **Contas → Minhas contas**, use **Transferir entre contas** no topo da
+página, ao lado de **Nova conta**. Cadastre duas contas para habilitar o botão.
+Depois de confirmar, confira o saldo de cada conta e o histórico de
+transferências na mesma página. A transferência preserva o saldo consolidado
+e os totais de receitas e despesas.
+
 #### Transações
 
 ![Listagem e gerenciamento de transações](docs/images/transacoes.png)

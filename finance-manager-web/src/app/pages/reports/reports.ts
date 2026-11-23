@@ -1,10 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
 import { LucideArrowRight, LucideFileText, LucideSheet, LucideTable2 } from '@lucide/angular';
 import { finalize, forkJoin } from 'rxjs';
-import { Auth } from '../../core/auth';
 import { CategoryApi } from '../../core/categories';
 import { Category } from '../../core/category.models';
 import { FinancialAccountApi } from '../../core/financial-accounts';
@@ -23,8 +20,6 @@ import { ReportExportDialog } from '../transactions/report-export-dialog/report-
 export class Reports implements OnInit {
   private readonly accountApi = inject(FinancialAccountApi);
   private readonly categoryApi = inject(CategoryApi);
-  private readonly auth = inject(Auth);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly accounts = signal<FinancialAccount[]>([]);
   protected readonly categories = signal<Category[]>([]);
@@ -57,12 +52,7 @@ export class Reports implements OnInit {
         this.accounts.set(accounts);
         this.categories.set(categories);
       },
-      error: (error: unknown) => {
-        if (error instanceof HttpErrorResponse && error.status === 401) {
-          this.auth.logout();
-          void this.router.navigateByUrl('/login');
-          return;
-        }
+      error: () => {
         this.error.set('Não foi possível carregar as contas e categorias. Tente novamente para preparar seu relatório.');
       },
     });

@@ -1,0 +1,2846 @@
+{
+  "CATALOGO_DE_12_11" : {
+    "restaurante" : {
+      "expected" : "Restaurantes",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 19845, 13126, 12186, 12117, 12906, 11308, 13284, 14919, 37073, 13746 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 20960, 15951, 12266, 11633, 13343, 11978, 13376, 28780, 17384, 16203 ]
+      }
+    },
+    "mercado" : {
+      "expected" : "Mercado",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 19029, 16716, 13931, 11596, 13329, 11056, 12469, 35505, 17153, 13799 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 21270, 14767, 11869, 10657, 13347, 11749, 13982, 48296, 18765, 13432 ]
+      }
+    },
+    "trabalho" : {
+      "expected" : "Plantão",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17561, 15673, 13492, 12843, 13417, 19901, 16774, 19419, 19124, 21953 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 21955, 16501, 11958, 11195, 13976, 11798, 14489, 25609, 15264, 17265 ]
+      }
+    },
+    "rotina" : {
+      "expected" : "Rotina",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 18754, 16319, 12255, 11476, 16415, 11864, 23731, 13606, 12631, 13284 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17857, 15168, 11486, 11618, 15584, 12067, 16804, 19281, 13577, 14913 ]
+      }
+    },
+    "receita" : {
+      "expected" : "Receitas pontuais",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16386, 13048, 12414, 11060, 16022, 10928, 18245, 15179, 16083, 15488 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16190, 14100, 12894, 11326, 13756, 12396, 33567, 15477, 13821, 15973 ]
+      }
+    },
+    "sem-historico" : {
+      "expected" : "Transporte",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15403, 12903, 12449, 10902, 15606, 11317, 25379, 18468, 16621, 15733 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        }, {
+          "category" : "Transporte",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15647, 13805, 12357, 12694, 12931, 12949, 18035, 17613, 18442, 14840 ]
+      }
+    },
+    "pao-e-leite" : {
+      "expected" : "Mercado",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15318, 13223, 12967, 11800, 17878, 13717, 33532, 14888, 16670, 13673 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        }, {
+          "category" : "Mercado",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17431, 14330, 12283, 10861, 16817, 12180, 28067, 14159, 13632, 16762 ]
+      }
+    },
+    "pizzaria" : {
+      "expected" : "Restaurantes",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 14141, 12661, 12356, 11794, 14155, 15352, 17826, 15967, 11558, 13290 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15837, 12786, 12829, 11938, 13306, 16461, 23967, 18955, 13278, 14156 ]
+      }
+    },
+    "plantao-onibus" : {
+      "expected" : "Plantão",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15057, 12169, 13399, 11824, 12206, 13117, 13559, 15022, 12591, 12576 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16180, 12929, 12200, 12737, 11626, 13550, 14774, 12485, 13366, 12800 ]
+      }
+    },
+    "rotina-aplicativo" : {
+      "expected" : "Rotina",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17193, 12988, 12559, 11195, 13420, 12280, 19742, 15215, 11403, 12160 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        }, {
+          "category" : "Rotina",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 18340, 12891, 12879, 11984, 13075, 15053, 15442, 48225, 10951, 13780 ]
+      }
+    },
+    "uber-show" : {
+      "expected" : "Lazer",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 18246, 13678, 12111, 13634, 11931, 14143, 15778, 24199, 11633, 15508 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16891, 13362, 11743, 11569, 12252, 12415, 14248, 33159, 12995, 14527 ]
+      }
+    },
+    "ingresso-show" : {
+      "expected" : "Lazer",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17888, 13155, 12255, 11884, 11149, 13384, 13574, 11822, 13339, 11827 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        }, {
+          "category" : "Lazer",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16167, 13860, 12599, 14059, 12111, 13168, 14124, 33291, 12437, 14064 ]
+      }
+    },
+    "reparo-casa" : {
+      "expected" : "Casa",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 18022, 13135, 12677, 11386, 10225, 12252, 28218, 12030, 13786, 12908 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15575, 13678, 14277, 12138, 13690, 11916, 22059, 19271, 12662, 12326 ]
+      }
+    },
+    "material-casa" : {
+      "expected" : "Casa",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17481, 12951, 13132, 12579, 12842, 12026, 18418, 14320, 14508, 15048 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        }, {
+          "category" : "Casa",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 28271, 13349, 12868, 11861, 13216, 12757, 33902, 13565, 13147, 13905 ]
+      }
+    },
+    "reembolso-plantao" : {
+      "expected" : "Acertos",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17659, 12506, 12219, 11472, 11667, 12235, 28771, 11409, 18593, 11728 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        }, {
+          "category" : "Acertos",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 19544, 13711, 13603, 11080, 12723, 11225, 16850, 12647, 17866, 12269 ]
+      }
+    },
+    "freela-foto" : {
+      "expected" : "Receitas pontuais",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 54042, 12707, 13499, 11623, 11391, 13393, 31557, 15678, 16431, 12778 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        }, {
+          "category" : "Receitas pontuais",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 25085, 14703, 13076, 12296, 13374, 11667, 16038, 13392, 14582, 11713 ]
+      }
+    },
+    "salario" : {
+      "expected" : "Salário",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17054, 14423, 11727, 11965, 10885, 13620, 35088, 35083, 15708, 14368 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        }, {
+          "category" : "Salário",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16754, 15066, 14373, 11118, 11822, 12067, 58546, 12562, 15977, 14824 ]
+      }
+    },
+    "sem-historico-restaurante" : {
+      "expected" : "Restaurantes",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17654, 13192, 11630, 10198, 9791, 11416, 29309, 44870, 19948, 19694 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        }, {
+          "category" : "Restaurantes",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 19307, 13451, 18709, 11286, 10163, 11555, 68851, 73685, 21363, 13822 ]
+      }
+    },
+    "sem-categoria" : {
+      "expected" : null,
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15553, 11262, 10888, 10917, 10124, 13386, 22742, 15090, 16406, 11667 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        } ],
+        "serviceMicros" : [ 20040, 16352, 16619, 14259, 14770, 17853, 68501, 40758, 27482, 16200 ]
+      }
+    },
+    "curso-sem-exemplo" : {
+      "expected" : "Estudos",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15453, 12453, 12413, 12144, 12445, 14313, 26649, 19759, 15917, 12812 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        }, {
+          "category" : "Estudos",
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16588, 13681, 12684, 11630, 10382, 14592, 40993, 37014, 17235, 11454 ]
+      }
+    }
+  },
+  "CATEGORIA_NULA" : {
+    "restaurante" : {
+      "expected" : "Restaurantes",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 14876, 17781, 12655, 12991, 25087, 13716, 12035, 10895, 12313, 11622 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 29119, 34897, 28898, 23904, 40060, 32720, 26515, 19397, 24121, 18612 ]
+      }
+    },
+    "mercado" : {
+      "expected" : "Mercado",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 60863, 19453, 19461, 14172, 29010, 12341, 11550, 11026, 13699, 10002 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 24501, 30924, 29727, 43654, 200100, 44024, 27109, 19507, 26372, 18796 ]
+      }
+    },
+    "trabalho" : {
+      "expected" : "Plantão",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 40340, 14107, 11612, 13315, 27718, 21135, 10658, 11155, 13012, 12315 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 77179, 54936, 22798, 31451, 30238, 102419, 21176, 20077, 26755, 21270 ]
+      }
+    },
+    "rotina" : {
+      "expected" : "Rotina",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 22570, 16139, 12878, 13842, 11626, 19840, 8319, 16537, 14368, 13247 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Rotina",
+          "search" : "hit"
+        }, {
+          "category" : "Rotina",
+          "search" : "hit"
+        }, {
+          "category" : "Rotina",
+          "search" : "hit"
+        }, {
+          "category" : "Rotina",
+          "search" : "hit"
+        }, {
+          "category" : "Rotina",
+          "search" : "hit"
+        }, {
+          "category" : "Rotina",
+          "search" : "hit"
+        }, {
+          "category" : "Rotina",
+          "search" : "hit"
+        }, {
+          "category" : "Rotina",
+          "search" : "hit"
+        }, {
+          "category" : "Rotina",
+          "search" : "hit"
+        }, {
+          "category" : "Rotina",
+          "search" : "hit"
+        } ],
+        "serviceMicros" : [ 109185, 26027, 28991, 27425, 25503, 27848, 19266, 19303, 25065, 23339 ]
+      }
+    },
+    "receita" : {
+      "expected" : "Receitas pontuais",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15643, 13819, 14554, 16942, 12517, 13554, 9711, 10429, 15600, 13736 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 30507, 27522, 31496, 48700, 31387, 27950, 19347, 18215, 25300, 24649 ]
+      }
+    },
+    "sem-historico" : {
+      "expected" : "Transporte",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 13408, 14267, 16213, 12588, 13166, 12736, 11048, 11640, 12100, 12777 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        } ],
+        "serviceMicros" : [ 20296, 19470, 22998, 19211, 19728, 20947, 15072, 15609, 17741, 16513 ]
+      }
+    },
+    "pao-e-leite" : {
+      "expected" : "Mercado",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16860, 13756, 18939, 15676, 16627, 34674, 12279, 9982, 13772, 12213 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 28587, 24237, 44732, 23887, 26987, 30573, 23511, 19584, 21226, 24203 ]
+      }
+    },
+    "pizzaria" : {
+      "expected" : "Restaurantes",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15380, 13903, 14105, 14443, 11639, 16378, 11954, 11405, 12074, 11135 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 25851, 25061, 29026, 58638, 21936, 28463, 23206, 23491, 20732, 24639 ]
+      }
+    },
+    "plantao-onibus" : {
+      "expected" : "Plantão",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 24190, 14404, 17175, 21293, 15083, 15668, 11366, 11430, 11905, 11317 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 114146, 27187, 28666, 25153, 33009, 25447, 21091, 25544, 31078, 19902 ]
+      }
+    },
+    "rotina-aplicativo" : {
+      "expected" : "Rotina",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 26303, 16159, 48918, 78804, 19228, 18963, 10374, 12476, 19214, 10861 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 39982, 25344, 44643, 42028, 27537, 42585, 19643, 21340, 34730, 34267 ]
+      }
+    },
+    "uber-show" : {
+      "expected" : "Lazer",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 27376, 14965, 25547, 17860, 15564, 15242, 13741, 11387, 13994, 12289 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : "Lazer",
+          "search" : "hit"
+        }, {
+          "category" : "Lazer",
+          "search" : "hit"
+        }, {
+          "category" : "Lazer",
+          "search" : "hit"
+        }, {
+          "category" : "Lazer",
+          "search" : "hit"
+        }, {
+          "category" : "Lazer",
+          "search" : "hit"
+        }, {
+          "category" : "Lazer",
+          "search" : "hit"
+        }, {
+          "category" : "Lazer",
+          "search" : "hit"
+        }, {
+          "category" : "Lazer",
+          "search" : "hit"
+        }, {
+          "category" : "Lazer",
+          "search" : "hit"
+        }, {
+          "category" : "Lazer",
+          "search" : "hit"
+        } ],
+        "serviceMicros" : [ 36450, 30953, 34324, 30505, 26762, 26158, 23259, 21815, 35117, 32775 ]
+      }
+    },
+    "ingresso-show" : {
+      "expected" : "Lazer",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 21039, 13136, 27447, 14019, 20218, 13869, 10230, 11378, 12435, 10575 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 30267, 44712, 101218, 24980, 51997, 25244, 21121, 61597, 48027, 20523 ]
+      }
+    },
+    "reparo-casa" : {
+      "expected" : "Casa",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16743, 13954, 12777, 12714, 21238, 14652, 10966, 16143, 14423, 21523 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 38937, 26512, 27102, 28099, 40490, 27920, 20672, 23585, 26858, 39698 ]
+      }
+    },
+    "material-casa" : {
+      "expected" : "Casa",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 29006, 14517, 14729, 11985, 12915, 15634, 9083, 14334, 11673, 15437 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 75095, 25934, 29939, 26740, 24138, 24119, 18415, 27731, 24516, 20373 ]
+      }
+    },
+    "reembolso-plantao" : {
+      "expected" : "Acertos",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 17801, 12217, 21004, 18143, 11186, 14931, 10319, 15553, 14879, 9070 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 248009, 23763, 32021, 27700, 25760, 26928, 23208, 30093, 25060, 16595 ]
+      }
+    },
+    "freela-foto" : {
+      "expected" : "Receitas pontuais",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16304, 15605, 13757, 14426, 13384, 13131, 10449, 20129, 14405, 10176 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 99736, 26068, 32919, 41812, 26179, 26172, 17275, 23351, 26812, 19589 ]
+      }
+    },
+    "salario" : {
+      "expected" : "Salário",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 15230, 11292, 11516, 34343, 20247, 10759, 9334, 13710, 13685, 10537 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 29251, 24086, 26525, 49443, 32051, 20610, 19206, 29272, 25973, 17537 ]
+      }
+    },
+    "sem-historico-restaurante" : {
+      "expected" : "Restaurantes",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 36439, 12476, 10883, 19827, 14482, 10003, 10331, 13556, 12903, 10034 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        } ],
+        "serviceMicros" : [ 20505, 16769, 15329, 20817, 31893, 14774, 13533, 17824, 18939, 17263 ]
+      }
+    },
+    "sem-categoria" : {
+      "expected" : null,
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 16056, 14400, 11726, 16705, 19729, 9952, 10965, 12005, 12226, 10396 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        }, {
+          "category" : null,
+          "search" : "empty_history"
+        } ],
+        "serviceMicros" : [ 20958, 19770, 16797, 92045, 17487, 13385, 14857, 17553, 17750, 15848 ]
+      }
+    },
+    "curso-sem-exemplo" : {
+      "expected" : "Estudos",
+      "catalogue" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        }, {
+          "category" : null,
+          "search" : "not_called"
+        } ],
+        "serviceMicros" : [ 39226, 16385, 12198, 23603, 11720, 10682, 10027, 13253, 10422, 8336 ]
+      },
+      "localRag" : {
+        "outcomes" : [ {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        }, {
+          "category" : null,
+          "search" : "no_match"
+        } ],
+        "serviceMicros" : [ 28118, 27059, 23173, 30771, 22377, 21821, 21542, 25474, 19068, 17169 ]
+      }
+    }
+  }
+}

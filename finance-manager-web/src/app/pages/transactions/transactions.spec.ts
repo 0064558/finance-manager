@@ -108,6 +108,35 @@ describe('Transactions', () => {
     categoriaSugerida: 'Alimentação', categoriaId: 'food',
   };
 
+  it('mantém o filtro aplicado e a página após editar uma transação', () => {
+    transactions.mockReturnValue(of({ ...page, totalPages: 3, totalElements: 21 }));
+    render();
+    const list = transactionsPage();
+    list['filterForm'].controls.type.setValue('EXPENSE');
+    list['applyFilters']();
+    list['currentPage'].set(1);
+    list['transactionForm'].set({ transactionId: 'edited', initialValues: {} });
+    transactions.mockReturnValue(of({ ...page, number: 1, totalPages: 3, totalElements: 21 }));
+    list['onTransactionSaved']();
+    expect(transactions).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'EXPENSE', page: 1 }));
+    expect(list['currentPage']()).toBe(1);
+    expect(list['filterForm'].controls.type.value).toBe('EXPENSE');
+    expect(list['transactionForm']()).toBeNull();
+  });
+
+  it('busca a última página válida quando a edição retira o item do filtro', () => {
+    render();
+    const list = transactionsPage();
+    list['appliedFilters'].set({ accountId: 'account' });
+    list['currentPage'].set(2);
+    list['transactionForm'].set({ transactionId: 'edited', initialValues: {} });
+    transactions.mockReturnValueOnce(of({ ...page, number: 2, totalPages: 2 }))
+      .mockReturnValueOnce(of({ ...page, number: 1, totalPages: 2 }));
+    list['onTransactionSaved']();
+    expect(transactions).toHaveBeenLastCalledWith({ accountId: 'account', page: 1, size: 10 });
+    expect(list['currentPage']()).toBe(1);
+  });
+
   it('restaura mensagens e confirmação ao recriar o chat e preserva o histórico entre aberturas', () => {
     const prompt = 'Gastei 47,90 no almoço.';
     getChatHistory.mockReturnValue(of([{ id: 'lunch', prompt, response: lunchSuggestion, saved: true }]));
