@@ -88,7 +88,7 @@ public class FinancialAccountService {
         boolean initialBalanceChanged = initialBalanceChanged(account, requestDTO);
 
         // verifica se o saldo mudou e se ha transacoes na conta
-        if (initialBalanceChanged && transactionRepository.existsByFinancialAccount_IdAndUser_Id(accountId, authenticatedUserId)) {
+        if (initialBalanceChanged && hasMovements(accountId, authenticatedUserId)) {
             throw new FinancialAccountHasTransactionsException();
         }
 
@@ -103,11 +103,16 @@ public class FinancialAccountService {
                 .orElseThrow(FinancialAccountNotFoundException::new);
 
         // se ha transacoes na conta
-        if (transactionRepository.existsByFinancialAccount_IdAndUser_Id(accountId, authenticatedUserId)) {
+        if (hasMovements(accountId, authenticatedUserId)) {
             throw new FinancialAccountHasTransactionsException();
         }
 
         financialAccountRepository.delete(account);
+    }
+
+    private boolean hasMovements(UUID accountId, UUID userId) {
+        return transactionRepository.existsByFinancialAccount_IdAndUser_Id(accountId, userId)
+                || financialAccountRepository.hasTransfers(accountId);
     }
 
     // metodo para retornar uma conta por meio do DTO

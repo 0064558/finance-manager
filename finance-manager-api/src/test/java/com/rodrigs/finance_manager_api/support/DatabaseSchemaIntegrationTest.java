@@ -37,11 +37,11 @@ class DatabaseSchemaIntegrationTest extends PostgresIntegrationTest {
                 WHERE table_schema = 'public'
                   AND table_name IN ('users', 'financial_accounts', 'categories', 'transactions',
                                      'transaction_idempotency', 'transaction_chat_history', 'transaction_chat_drafts',
-                                     'transaction_embedding_pilots', 'transaction_embeddings')
+                                     'transaction_embedding_pilots', 'transaction_embeddings', 'account_transfers')
                 """, Integer.class);
 
-        assertThat(appliedMigrations).isEqualTo(11);
-        assertThat(applicationTables).isEqualTo(9);
+        assertThat(appliedMigrations).isEqualTo(12);
+        assertThat(applicationTables).isEqualTo(10);
         assertThat(jdbcTemplate.queryForObject("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')",
                 Boolean.class)).isTrue();
     }
@@ -56,10 +56,14 @@ class DatabaseSchemaIntegrationTest extends PostgresIntegrationTest {
                     'uq_categories_id_user',
                     'fk_transactions_account_same_user',
                     'fk_transactions_category_same_user',
-                    'ck_transactions_amount_positive'
+                    'ck_transactions_amount_positive',
+                    'fk_account_transfers_source_same_user',
+                    'fk_account_transfers_destination_same_user',
+                    'ck_account_transfers_distinct_accounts',
+                    'ck_account_transfers_amount_positive'
                 )
                 """, Integer.class);
 
-        assertThat(constraints).isEqualTo(5);
+        assertThat(constraints).isEqualTo(9);
     }
 }

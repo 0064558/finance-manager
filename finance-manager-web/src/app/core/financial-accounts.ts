@@ -3,10 +3,13 @@ import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import {
+    AccountTransfer,
+    CreateAccountTransferRequest,
     CreateFinancialAccountRequest,
     FinancialAccount,
     UpdateFinancialAccountRequest,
 } from './financial-account.models';
+import { PageResponse } from './transaction.models';
 
 // Serviço para interagir com a API de contas financeiras, fornecendo métodos para obter todas as contas, 
 // criar uma nova conta e atualizar uma conta existente.
@@ -17,6 +20,17 @@ export class FinancialAccountApi {
 
     // Endpoint base da API para contas financeiras.
     private readonly endpoint = '/api/v1/financial-accounts';
+    private readonly transfersEndpoint = '/api/v1/transfers';
+
+    getTransfers(page: number): Observable<PageResponse<AccountTransfer>> {
+        return this.http.get<PageResponse<AccountTransfer>>(this.transfersEndpoint, { params: { page } });
+    }
+
+    createTransfer(request: CreateAccountTransferRequest, key: string): Observable<AccountTransfer> {
+        return this.http.post<AccountTransfer>(this.transfersEndpoint, request, {
+            headers: { 'Idempotency-Key': key },
+        });
+    }
 
     // Método para listar todas as contas financeiras.
     getAll(): Observable<FinancialAccount[]> {

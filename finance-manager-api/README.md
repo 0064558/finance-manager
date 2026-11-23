@@ -820,6 +820,30 @@ a configuração padrão do Actuator expõe somente `health` por HTTP.
 [Plano de implementação](../docs/plano-rag-categorizacao.md) ·
 [Avaliação com casos fictícios](../docs/avaliacao-sugestoes-transacoes.md)
 
+## Transferências entre contas próprias
+
+Na tela **Minhas contas**, selecione **Transferir entre contas** para registrar
+uma movimentação entre duas contas distintas do mesmo usuário. A operação
+debita a origem e credita o destino pelo mesmo valor. A origem pode ficar
+com saldo negativo. O débito e o crédito se compensam no saldo total.
+Transferências ficam fora dos totais consolidados de receitas e despesas.
+
+| Método | Endpoint | Status de sucesso | Finalidade |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/transfers` | `201 Created` | Registra uma transferência. |
+| `GET` | `/api/v1/transfers` | `200 OK` | Lista as transferências do usuário, da mais recente para a mais antiga, usando `page` e `size`. |
+
+Envie `sourceAccountId`, `destinationAccountId`, `amount` e `occurredOn` no
+`POST`. O valor deve ser positivo, com até 17 dígitos inteiros e duas casas
+decimais. A API aceita um número JSON ou uma string decimal como `"125.50"`.
+A data deve estar no formato ISO `AAAA-MM-DD` e ser de hoje ou anterior.
+A `description` é opcional e aceita até 255 caracteres.
+
+Use o cabeçalho `Idempotency-Key` para repetir um envio com segurança. A mesma
+chave e os mesmos dados retornam o registro anterior. Outros dados válidos com a
+mesma chave recebem `409`. Contas iguais ou dados inválidos recebem `400`.
+Conta inexistente ou de outro usuário recebe `404`.
+
 ## Dashboard e relatórios
 
 Os endpoints de relatório exigem autenticação JWT:

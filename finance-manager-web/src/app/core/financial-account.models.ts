@@ -19,3 +19,18 @@ export interface CreateFinancialAccountRequest {
 }
 
 export type UpdateFinancialAccountRequest = CreateFinancialAccountRequest;
+
+export interface CreateAccountTransferRequest {
+  sourceAccountId: string;
+  destinationAccountId: string;
+  amount: string;
+  occurredOn: string;
+  description?: string;
+}
+
+export interface AccountTransfer extends Omit<CreateAccountTransferRequest, 'amount' | 'description'> {
+  id: string;
+  amount: number;
+  description: string | null;
+  createdAt: string;
+}

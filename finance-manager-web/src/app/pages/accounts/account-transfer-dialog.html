@@ -1,0 +1,74 @@
+<dialog #dialog class="transaction-modal fm-modal" aria-labelledby="transfer-dialog-title"
+  (cancel)="$event.preventDefault(); close()">
+  <header class="transaction-modal__header">
+    <h2 id="transfer-dialog-title">Transferir entre contas</h2>
+    <button class="fm-button" type="button" [disabled]="submitting()" (click)="close()" aria-label="Fechar formulário">
+      Fechar
+    </button>
+  </header>
+
+  <form class="transaction-form" [formGroup]="form" (ngSubmit)="submit()" [attr.aria-busy]="submitting()">
+    <div class="transaction-form__field">
+      <label for="transfer-source">Conta de origem</label>
+      <select id="transfer-source" formControlName="sourceAccountId" required
+        [attr.aria-invalid]="form.controls.sourceAccountId.touched && form.controls.sourceAccountId.invalid">
+        <option value="">Selecione uma conta</option>
+        @for (account of accounts(); track account.id) {
+          <option [value]="account.id">{{ accountNames().get(account.id) }}</option>
+        }
+      </select>
+      @if (form.controls.sourceAccountId.touched && form.controls.sourceAccountId.invalid) {
+        <p class="transaction-form__error">Selecione a conta de origem.</p>
+      }
+    </div>
+
+    <div class="transaction-form__field">
+      <label for="transfer-destination">Conta de destino</label>
+      <select id="transfer-destination" formControlName="destinationAccountId" required
+        [attr.aria-invalid]="form.controls.destinationAccountId.touched && form.controls.destinationAccountId.invalid">
+        <option value="">Selecione uma conta</option>
+        @for (account of accounts(); track account.id) {
+          <option [value]="account.id">{{ accountNames().get(account.id) }}</option>
+        }
+      </select>
+      @if (form.controls.destinationAccountId.touched && form.controls.destinationAccountId.invalid) {
+        <p class="transaction-form__error">Selecione a conta de destino.</p>
+      }
+    </div>
+
+    <div class="transaction-form__field">
+      <label for="transfer-amount">Valor (R$)</label>
+      <input id="transfer-amount" type="text" inputmode="decimal" maxlength="20" placeholder="0,00"
+        formControlName="amount" required
+        [attr.aria-invalid]="form.controls.amount.touched && form.controls.amount.invalid" />
+      @if (form.controls.amount.touched && form.controls.amount.invalid) {
+        <p class="transaction-form__error">Informe um valor positivo com até duas casas decimais.</p>
+      }
+    </div>
+
+    <div class="transaction-form__field">
+      <label for="transfer-date">Data</label>
+      <input id="transfer-date" type="date" [max]="today" formControlName="occurredOn" required
+        [attr.aria-invalid]="form.controls.occurredOn.touched && form.controls.occurredOn.invalid" />
+      @if (form.controls.occurredOn.touched && form.controls.occurredOn.invalid) {
+        <p class="transaction-form__error">Informe uma data válida até hoje.</p>
+      }
+    </div>
+
+    <div class="transaction-form__field transaction-form__field--full">
+      <label for="transfer-description">Descrição <span>(opcional)</span></label>
+      <input id="transfer-description" type="text" maxlength="255" formControlName="description" />
+    </div>
+
+    @if (error()) {
+      <p class="transaction-form__server-error" role="alert">{{ error() }}</p>
+    }
+
+    <div class="transaction-form__actions">
+      <button class="fm-button" type="button" [disabled]="submitting()" (click)="close()">Cancelar</button>
+      <button class="fm-button" type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Registrando…' : 'Confirmar transferência' }}
+      </button>
+    </div>
+  </form>
+</dialog>
